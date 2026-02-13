@@ -8,6 +8,8 @@ use App\Models\MainCategory;
 use App\Models\Product;
 use App\Models\CustomizationParam;
 use App\Models\Order;
+use App\Models\OrderStatus;
+use App\Models\OrderStatusHistory;
 use App\Models\Customer;
 use App\Models\User;
 use App\Models\Collection;
@@ -76,10 +78,25 @@ class DashboardController extends Controller
                             ->orderBy('month')
                             ->get();
         
-        // Sipariş durumlarına göre dağılım
-        $ordersByStatus = Order::select('status', DB::raw('COUNT(*) as count'))
-                               ->groupBy('status')
-                               ->get();
+        // Ana sipariş durumları (orders tablosu - 4 durum)
+        // 0: Onay Bekliyor, 1: İşlemde, 2: Teslim Edildi, 3: İptal
+        $ordersByMainStatus = Order::select('status', DB::raw('COUNT(*) as count'))
+            ->groupBy('status')
+            ->get();
+
+        // Alt sipariş durumları (cart bazlı - OrderStatusHistory'den)
+        $latestHistoryIds = DB::table('order_status_histories')
+            ->select(DB::raw('MAX(id) as id'))
+            ->whereNotNull('cart_id')
+            ->groupBy('cart_id')
+            ->pluck('id');
+
+        $cartsByStatus = OrderStatusHistory::whereIn('id', $latestHistoryIds)
+            ->select('order_status_id as status', DB::raw('COUNT(*) as count'))
+            ->groupBy('order_status_id')
+            ->get();
+
+        $orderStatusTitles = OrderStatus::pluck('title', 'id')->toArray();
         
         // Kullanıcı sayısı
         $totalUsers = User::count();
@@ -104,7 +121,9 @@ class DashboardController extends Controller
             'mostInDebtCustomers',
             'recentOrders',
             'monthlyOrders',
-            'ordersByStatus',
+            'ordersByMainStatus',
+            'cartsByStatus',
+            'orderStatusTitles',
             'totalUsers',
             'activeUsers'
         ));

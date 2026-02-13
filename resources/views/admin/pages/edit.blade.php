@@ -1,17 +1,20 @@
 @extends('admin.layout')
 
 @section('content')
+<div class="page-header d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h1 class="page-title">Sayfa Düzenle</h1>
+        <p class="page-subtitle">{{ $page->title }}</p>
+    </div>
+    <a href="{{ route('admin.pages.index') }}" class="btn-material btn-material-secondary">
+        <span class="material-icons">arrow_back</span> Geri Dön
+    </a>
+</div>
+
 <div class="row justify-content-center">
     <div class="col-md-10">
-        <div class="d-flex justify-content-between align-items-center mb-4">
-            <h1 class="h3">Sayfa Düzenle: {{ $page->title }}</h1>
-            <a href="{{ route('admin.pages.index') }}" class="btn btn-secondary">
-                <i class="fas fa-arrow-left"></i> Geri
-            </a>
-        </div>
-
         @if($errors->any())
-            <div class="alert alert-danger">
+            <div class="material-alert material-alert-danger mb-3">
                 <ul class="mb-0">
                     @foreach($errors->all() as $error)
                         <li>{{ $error }}</li>
@@ -20,15 +23,15 @@
             </div>
         @endif
 
-        <div class="card">
-            <div class="card-body">
+        <div class="material-card-elevated">
+            <div class="material-card-body">
                 <form action="{{ route('admin.pages.update', $page) }}" method="POST">
                     @csrf
                     @method('PUT')
                     
                     <div class="mb-3">
                         <label for="title" class="form-label">Başlık *</label>
-                        <input type="text" name="title" id="title" class="form-control @error('title') is-invalid @enderror" value="{{ old('title', $page->title) }}" required>
+                        <input type="text" name="title" id="title" class="form-control form-control-material @error('title') is-invalid @enderror" value="{{ old('title', $page->title) }}" required>
                         @error('title')
                             <div class="invalid-feedback">{{ $message }}</div>
                         @enderror
@@ -36,7 +39,7 @@
 
                     <div class="mb-3">
                         <label for="slug" class="form-label">Slug</label>
-                        <input type="text" name="slug" id="slug" class="form-control @error('slug') is-invalid @enderror" value="{{ old('slug', $page->slug) }}" placeholder="Boş bırakırsanız başlıktan otomatik oluşturulur">
+                        <input type="text" name="slug" id="slug" class="form-control form-control-material @error('slug') is-invalid @enderror" value="{{ old('slug', $page->slug) }}" placeholder="Boş bırakırsanız başlıktan otomatik oluşturulur">
                         @error('slug')
                             <div class="invalid-feedback">{{ $message }}</div>
                         @enderror
@@ -45,7 +48,7 @@
 
                     <div class="mb-3">
                         <label for="description" class="form-label">Açıklama</label>
-                        <textarea name="description" id="description" class="form-control @error('description') is-invalid @enderror" rows="3">{{ old('description', $page->description) }}</textarea>
+                        <textarea name="description" id="description" class="form-control form-control-material @error('description') is-invalid @enderror" rows="3">{{ old('description', $page->description) }}</textarea>
                         @error('description')
                             <div class="invalid-feedback">{{ $message }}</div>
                         @enderror
@@ -53,18 +56,15 @@
 
                     <div class="mb-3">
                         <label for="text" class="form-label">İçerik <span class="text-danger">*</span></label>
-                        <textarea name="text" id="text" class="form-control @error('text') is-invalid @enderror" rows="15" placeholder="Sayfa içeriğini girin" required>{{ old('text', $page->text) }}</textarea>
+                        <textarea name="text" id="text" class="form-control form-control-material @error('text') is-invalid @enderror" rows="15" placeholder="Sayfa içeriğini girin" required>{{ old('text', $page->text) }}</textarea>
                         @error('text')
                             <div class="invalid-feedback">{{ $message }}</div>
                         @enderror
                     </div>
 
-                    <div class="d-flex justify-content-between">
-                        <a href="{{ route('admin.pages.index') }}" class="btn btn-secondary">
-                            İptal
-                        </a>
-                        <button type="submit" class="btn btn-primary" onclick="syncEditorContent()">
-                            <i class="fas fa-save"></i> Güncelle
+                    <div class="d-flex justify-content-end gap-2">
+                        <button type="submit" class="btn-material btn-material-primary" onclick="syncEditorContent()">
+                            <span class="material-icons">save</span> Güncelle
                         </button>
                     </div>
                 </form>

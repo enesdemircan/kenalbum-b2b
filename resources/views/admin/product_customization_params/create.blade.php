@@ -1,13 +1,19 @@
 @extends('admin.layout')
 
 @section('content')
-<div class="d-flex justify-content-between align-items-center mb-3">
-    <h1 class="h3">{{ $product->title }} - Yeni Özelleştirme Parametresi Ekle</h1>
-    <a href="{{ route('admin.product-customization-params.index', $product->id) }}" class="btn btn-secondary">← Geri Dön</a>
+<div class="page-header d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h1 class="page-title">Yeni Özelleştirme Parametresi Ekle</h1>
+        <p class="page-subtitle">{{ $product->title }}</p>
+    </div>
+    <a href="{{ route('admin.product-customization-params.index', $product->id) }}" class="btn-material btn-material-secondary">
+        <span class="material-icons">arrow_back</span> Geri Dön
+    </a>
 </div>
 
 @if($parent)
-<div class="alert alert-info">
+<div class="material-alert material-alert-info mb-3">
+    <span class="material-icons">info</span>
     <strong>Parent Parametre:</strong> {{ $parent->param->key }} ({{ $parent->param->category->title }})
     @if(isset($subCategoryParams) && $subCategoryParams->count() > 0)
         <br><small>Bu kategorinin alt kategorilerinde {{ $subCategoryParams->count() }} parametre bulunuyor.</small>
@@ -15,8 +21,8 @@
 </div>
 @endif
 
-<div class="card">
-    <div class="card-body">
+<div class="material-card-elevated">
+    <div class="material-card-body">
         <form action="{{ route('admin.product-customization-params.store', $product->id) }}" method="POST">
             @csrf
             <div class="row">
@@ -30,12 +36,12 @@
                         @if($parent)
                             <!-- Parent seçildiğinde kategori otomatik seçili ve disabled -->
                             <input type="hidden" name="customization_category_id" value="{{ $selectedCategoryId }}">
-                            <select class="form-select" disabled>
+                            <select class="form-select form-control-material" disabled>
                                 <option value="{{ $selectedCategoryId }}" selected>{{ $parent->param->category->title }}</option>
                             </select>
                             <small class="text-muted">Parent parametrenin kategorisi otomatik seçildi</small>
                         @else
-                            <select name="customization_category_id" id="customization_category_id" class="form-select" required>
+                            <select name="customization_category_id" id="customization_category_id" class="form-select form-control-material" required>
                                 <option value="">Kategori Seçin</option>
                                 @foreach($customizationCategories as $category)
                                     <option value="{{ $category->id }}">{{ $category->title }}</option>
@@ -48,7 +54,7 @@
                 <div class="col-md-6">
                     <div class="mb-3">
                         <label for="params_id" class="form-label">Parametre</label>
-                        <select name="params_id" id="params_id" class="form-select" required>
+                        <select name="params_id" id="params_id" class="form-select form-control-material" required>
                             <option value="">Parametre Seçin</option>
                             @if(isset($subCategoryParams) && $subCategoryParams->count() > 0)
                                 @foreach($subCategoryParams as $param)
@@ -65,7 +71,7 @@
                 <div class="col-md-6">
                     <div class="mb-3">
                         <label for="price" class="form-label">Ek Fiyat (TL)</label>
-                        <input type="number" name="price" id="price" class="form-control" step="0.01" min="0" placeholder="0.00">
+                        <input type="number" name="price" id="price" class="form-control form-control-material" step="0.01" min="0" placeholder="0.00">
                         <small class="text-muted">Bu parametre seçildiğinde eklenecek fiyat</small>
                     </div>
                 </div>
@@ -73,20 +79,22 @@
                 <div class="col-md-6" style="display: none;">
                     <div class="mb-3">
                         <label for="option1" class="form-label">Seçenek 1</label>
-                        <input type="text" name="option1" id="option1" class="form-control" placeholder="Opsiyonel">
+                        <input type="text" name="option1" id="option1" class="form-control form-control-material" placeholder="Opsiyonel">
                     </div>
                 </div>
                 
                 <div class="col-md-6" style="display: none;">
                     <div class="mb-3">
                         <label for="option2" class="form-label">Seçenek 2</label>
-                        <input type="text" name="option2" id="option2" class="form-control" placeholder="Opsiyonel">
+                        <input type="text" name="option2" id="option2" class="form-control form-control-material" placeholder="Opsiyonel">
                     </div>
                 </div>
             </div>
 
             <div class="d-flex justify-content-end">
-                <button type="submit" class="btn btn-primary">Parametre Ekle</button>
+                <button type="submit" class="btn-material btn-material-primary">
+                    <span class="material-icons">add</span> Parametre Ekle
+                </button>
             </div>
         </form>
     </div>

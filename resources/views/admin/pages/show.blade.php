@@ -1,25 +1,28 @@
 @extends('admin.layout')
 
 @section('content')
+<div class="page-header d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h1 class="page-title">{{ $page->title }}</h1>
+        <p class="page-subtitle">Sayfa detayları</p>
+    </div>
+    <div class="d-flex gap-2">
+        <a href="{{ route('admin.pages.index') }}" class="btn-material btn-material-secondary">
+            <span class="material-icons">arrow_back</span> Geri
+        </a>
+        <a href="{{ route('admin.pages.edit', $page) }}" class="btn-material btn-material-warning">
+            <span class="material-icons">edit</span> Düzenle
+        </a>
+    </div>
+</div>
+
 <div class="row justify-content-center">
     <div class="col-md-10">
-        <div class="d-flex justify-content-between align-items-center mb-4">
-            <h1 class="h3">{{ $page->title }}</h1>
-            <div>
-                <a href="{{ route('admin.pages.edit', $page) }}" class="btn btn-warning">
-                    <i class="fas fa-edit"></i> Düzenle
-                </a>
-                <a href="{{ route('admin.pages.index') }}" class="btn btn-secondary">
-                    <i class="fas fa-arrow-left"></i> Geri
-                </a>
+        <div class="material-card-elevated">
+            <div class="material-card-header">
+                <h5><span class="material-icons" style="vertical-align:middle;margin-right:8px">info</span>Sayfa Detayları</h5>
             </div>
-        </div>
-
-        <div class="card">
-            <div class="card-header">
-                <h5 class="card-title mb-0">Sayfa Detayları</h5>
-            </div>
-            <div class="card-body">
+            <div class="material-card-body">
                 <div class="row">
                     <div class="col-md-6">
                         <table class="table table-borderless">
@@ -53,11 +56,11 @@
             </div>
         </div>
 
-        <div class="card mt-4">
-            <div class="card-header">
-                <h5 class="card-title mb-0">İçerik</h5>
+        <div class="material-card-elevated mt-4">
+            <div class="material-card-header">
+                <h5><span class="material-icons" style="vertical-align:middle;margin-right:8px">article</span>İçerik</h5>
             </div>
-            <div class="card-body">
+            <div class="material-card-body">
                 <div class="page-content">
                     {!! $page->text !!}
                 </div>

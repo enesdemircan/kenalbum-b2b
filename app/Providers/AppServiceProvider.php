@@ -24,6 +24,10 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
+        // Pagination View
+        \Illuminate\Pagination\Paginator::defaultView('pagination.material');
+        \Illuminate\Pagination\Paginator::defaultSimpleView('pagination.material');
+        
         // Model Observers
         \App\Models\Order::observe(\App\Observers\OrderObserver::class);
         

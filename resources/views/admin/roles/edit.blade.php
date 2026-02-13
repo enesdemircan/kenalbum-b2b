@@ -1,56 +1,70 @@
 @extends('admin.layout')
 
 @section('content')
-    <div class="row justify-content-center">
-        <div class="col-md-8">
-            <h1 class="h4 mb-3">Rol Düzenle: {{ $role->name }}</h1>
-            
-            @if($errors->any())
-                <div class="alert alert-danger">
-                    <ul class="mb-0">
-                        @foreach($errors->all() as $error)
-                            <li>{{ $error }}</li>
-                        @endforeach
-                    </ul>
-                </div>
-            @endif
-            
-            <form action="{{ route('admin.roles.update', $role->id) }}" method="POST">
-                @csrf
-                @method('PUT')
-                <div class="mb-3">
-                    <label for="name" class="form-label">Rol Adı</label>
-                    <input type="text" name="name" id="name" class="form-control" value="{{ old('name', $role->name) }}" required>
-                </div>
-                
-                <div class="mb-3">
-                    <label for="description" class="form-label">Açıklama</label>
-                    <textarea name="description" id="description" class="form-control" rows="3">{{ old('description', $role->description) }}</textarea>
-                </div>
-                
-             
+<div class="page-header d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h1 class="page-title">Rol Düzenle</h1>
+        <p class="page-subtitle">{{ $role->name }} - Rol ve route izinlerini güncelleyin</p>
+    </div>
+    <a href="{{ route('admin.roles.index') }}" class="btn-material btn-material-secondary">
+        <span class="material-icons">arrow_back</span>
+        Geri Dön
+    </a>
+</div>
 
-                <div class="mb-3">
-                    <label class="form-label">Route İzinleri</label>
-                    <div class="alert alert-info">
-                        <i class="fas fa-info-circle"></i> 
-                        <strong>Bilgi:</strong> Route izinleri, bu rolün hangi sayfalara erişebileceğini ve hangi işlemleri yapabileceğini belirler.
+@if($errors->any())
+    <div class="material-alert material-alert-danger">
+        <span class="material-icons">error</span>
+        <div>
+            <strong>Hatalar:</strong>
+            <ul class="mb-0" style="margin-top: 8px">
+                @foreach($errors->all() as $error)
+                    <li>{{ $error }}</li>
+                @endforeach
+            </ul>
+        </div>
+    </div>
+@endif
+
+<div class="material-card-elevated">
+    <div class="material-card-body">
+        <form action="{{ route('admin.roles.update', $role->id) }}" method="POST">
+            @csrf
+            @method('PUT')
+            <div class="row g-4">
+                <div class="col-md-6">
+                    <div class="mb-3">
+                        <label for="name" class="form-label">Rol Adı *</label>
+                        <input type="text" name="name" id="name" class="form-control form-control-material" value="{{ old('name', $role->name) }}" required>
                     </div>
-                    
-                    @foreach($routeGroups as $group)
-                        <div class="card mb-3">
-                            <div class="card-header">
-                                <div class="d-flex justify-content-between align-items-center">
-                                    <h6 class="mb-0">{{ ucfirst($group) }} Route'ları</h6>
-                                    <div class="form-check">
-                                        <input class="form-check-input select-all-group" type="checkbox" data-group="{{ $group }}" id="select_all_{{ $group }}">
-                                        <label class="form-check-label" for="select_all_{{ $group }}">
-                                            Tümünü Seç
-                                        </label>
-                                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="mb-3">
+                        <label for="description" class="form-label">Açıklama</label>
+                        <textarea name="description" id="description" class="form-control form-control-material" rows="3">{{ old('description', $role->description) }}</textarea>
+                    </div>
+                </div>
+            </div>
+
+            <div class="mb-4">
+                <label class="form-label">Route İzinleri</label>
+                <div class="material-alert material-alert-info mb-3">
+                    <span class="material-icons">info</span>
+                    <span><strong>Bilgi:</strong> Route izinleri, bu rolün hangi sayfalara erişebileceğini ve hangi işlemleri yapabileceğini belirler.</span>
+                </div>
+                
+                @foreach($routeGroups as $group)
+                    <div class="material-card-outlined mb-3">
+                        <div class="material-card-header" style="background: #f8f9fa">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <h6 class="mb-0">{{ ucfirst($group) }} Route'ları</h6>
+                                <div class="form-check">
+                                    <input class="form-check-input select-all-group" type="checkbox" data-group="{{ $group }}" id="select_all_{{ $group }}">
+                                    <label class="form-check-label" for="select_all_{{ $group }}">Tümünü Seç</label>
                                 </div>
                             </div>
-                            <div class="card-body">
+                        </div>
+                        <div class="material-card-body">
                                 @if(isset($routes[$group]))
                                     @foreach($routes[$group] as $route)
 
@@ -77,13 +91,13 @@
                                                 
                                                 <div class="row">
                                                     <div class="col-md-6">
-                                                        <span class="badge bg-{{ $route->method == 'GET' ? 'success' : ($route->method == 'POST' ? 'primary' : ($route->method == 'PUT' ? 'warning' : ($route->method == 'DELETE' ? 'danger' : 'info'))) }}">
+                                                        <span class="material-badge material-badge-{{ $route->method == 'GET' ? 'success' : ($route->method == 'POST' ? 'primary' : ($route->method == 'PUT' ? 'warning' : ($route->method == 'DELETE' ? 'danger' : 'info'))) }}">
                                                             {{ $route->method }}
                                                         </span>
                                                         @if($routeImportance === 'critical')
-                                                            <span class="badge bg-danger ms-1">Kritik</span>
+                                                            <span class="material-badge material-badge-danger ms-1">Kritik</span>
                                                         @elseif($routeImportance === 'important')
-                                                            <span class="badge bg-warning ms-1">Önemli</span>
+                                                            <span class="material-badge material-badge-warning ms-1">Önemli</span>
                                                         @endif
                                                     </div>
 
@@ -99,23 +113,25 @@
                     @endforeach
                 </div>
                 
-                <div class="mb-3">
-                    <div class="alert alert-info">
-                        <strong>Bu rolü kullanan kullanıcılar:</strong> {{ $role->users()->count() }} kullanıcı
-                    </div>
+                <div class="material-alert material-alert-info mb-4">
+                    <span class="material-icons">people</span>
+                    <span><strong>Bu rolü kullanan kullanıcılar:</strong> {{ $role->users()->count() }} kullanıcı</span>
                 </div>
                 
                 <div class="d-flex gap-2">
-                    <button type="submit" class="btn btn-primary">
-                        <i class="fas fa-save"></i> Güncelle
-                    </button>
-                    <a href="{{ route('admin.roles.index') }}" class="btn btn-secondary">
-                        <i class="fas fa-arrow-left"></i> Geri
+                    <a href="{{ route('admin.roles.index') }}" class="btn-material btn-material-secondary">
+                        <span class="material-icons">close</span>
+                        İptal
                     </a>
+                    <button type="submit" class="btn-material btn-material-primary">
+                        <span class="material-icons">save</span>
+                        Güncelle
+                    </button>
                 </div>
             </form>
         </div>
     </div>
+</div>
 @endsection
 
 @push('scripts')

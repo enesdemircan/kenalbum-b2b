@@ -20,6 +20,9 @@
     <!-- Chart.js -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
     
+    <!-- Material Admin CSS -->
+    <link href="{{ asset('css/admin-material.css') }}" rel="stylesheet">
+    
     <style>
         :root {
             --primary-color: #1976d2;
@@ -439,8 +442,8 @@
     </button>
     
     <a href="{{ route('admin.dashboard') }}" class="topbar-brand">
-        <span class="material-icons">photo_album</span>
-        <span>Ken Albüm</span>
+
+        <span>KenPanel v1.0.0</span>
     </a>
     
     <div class="topbar-menu">

@@ -1,111 +1,127 @@
 @extends('admin.layout')
 
 @section('content')
-    <div class="row justify-content-center">
-        <div class="col-md-8">
-            <div class="card">
-                <div class="card-header">
-                    <h5 class="mb-0">Yeni Firma Ekle</h5>
-                </div>
-                <div class="card-body">
-                    <form action="{{ route('admin.customers.store') }}" method="POST">
-                        @csrf
-                        
-                        <div class="row">
-                            <div class="col-md-6">
-                                <div class="mb-3">
-                                    <label for="firma_id" class="form-label">Firma ID *</label>
-                                    <input type="text" name="firma_id" id="firma_id" class="form-control @error('firma_id') is-invalid @enderror" value="{{ old('firma_id') }}" required>
-                                    @error('firma_id')
-                                        <div class="invalid-feedback">{{ $message }}</div>
-                                    @enderror
-                                </div>
-                            </div>
-                            <div class="col-md-6">
-                                <div class="mb-3">
-                                    <label for="unvan" class="form-label">Ünvan *</label>
-                                    <input type="text" name="unvan" id="unvan" class="form-control @error('unvan') is-invalid @enderror" value="{{ old('unvan') }}" required>
-                                    @error('unvan')
-                                        <div class="invalid-feedback">{{ $message }}</div>
-                                    @enderror
-                                </div>
-                            </div>
-                        </div>
+<div class="page-header d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h1 class="page-title">Yeni Firma Ekle</h1>
+        <p class="page-subtitle">Sisteme yeni firma kaydı oluşturun</p>
+    </div>
+    <a href="{{ route('admin.customers.index') }}" class="btn-material btn-material-secondary">
+        <span class="material-icons">arrow_back</span>
+        Geri Dön
+    </a>
+</div>
 
-                        <div class="row">
-                            <div class="col-md-6">
-                                <div class="mb-3">
-                                    <label for="phone" class="form-label">Telefon *</label>
-                                    <input type="text" name="phone" id="phone" class="form-control @error('phone') is-invalid @enderror" value="{{ old('phone') }}" required>
-                                    @error('phone')
-                                        <div class="invalid-feedback">{{ $message }}</div>
-                                    @enderror
-                                </div>
-                            </div>
-                            <div class="col-md-6">
-                                <div class="mb-3">
-                                    <label for="email" class="form-label">E-posta *</label>
-                                    <input type="email" name="email" id="email" class="form-control @error('email') is-invalid @enderror" value="{{ old('email') }}" required>
-                                    @error('email')
-                                        <div class="invalid-feedback">{{ $message }}</div>
-                                    @enderror
-                                </div>
+<div class="row justify-content-center">
+    <div class="col-md-10">
+        <div class="material-card-elevated">
+            <div class="material-card-header">
+                <h5><span class="material-icons" style="vertical-align:middle;margin-right:8px">business</span>Firma Bilgileri</h5>
+            </div>
+            <div class="material-card-body">
+                <form action="{{ route('admin.customers.store') }}" method="POST">
+                    @csrf
+                    
+                    <div class="row g-4">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="firma_id" class="form-label">Firma ID *</label>
+                                <input type="text" name="firma_id" id="firma_id" class="form-control form-control-material @error('firma_id') is-invalid @enderror" value="{{ old('firma_id') }}" required>
+                                @error('firma_id')
+                                    <div class="invalid-feedback">{{ $message }}</div>
+                                @enderror
                             </div>
                         </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="unvan" class="form-label">Ünvan *</label>
+                                <input type="text" name="unvan" id="unvan" class="form-control form-control-material @error('unvan') is-invalid @enderror" value="{{ old('unvan') }}" required>
+                                @error('unvan')
+                                    <div class="invalid-feedback">{{ $message }}</div>
+                                @enderror
+                            </div>
+                        </div>
+                    </div>
 
-                        <div class="mb-3">
-                            <label for="adres" class="form-label">Adres *</label>
-                            <textarea name="adres" id="adres" rows="3" class="form-control @error('adres') is-invalid @enderror" required>{{ old('adres') }}</textarea>
-                            @error('adres')
-                                <div class="invalid-feedback">{{ $message }}</div>
-                            @enderror
-                        </div>
-
-                        <div class="row">
-                            <div class="col-md-6">
-                                <div class="mb-3">
-                                    <label for="vergi_dairesi" class="form-label">Vergi Dairesi *</label>
-                                    <input type="text" name="vergi_dairesi" id="vergi_dairesi" class="form-control @error('vergi_dairesi') is-invalid @enderror" value="{{ old('vergi_dairesi') }}" required>
-                                    @error('vergi_dairesi')
-                                        <div class="invalid-feedback">{{ $message }}</div>
-                                    @enderror
-                                </div>
-                            </div>
-                            <div class="col-md-6">
-                                <div class="mb-3">
-                                    <label for="vergi_numarasi" class="form-label">Vergi Numarası *</label>
-                                    <input type="text" name="vergi_numarasi" id="vergi_numarasi" class="form-control @error('vergi_numarasi') is-invalid @enderror" value="{{ old('vergi_numarasi') }}" required>
-                                    @error('vergi_numarasi')
-                                        <div class="invalid-feedback">{{ $message }}</div>
-                                    @enderror
-                                </div>
+                    <div class="row g-4">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="phone" class="form-label">Telefon *</label>
+                                <input type="text" name="phone" id="phone" class="form-control form-control-material @error('phone') is-invalid @enderror" value="{{ old('phone') }}" required>
+                                @error('phone')
+                                    <div class="invalid-feedback">{{ $message }}</div>
+                                @enderror
                             </div>
                         </div>
-
-                        <div class="row">
-                            <div class="col-md-6">
-                                <div class="mb-3">
-                                    <label for="balance" class="form-label">Bakiye (₺)</label>
-                                    <input type="number" name="balance" id="balance" class="form-control @error('balance') is-invalid @enderror" value="{{ old('balance', 0.00) }}" step="0.01" min="-999999999.99" max="999999999.99" placeholder="0.00">
-                                    <small class="form-text text-muted">Negatif değerler borç, pozitif değerler alacak gösterir</small>
-                                    @error('balance')
-                                        <div class="invalid-feedback">{{ $message }}</div>
-                                    @enderror
-                                </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="email" class="form-label">E-posta *</label>
+                                <input type="email" name="email" id="email" class="form-control form-control-material @error('email') is-invalid @enderror" value="{{ old('email') }}" required>
+                                @error('email')
+                                    <div class="invalid-feedback">{{ $message }}</div>
+                                @enderror
                             </div>
                         </div>
+                    </div>
 
-                        <div class="d-flex justify-content-between">
-                            <a href="{{ route('admin.customers.index') }}" class="btn btn-secondary">
-                                <i class="fas fa-arrow-left"></i> Geri
-                            </a>
-                            <button type="submit" class="btn btn-success">
-                                <i class="fas fa-save"></i> Kaydet
-                            </button>
+                    <div class="mb-3">
+                        <label for="adres" class="form-label">Adres *</label>
+                        <textarea name="adres" id="adres" rows="3" class="form-control form-control-material @error('adres') is-invalid @enderror" required>{{ old('adres') }}</textarea>
+                        @error('adres')
+                            <div class="invalid-feedback">{{ $message }}</div>
+                        @enderror
+                    </div>
+
+                    <div class="row g-4">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="vergi_dairesi" class="form-label">Vergi Dairesi *</label>
+                                <input type="text" name="vergi_dairesi" id="vergi_dairesi" class="form-control form-control-material @error('vergi_dairesi') is-invalid @enderror" value="{{ old('vergi_dairesi') }}" required>
+                                @error('vergi_dairesi')
+                                    <div class="invalid-feedback">{{ $message }}</div>
+                                @enderror
+                            </div>
                         </div>
-                    </form>
-                </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="vergi_numarasi" class="form-label">Vergi Numarası *</label>
+                                <input type="text" name="vergi_numarasi" id="vergi_numarasi" class="form-control form-control-material @error('vergi_numarasi') is-invalid @enderror" value="{{ old('vergi_numarasi') }}" required>
+                                @error('vergi_numarasi')
+                                    <div class="invalid-feedback">{{ $message }}</div>
+                                @enderror
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="row g-4">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="balance" class="form-label">Bakiye (₺)</label>
+                                <input type="number" name="balance" id="balance" class="form-control form-control-material @error('balance') is-invalid @enderror" value="{{ old('balance', 0.00) }}" step="0.01" min="-999999999.99" max="999999999.99" placeholder="0.00">
+                                <small class="form-text text-muted">
+                                    <span class="material-icons" style="font-size: 14px; vertical-align: middle">info</span>
+                                    Negatif değerler borç, pozitif değerler alacak gösterir
+                                </small>
+                                @error('balance')
+                                    <div class="invalid-feedback">{{ $message }}</div>
+                                @enderror
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="d-flex justify-content-end gap-2 mt-4">
+                        <a href="{{ route('admin.customers.index') }}" class="btn-material btn-material-secondary">
+                            <span class="material-icons">close</span>
+                            İptal
+                        </a>
+                        <button type="submit" class="btn-material btn-material-success">
+                            <span class="material-icons">save</span>
+                            Kaydet
+                        </button>
+                    </div>
+                </form>
             </div>
         </div>
     </div>
-@endsection 
+</div>
+@endsection

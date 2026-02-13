@@ -26,10 +26,10 @@
         </div>
     @endif
 
-    <div class="row">
+    <div class="row g-4 mb-4">
         <!-- Sipariş Bilgileri -->
         <div class="col-md-6">
-            <div class="material-card-elevated mb-4">
+            <div class="material-card-elevated">
                 <div class="material-card-header">
                     <h5><span class="material-icons" style="vertical-align:middle;margin-right:8px">receipt</span>Sipariş Bilgileri</h5>
                 </div>
@@ -62,7 +62,7 @@
 
         <!-- Müşteri Bilgileri -->
         <div class="col-md-6">
-            <div class="material-card-elevated mb-4">
+            <div class="material-card-elevated">
                 <div class="material-card-header">
                     <h5><span class="material-icons" style="vertical-align:middle;margin-right:8px">person</span>Müşteri Bilgileri</h5>
                 </div>
@@ -125,6 +125,7 @@
                                     </div>
                                 </div>
                             </div>
+                            
                             <div class="material-card-body">
                                 <!-- Ürün Özelleştirme Detayları -->
                                 @if($item->notes)
@@ -151,6 +152,7 @@
                                     @endif
                              
                                 @endif
+                                
                                 <!-- Acil üretim bilgisi -->
                                 @if($item->urgent_status == 1)
                                     <div class="material-badge material-badge-warning mb-3">
@@ -189,13 +191,12 @@
                                     </form>
                                 </div>
 
-
-                                    @php
-                                        $productStatuses = \App\Models\OrderStatusHistory::where('cart_id', $item->id)
-                                            ->with('orderStatus', 'user')
-                                            ->orderBy('created_at', 'desc')
-                                            ->get();
-                                    @endphp
+                                @php
+                                    $productStatuses = \App\Models\OrderStatusHistory::where('cart_id', $item->id)
+                                        ->with('orderStatus', 'user')
+                                        ->orderBy('created_at', 'desc')
+                                        ->get();
+                                @endphp
 
                                 <!-- Durum Geçmişi -->
                                 <div class="timeline-container mb-3">
@@ -241,7 +242,7 @@
                                 </div>
                                 
                                 <!-- Action Buttons -->
-                                <div class="d-flex flex-wrap gap-2 mb-3">
+                                <div class="d-flex flex-wrap gap-2">
                                     @if(!empty($item->s3_zip))
                                         <a href="{{ route('admin.orders.download-cart-files', ['order' => $order->id, 'cart' => $item->id]) }}" class="btn-material btn-material-primary">
                                             <span class="material-icons">download</span>
@@ -257,7 +258,7 @@
                                 
                                 <!-- Kargo Bilgileri -->
                                 @if($item->cargo_barcode)
-                                    <div class="material-card-outlined">
+                                    <div class="material-card-outlined mt-3">
                                         <div class="material-card-header" style="background: #f8f9fa">
                                             <h6 style="margin: 0; display: flex; align-items: center; gap: 8px">
                                                 <span class="material-icons" style="font-size:20px">local_shipping</span>
@@ -266,40 +267,40 @@
                                         </div>
                                         <div class="material-card-body">
                                             <div class="material-info-grid">
-                                <div class="material-info-item">
-                                    <span class="material-info-label">Kargo Barkodu</span>
-                                    <span class="material-info-value">{{ $item->cargo_barcode }}</span>
-                                </div>
-                                <div class="material-info-item">
-                                    <span class="material-info-label">Takip</span>
-                                    <div>
-                                        @if($item->tracking_url)
-                                            <a href="{{ $item->tracking_url }}" target="_blank" class="btn-material btn-material-info btn-material-outlined">
-                                                <span class="material-icons">open_in_new</span>
-                                                Takip Et
-                                            </a>
-                                        @elseif(str_contains($item->cargo_barcode, 'Takip:'))
-                                            @php
-                                                $cartBarcode = $item->barcode;
-                                            @endphp
-                                            <a href="https://sube.kolaygelsin.com/takip?ccode=29532262&musref={{ $cartBarcode }}" target="_blank" class="btn-material btn-material-info btn-material-outlined">
-                                                <span class="material-icons">open_in_new</span>
-                                                Takip Et
-                                            </a>
-                                        @endif
-                                        
-                                        @if($item->barcode_zpl)
-                                            <a href="{{ route('admin.orders.zpl-pdf', ['order' => $order->id, 'cart' => $item->id]) }}" class="btn-material btn-material-success btn-material-outlined mt-2" target="_blank">
-                                                <span class="material-icons">print</span>
-                                                ZPL PDF
-                                            </a>
-                                        @endif
+                                                <div class="material-info-item">
+                                                    <span class="material-info-label">Kargo Barkodu</span>
+                                                    <span class="material-info-value">{{ $item->cargo_barcode }}</span>
+                                                </div>
+                                                <div class="material-info-item">
+                                                    <span class="material-info-label">Takip</span>
+                                                    <div>
+                                                        @if($item->tracking_url)
+                                                            <a href="{{ $item->tracking_url }}" target="_blank" class="btn-material btn-material-info btn-material-outlined">
+                                                                <span class="material-icons">open_in_new</span>
+                                                                Takip Et
+                                                            </a>
+                                                        @elseif(str_contains($item->cargo_barcode, 'Takip:'))
+                                                            @php
+                                                                $cartBarcode = $item->barcode;
+                                                            @endphp
+                                                            <a href="https://sube.kolaygelsin.com/takip?ccode=29532262&musref={{ $cartBarcode }}" target="_blank" class="btn-material btn-material-info btn-material-outlined">
+                                                                <span class="material-icons">open_in_new</span>
+                                                                Takip Et
+                                                            </a>
+                                                        @endif
+                                                        
+                                                        @if($item->barcode_zpl)
+                                                            <a href="{{ route('admin.orders.zpl-pdf', ['order' => $order->id, 'cart' => $item->id]) }}" class="btn-material btn-material-success btn-material-outlined mt-2" target="_blank">
+                                                                <span class="material-icons">print</span>
+                                                                ZPL PDF
+                                                            </a>
+                                                        @endif
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
                                     </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                @endif
+                                @endif
                             </div>
                         </div>
                     </div>
@@ -310,62 +311,63 @@
 
     <!-- Kargo Firması Seçim Modal -->
     <div class="modal fade" id="cargoModal" tabindex="-1" aria-labelledby="cargoModalLabel" aria-hidden="true">
-        <div class="modal-dialog">
-            <div class="modal-content">
-                <div class="modal-header">
+        <div class="modal-dialog modal-dialog-material">
+            <div class="modal-content material-modal">
+                <div class="modal-header material-modal-header">
                     <h5 class="modal-title" id="cargoModalLabel">
-                        <i class="fas fa-truck"></i> Kargo Firması Seçin
+                        <span class="material-icons" style="vertical-align:middle;margin-right:8px">local_shipping</span>
+                        Kargo Firması Seçin
                     </h5>
                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
-                <div class="modal-body">
+                <div class="modal-body material-modal-body">
                     <p class="text-muted mb-3">Sipariş durumu "Kargoya Verildi" olarak güncellenecek. Lütfen kargo firmasını seçin:</p>
                     
-                    <div class="row">
-                        <div class="col-md-12 mb-2">
-                            <h6 class="fw-bold text-secondary mb-2">Kargo Firması</h6>
-                            <div class="form-check">
-                                <input class="form-check-input" type="radio" name="cargo_company_modal" id="everest" value="everest">
-                                <label class="form-check-label" for="everest">
-                                    <strong>Everest Kargo</strong>
-                                </label>
-                            </div>
-                       
-                            <div class="form-check">
-                                <input class="form-check-input" type="radio" name="cargo_company_modal" id="yurtici" value="yurtici">
-                                <label class="form-check-label" for="yurtici">
-                                    <strong>Yurtiçi Kargo</strong>
-                                </label>
-                            </div>
-                       
-                            <div class="form-check">
-                                <input class="form-check-input" type="radio" name="cargo_company_modal" id="kolay_gelsin" value="kolay_gelsin">
-                                <label class="form-check-label" for="kolay_gelsin">
-                                    <strong>Kolay Gelsin</strong>
-                                </label>
-                            </div>
-                        </div>
-                        <div class="col-md-12 mb-2">
-                           <h6 class="fw-bold text-secondary mb-2">Ödeme Tipi</h6>
-                           <div class="form-check">
-                            <input class="form-check-input" type="radio" name="payment_type"  value="1">
-                            <label class="form-check-label" for="">
-                                <strong>Alıcı Ödemeli</strong>
+                    <div class="mb-3">
+                        <h6 class="fw-bold text-secondary mb-2">Kargo Firması</h6>
+                        <div class="form-check mb-2">
+                            <input class="form-check-input" type="radio" name="cargo_company_modal" id="everest" value="everest">
+                            <label class="form-check-label" for="everest">
+                                <strong>Everest Kargo</strong>
                             </label>
                         </div>
-                        <div class="form-check">
-                            <input class="form-check-input" type="radio" name="payment_type"  value="2">
-                            <label class="form-check-label" for="">
-                                <strong>Gönderici Ödemeli</strong>
+                   
+                        <div class="form-check mb-2">
+                            <input class="form-check-input" type="radio" name="cargo_company_modal" id="yurtici" value="yurtici">
+                            <label class="form-check-label" for="yurtici">
+                                <strong>Yurtiçi Kargo</strong>
                             </label>
                         </div>
+                   
+                        <div class="form-check mb-2">
+                            <input class="form-check-input" type="radio" name="cargo_company_modal" id="kolay_gelsin" value="kolay_gelsin">
+                            <label class="form-check-label" for="kolay_gelsin">
+                                <strong>Kolay Gelsin</strong>
+                            </label>
                         </div>
                     </div>
+                    
+                    <div class="mb-3">
+                       <h6 class="fw-bold text-secondary mb-2">Ödeme Tipi</h6>
+                       <div class="form-check mb-2">
+                        <input class="form-check-input" type="radio" name="payment_type" value="1">
+                        <label class="form-check-label">
+                            <strong>Alıcı Ödemeli</strong>
+                        </label>
+                    </div>
+                    <div class="form-check">
+                        <input class="form-check-input" type="radio" name="payment_type" value="2">
+                        <label class="form-check-label">
+                            <strong>Gönderici Ödemeli</strong>
+                        </label>
+                    </div>
+                    </div>
                 </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">İptal</button>
-                    <button type="button" class="btn btn-primary" onclick="confirmCargoSelection()">
-                        <i class="fas fa-check"></i> Onayla
+                <div class="modal-footer material-modal-footer">
+                    <button type="button" class="btn-material btn-material-secondary" data-bs-dismiss="modal">İptal</button>
+                    <button type="button" class="btn-material btn-material-primary" onclick="confirmCargoSelection()">
+                        <span class="material-icons">check</span>
+                        Onayla
                     </button>
                 </div>
             </div>
@@ -463,6 +465,7 @@ function checkCargoStatus(selectElement, cartId) {
 function confirmCargoSelection() {
     const selectedCargo = document.querySelector('input[name="cargo_company_modal"]:checked');
     const selectedPaymentType = document.querySelector('input[name="payment_type"]:checked');
+    
     if (!selectedCargo) {
         alert('Lütfen bir kargo firması seçin!');
         return;
@@ -474,9 +477,11 @@ function confirmCargoSelection() {
     
     const cargoCompany = selectedCargo.value;
     const paymentType = selectedPaymentType.value;
+    
     // Hidden input'a kargo firmasını set et
     document.getElementById('cargoCompany' + currentCartId).value = cargoCompany;
     document.getElementById('paymentType' + currentCartId).value = paymentType;
+    
     // Modal'ı kapat
     const cargoModal = bootstrap.Modal.getInstance(document.getElementById('cargoModal'));
     cargoModal.hide();
@@ -489,96 +494,21 @@ function confirmCargoSelection() {
 document.getElementById('cargoModal').addEventListener('hidden.bs.modal', function () {
     // Seçili durumu reset et
     if (currentCartId) {
-        document.querySelector(`#statusForm${currentCartId} select[name="order_status_id"]`).value = '';
+        const statusSelect = document.querySelector(`#statusForm${currentCartId} select[name="order_status_id"]`);
+        if (statusSelect) statusSelect.value = '';
     }
     
     // Radio button'ları reset et
     document.querySelectorAll('input[name="cargo_company_modal"]').forEach(radio => {
         radio.checked = false;
     });
-       // Radio button'ları reset et
-       document.querySelectorAll('input[name="payment_type"]').forEach(radio => {
+    
+    document.querySelectorAll('input[name="payment_type"]').forEach(radio => {
         radio.checked = false;
     });
     
     currentCartId = null;
     currentStatusId = null;
 });
-
-    // ZPL PDF oluşturma fonksiyonu (artık kullanılmıyor - backend route kullanılıyor)
-    function printZplBarcode(zplData, barcodeInfo) {
-        alert('Bu özellik artık backend route ile çalışıyor. ZPL PDF butonuna tıklayın.');
-    }
-
-// ZPL verisini yazıcıya gönderme (placeholder)
-function sendToPrinter(zplData) {
-    alert('ZPL verisi yazıcıya gönderilecek:\n\n' + zplData.substring(0, 100) + '...\n\nBu özellik için barcode yazıcı sürücüsü gerekli.');
-}
-
-// ZPL'i PDF'e çevirme fonksiyonu
-function generateZplPDF(zplData, barcodeInfo) {
-    try {
-        // jsPDF kütüphanesini yükle
-        if (typeof jsPDF === 'undefined') {
-            // jsPDF CDN'den yükle
-            const script = document.createElement('script');
-            script.src = 'https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js';
-            script.onload = () => createZplPDF(zplData, barcodeInfo);
-            document.head.appendChild(script);
-        } else {
-            createZplPDF(zplData, barcodeInfo);
-        }
-    } catch (error) {
-        console.error('PDF oluşturma hatası:', error);
-        alert('PDF oluşturma sırasında hata oluştu: ' + error.message);
-    }
-}
-
-// PDF oluşturma fonksiyonu
-function createZplPDF(zplData, barcodeInfo) {
-    try {
-        const { jsPDF } = window.jspdf;
-        const doc = new jsPDF();
-        
-        // PDF başlığı
-        doc.setFontSize(20);
-        doc.text('🚚 ZPL Barcode Etiketi', 20, 20);
-        
-        // Kargo bilgileri
-        doc.setFontSize(12);
-        doc.text('Kargo Bilgileri:', 20, 40);
-        doc.setFontSize(10);
-        doc.text(`Barcode: ${barcodeInfo}`, 20, 50);
-        doc.text(`Tarih: ${new Date().toLocaleString('tr-TR')}`, 20, 60);
-        
-        // ZPL verisi
-        doc.setFontSize(12);
-        doc.text('ZPL Verisi (Yazıcı Komutları):', 20, 80);
-        doc.setFontSize(8);
-        
-        // ZPL verisini satırlara böl
-        const zplLines = zplData.split('\n');
-        let yPosition = 90;
-        
-        zplLines.forEach((line, index) => {
-            if (yPosition > 250) {
-                doc.addPage();
-                yPosition = 20;
-            }
-            doc.text(line.trim(), 20, yPosition);
-            yPosition += 5;
-        });
-        
-        // PDF'i indir
-        const fileName = `ZPL_Barcode_${barcodeInfo.replace(/[^a-zA-Z0-9]/g, '_')}_${new Date().getTime()}.pdf`;
-        doc.save(fileName);
-        
-        alert('PDF başarıyla oluşturuldu ve indirildi!');
-        
-    } catch (error) {
-        console.error('PDF oluşturma hatası:', error);
-        alert('PDF oluşturma sırasında hata oluştu: ' + error.message);
-    }
-}
 </script>
 @endsection

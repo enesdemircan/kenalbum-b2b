@@ -1,15 +1,20 @@
 @extends('admin.layout')
 
 @section('content')
-<div class="d-flex justify-content-between align-items-center mb-3">
-    <h1 class="h3">Yeni Route Ekle</h1>
-    <a href="{{ route('admin.routes.index') }}" class="btn btn-secondary">
-        <i class="fas fa-arrow-left"></i> Geri Dön
+<div class="page-header d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h1 class="page-title">Yeni Route Ekle</h1>
+        <p class="page-subtitle">Route bilgilerini girin</p>
+    </div>
+    <a href="{{ route('admin.routes.index') }}" class="btn-material btn-material-secondary">
+        <span class="material-icons">arrow_back</span>
+        Geri Dön
     </a>
 </div>
 
 @if($errors->any())
-    <div class="alert alert-danger">
+    <div class="material-alert material-alert-danger mb-3">
+        <span class="material-icons">error</span>
         <ul class="mb-0">
             @foreach($errors->all() as $error)
                 <li>{{ $error }}</li>
@@ -18,8 +23,8 @@
     </div>
 @endif
 
-<div class="card">
-    <div class="card-body">
+<div class="material-card-elevated">
+    <div class="material-card-body">
         <form action="{{ route('admin.routes.store') }}" method="POST">
             @csrf
             
@@ -27,7 +32,7 @@
                 <div class="col-md-6">
                     <div class="mb-3">
                         <label for="name" class="form-label">Route Adı <span class="text-danger">*</span></label>
-                        <input type="text" class="form-control @error('name') is-invalid @enderror" 
+                        <input type="text" class="form-control form-control-material @error('name') is-invalid @enderror" 
                                id="name" name="name" value="{{ old('name') }}" 
                                placeholder="örn: admin.products.index" required>
                         <div class="form-text">Benzersiz route adı (örn: admin.products.index)</div>
@@ -40,7 +45,7 @@
                 <div class="col-md-6">
                     <div class="mb-3">
                         <label for="uri" class="form-label">URI <span class="text-danger">*</span></label>
-                        <input type="text" class="form-control @error('uri') is-invalid @enderror" 
+                        <input type="text" class="form-control form-control-material @error('uri') is-invalid @enderror" 
                                id="uri" name="uri" value="{{ old('uri') }}" 
                                placeholder="örn: /admin/products" required>
                         <div class="form-text">Route URI'si (örn: /admin/products)</div>
@@ -55,7 +60,7 @@
                 <div class="col-md-6">
                     <div class="mb-3">
                         <label for="method" class="form-label">HTTP Method <span class="text-danger">*</span></label>
-                        <select class="form-select @error('method') is-invalid @enderror" 
+                        <select class="form-select form-control-material @error('method') is-invalid @enderror" 
                                 id="method" name="method" required>
                             <option value="">Method Seçin</option>
                             @foreach($methods as $method)
@@ -73,7 +78,7 @@
                 <div class="col-md-6">
                     <div class="mb-3">
                         <label for="group" class="form-label">Grup</label>
-                        <input type="text" class="form-control @error('group') is-invalid @enderror" 
+                        <input type="text" class="form-control form-control-material @error('group') is-invalid @enderror" 
                                id="group" name="group" value="{{ old('group') }}" 
                                placeholder="örn: admin, customer, api">
                         <div class="form-text">Route grubu (opsiyonel)</div>
@@ -86,7 +91,7 @@
 
             <div class="mb-3">
                 <label for="description" class="form-label">Açıklama</label>
-                <textarea class="form-control @error('description') is-invalid @enderror" 
+                <textarea class="form-control form-control-material @error('description') is-invalid @enderror" 
                           id="description" name="description" rows="3" 
                           placeholder="Route açıklaması">{{ old('description') }}</textarea>
                 @error('description')
@@ -106,8 +111,9 @@
             </div>
 
             <div class="d-flex justify-content-end">
-                <button type="submit" class="btn btn-primary">
-                    <i class="fas fa-save"></i> Route Oluştur
+                <button type="submit" class="btn-material btn-material-primary">
+                    <span class="material-icons">save</span>
+                    Route Oluştur
                 </button>
             </div>
         </form>
@@ -128,7 +134,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
     function updateMethodColor() {
         const selectedMethod = methodSelect.value;
-        methodSelect.className = 'form-select';
+        methodSelect.className = 'form-select form-control-material';
         
         if (selectedMethod && methodColors[selectedMethod]) {
             methodSelect.classList.add(`border-${methodColors[selectedMethod]}`);

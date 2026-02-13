@@ -1,74 +1,84 @@
 @extends('admin.layout')
 
 @section('content')
-<div class="d-flex justify-content-between align-items-center mb-3">
-    <h1 class="h3">Rol Yönetimi</h1>
-    <a href="{{ route('admin.roles.create') }}" class="btn btn-primary">
-        <i class="bi bi-plus-circle"></i> Yeni Rol Ekle
+<div class="page-header d-flex justify-content-between align-items-center">
+    <div>
+        <h1 class="page-title">Rol Yönetimi</h1>
+        <p class="page-subtitle">Kullanıcı rollerini ve izinlerini yönetin</p>
+    </div>
+    <a href="{{ route('admin.roles.create') }}" class="btn-material btn-material-primary">
+        <span class="material-icons">add</span>
+        Yeni Rol Ekle
     </a>
 </div>
 
 @if(session('success'))
-    <div class="alert alert-success">{{ session('success') }}</div>
+    <div class="material-alert material-alert-success mb-3">
+        <span class="material-icons">check_circle</span>
+        <span>{{ session('success') }}</span>
+    </div>
 @endif
 
 @if(session('error'))
-    <div class="alert alert-danger">{{ session('error') }}</div>
+    <div class="material-alert material-alert-danger mb-3">
+        <span class="material-icons">error</span>
+        <span>{{ session('error') }}</span>
+    </div>
 @endif
 
-<table class="table table-bordered table-striped">
-    <thead>
-        <tr>
-            <th>ID</th>
-            <th>Rol Adı</th>
-            <th>Açıklama</th>
-            <th>İzinler</th>
-            <th>Kullanıcı Sayısı</th>
-            <th style="width: 190px;"></th>
-        </tr>
-    </thead>
-    <tbody>
-        @foreach($roles as $role)
+<div class="material-table-wrapper">
+    <table class="material-table">
+        <thead>
             <tr>
-                <td>{{ $role->id }}</td>
-                <td>
-                    <strong>{{ $role->name }}</strong>
-                </td>
-                <td>{{ $role->description ?? 'Açıklama yok' }}</td>
-                <td>
-                    @if($role->permissions)
-                        @foreach($role->permissions as $permission)
-                            <span class="badge bg-info me-1">{{ $permission }}</span>
-                        @endforeach
-                    @else
-                        <span class="text-muted">İzin yok</span>
-                    @endif
-                </td>
-                <td>
-                    <span class="badge bg-secondary">{{ $role->users()->count() }} kullanıcı</span>
-                </td>
-                <td>
-                    <a href="{{ route('admin.roles.edit', $role->id) }}" class="btn btn-sm btn-warning" title="Düzenle">
-                        <i class="bi bi-pencil-square"></i>
-                    </a>
-                    @if($role->users()->count() == 0)
-                        <form action="{{ route('admin.roles.destroy', $role->id) }}" method="POST" class="d-inline">
-                            @csrf
-                            @method('DELETE')
-                            <button type="submit" class="btn btn-sm btn-danger" onclick="return confirm('Bu rolü silmek istediğinizden emin misiniz?')" title="Sil">
-                                <i class="bi bi-trash"></i>
-                            </button>
-                        </form>
-                    @endif
-                </td>
+                <th>Rol Adı</th>
+                <th>Açıklama</th>
+                <th>İzinler</th>
+                <th>Kullanıcı Sayısı</th>
+                <th style="width: 140px">İşlemler</th>
             </tr>
-        @endforeach
-    </tbody>
-</table>
-
-<!-- Sayfalama -->
-<div class="d-flex justify-content-center mt-4">
-    {{ $roles->links() }}
+        </thead>
+        <tbody>
+            @foreach($roles as $role)
+                <tr>
+                    <td><strong>{{ $role->name }}</strong></td>
+                    <td>{{ $role->description ?? 'Açıklama yok' }}</td>
+                    <td>
+                        @if($role->permissions)
+                            <div class="d-flex flex-wrap gap-1">
+                                @foreach($role->permissions as $permission)
+                                    <span class="material-badge material-badge-info">{{ $permission }}</span>
+                                @endforeach
+                            </div>
+                        @else
+                            <span class="text-muted">İzin yok</span>
+                        @endif
+                    </td>
+                    <td>
+                        <span class="material-badge material-badge-secondary">{{ $role->users()->count() }} kullanıcı</span>
+                    </td>
+                    <td>
+                        <div class="d-flex gap-1 justify-content-end">
+                            <button class="btn-material-icon btn-material-icon-warning" title="Düzenle" onclick="window.location.href='{{ route('admin.roles.edit', $role->id) }}'">
+                                <span class="material-icons">edit</span>
+                            </button>
+                            @if($role->users()->count() == 0)
+                                <form action="{{ route('admin.roles.destroy', $role->id) }}" method="POST" class="d-inline" onsubmit="return confirm('Bu rolü silmek istediğinizden emin misiniz?')">
+                                    @csrf
+                                    @method('DELETE')
+                                    <button type="submit" class="btn-material-icon btn-material-icon-danger" title="Sil">
+                                        <span class="material-icons">delete</span>
+                                    </button>
+                                </form>
+                            @endif
+                        </div>
+                    </td>
+                </tr>
+            @endforeach
+        </tbody>
+    </table>
 </div>
 
-@endsection 
+<div class="material-pagination">
+    {{ $roles->links() }}
+</div>
+@endsection

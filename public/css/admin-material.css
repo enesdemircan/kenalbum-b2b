@@ -1,0 +1,798 @@
+/* ===================================
+   Material Design Admin CSS
+   Version: 1.0
+   ================================== */
+
+/* ===================================
+   1. CSS Variables
+   ================================== */
+:root {
+    /* Primary Colors */
+    --md-primary: #1976d2;
+    --md-primary-light: #4fc3f7;
+    --md-primary-dark: #0d47a1;
+    
+    /* Secondary Colors */
+    --md-secondary: #424242;
+    --md-secondary-light: #6d6d6d;
+    --md-secondary-dark: #1b1b1b;
+    
+    /* Status Colors */
+    --md-success: #388e3c;
+    --md-success-light: #66bb6a;
+    --md-warning: #f57c00;
+    --md-warning-light: #ffa726;
+    --md-danger: #d32f2f;
+    --md-danger-light: #ef5350;
+    --md-info: #0288d1;
+    --md-info-light: #4fc3f7;
+    
+    /* Neutral Colors */
+    --md-text-primary: #212121;
+    --md-text-secondary: #757575;
+    --md-text-disabled: #bdbdbd;
+    --md-divider: #e0e0e0;
+    --md-background: #fafafa;
+    --md-surface: #ffffff;
+    
+    /* Shadows */
+    --md-shadow-1: 0 1px 3px rgba(0,0,0,0.12), 0 1px 2px rgba(0,0,0,0.24);
+    --md-shadow-2: 0 3px 6px rgba(0,0,0,0.16), 0 3px 6px rgba(0,0,0,0.23);
+    --md-shadow-3: 0 10px 20px rgba(0,0,0,0.19), 0 6px 6px rgba(0,0,0,0.23);
+    --md-shadow-4: 0 14px 28px rgba(0,0,0,0.25), 0 10px 10px rgba(0,0,0,0.22);
+    --md-shadow-5: 0 19px 38px rgba(0,0,0,0.30), 0 15px 12px rgba(0,0,0,0.22);
+    
+    /* Transitions */
+    --md-transition-fast: 0.15s cubic-bezier(0.4, 0, 0.2, 1);
+    --md-transition-normal: 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    --md-transition-slow: 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+    
+    /* Spacing */
+    --md-spacing-xs: 4px;
+    --md-spacing-sm: 8px;
+    --md-spacing-md: 16px;
+    --md-spacing-lg: 24px;
+    --md-spacing-xl: 32px;
+    
+    /* Border Radius */
+    --md-radius-sm: 4px;
+    --md-radius-md: 8px;
+    --md-radius-lg: 16px;
+    --md-radius-circle: 50%;
+}
+
+/* ===================================
+   2. Typography
+   ================================== */
+.page-header {
+    margin-bottom: var(--md-spacing-xl);
+}
+
+.page-title {
+    font-size: 28px;
+    font-weight: 400;
+    color: var(--md-text-primary);
+    margin: 0 0 var(--md-spacing-sm) 0;
+}
+
+.page-subtitle {
+    font-size: 14px;
+    color: var(--md-text-secondary);
+}
+
+/* ===================================
+   3. Material Cards
+   ================================== */
+.material-card {
+    background: var(--md-surface);
+    border-radius: var(--md-radius-md);
+    overflow: hidden;
+}
+
+.material-card-elevated {
+    background: var(--md-surface);
+    border-radius: var(--md-radius-md);
+    box-shadow: var(--md-shadow-2);
+    overflow: hidden;
+    transition: box-shadow var(--md-transition-normal);
+}
+
+.material-card-elevated:hover {
+    box-shadow: var(--md-shadow-3);
+}
+
+.material-card-outlined {
+    background: var(--md-surface);
+    border: 1px solid var(--md-divider);
+    border-radius: var(--md-radius-md);
+    overflow: hidden;
+}
+
+.material-card-header {
+    padding: var(--md-spacing-lg);
+    border-bottom: 1px solid var(--md-divider);
+    background: var(--md-surface);
+}
+
+.material-card-header h5 {
+    margin: 0;
+    font-size: 20px;
+    font-weight: 500;
+    color: var(--md-text-primary);
+}
+
+.material-card-body {
+    padding: var(--md-spacing-lg);
+}
+
+/* ===================================
+   4. Material Inputs
+   ================================== */
+.material-input-wrapper {
+    position: relative;
+    margin-bottom: var(--md-spacing-lg);
+}
+
+.material-input {
+    width: 100%;
+    padding: 12px 0 8px 0;
+    border: none;
+    border-bottom: 1px solid var(--md-divider);
+    background: transparent;
+    font-size: 16px;
+    color: var(--md-text-primary);
+    transition: border-color var(--md-transition-fast);
+    outline: none;
+}
+
+.material-input:focus {
+    border-bottom-color: var(--md-primary);
+}
+
+.material-input:focus ~ label,
+.material-input:not(:placeholder-shown) ~ label,
+.material-input.filled ~ label {
+    transform: translateY(-20px) scale(0.85);
+    color: var(--md-primary);
+}
+
+.material-input-wrapper label {
+    position: absolute;
+    left: 0;
+    top: 12px;
+    color: var(--md-text-secondary);
+    font-size: 16px;
+    pointer-events: none;
+    transition: all var(--md-transition-fast);
+    transform-origin: left top;
+}
+
+.material-input-underline {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    height: 2px;
+    width: 0;
+    background: var(--md-primary);
+    transition: width var(--md-transition-fast);
+}
+
+.material-input:focus ~ .material-input-underline {
+    width: 100%;
+}
+
+/* Select Styling */
+.material-select-wrapper {
+    position: relative;
+    margin-bottom: var(--md-spacing-lg);
+}
+
+.material-select {
+    width: 100%;
+    padding: 12px 0 8px 0;
+    border: none;
+    border-bottom: 1px solid var(--md-divider);
+    background: transparent;
+    font-size: 16px;
+    color: var(--md-text-primary);
+    cursor: pointer;
+    transition: border-color var(--md-transition-fast);
+    outline: none;
+}
+
+.material-select:focus {
+    border-bottom-color: var(--md-primary);
+}
+
+.material-select-wrapper label {
+    position: absolute;
+    left: 0;
+    top: -8px;
+    color: var(--md-text-secondary);
+    font-size: 12px;
+    font-weight: 500;
+}
+
+/* Textarea */
+.material-textarea {
+    resize: vertical;
+    min-height: 100px;
+}
+
+/* Bootstrap Form Control Override for Material Style */
+.form-control-material {
+    border: none;
+    border-bottom: 2px solid var(--md-divider);
+    border-radius: 0;
+    padding: 12px 10px;
+    transition: border-color var(--md-transition-fast);
+}
+
+.form-control-material:focus {
+    border-color: var(--md-primary);
+    box-shadow: none;
+}
+
+/* ===================================
+   5. Material Buttons
+   ================================== */
+.btn-material {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--md-spacing-sm);
+    padding: 10px 24px;
+    border: none;
+    border-radius: var(--md-radius-sm);
+    font-size: 14px;
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    cursor: pointer;
+    transition: all var(--md-transition-fast);
+    box-shadow: var(--md-shadow-1);
+    text-decoration: none;
+}
+
+.btn-material:hover {
+    box-shadow: var(--md-shadow-2);
+    transform: translateY(-2px);
+}
+
+.btn-material:active {
+    box-shadow: var(--md-shadow-1);
+    transform: translateY(0);
+}
+
+.btn-material-primary {
+    background: var(--md-primary);
+    color: white;
+}
+
+.btn-material-primary:hover {
+    background: var(--md-primary-dark);
+    color: white;
+}
+
+.btn-material-success {
+    background: var(--md-success);
+    color: white;
+}
+
+.btn-material-success:hover {
+    background: var(--md-success-light);
+    color: white;
+}
+
+.btn-material-warning {
+    background: var(--md-warning);
+    color: white;
+}
+
+.btn-material-warning:hover {
+    background: var(--md-warning-light);
+    color: white;
+}
+
+.btn-material-danger {
+    background: var(--md-danger);
+    color: white;
+}
+
+.btn-material-danger:hover {
+    background: var(--md-danger-light);
+    color: white;
+}
+
+.btn-material-info {
+    background: var(--md-info);
+    color: white;
+}
+
+.btn-material-info:hover {
+    background: var(--md-info-light);
+    color: white;
+}
+
+.btn-material-secondary {
+    background: var(--md-secondary);
+    color: white;
+}
+
+.btn-material-secondary:hover {
+    background: var(--md-secondary-light);
+    color: white;
+}
+
+/* Outlined Buttons */
+.btn-material-outlined {
+    background: transparent;
+    border: 1px solid currentColor;
+    box-shadow: none;
+}
+
+.btn-material-outlined:hover {
+    background: rgba(0, 0, 0, 0.04);
+}
+
+/* Icon Buttons */
+.btn-material-icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 36px;
+    height: 36px;
+    padding: 0;
+    border: none;
+    border-radius: var(--md-radius-circle);
+    background: transparent;
+    cursor: pointer;
+    transition: background var(--md-transition-fast);
+}
+
+.btn-material-icon:hover {
+    background: rgba(0, 0, 0, 0.08);
+}
+
+.btn-material-icon .material-icons {
+    font-size: 20px;
+}
+
+.btn-material-icon-primary { color: var(--md-primary); }
+.btn-material-icon-success { color: var(--md-success); }
+.btn-material-icon-warning { color: var(--md-warning); }
+.btn-material-icon-danger { color: var(--md-danger); }
+.btn-material-icon-info { color: var(--md-info); }
+.btn-material-icon-secondary { color: var(--md-secondary); }
+
+/* ===================================
+   6. Material Tables
+   ================================== */
+.material-table-wrapper {
+    background: var(--md-surface);
+    border-radius: var(--md-radius-md);
+    box-shadow: var(--md-shadow-1);
+    overflow-x: auto;
+}
+
+.material-table {
+    width: 100%;
+    border-collapse: collapse;
+    background: var(--md-surface);
+}
+
+.material-table thead {
+    background: #f5f5f5;
+    position: sticky;
+    top: 0;
+    z-index: 10;
+}
+
+.material-table thead th {
+    padding: 16px;
+    text-align: left;
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--md-text-secondary);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    border-bottom: 2px solid var(--md-divider);
+}
+
+.material-table tbody tr {
+    transition: background var(--md-transition-fast);
+}
+
+.material-table tbody tr:hover {
+    background: rgba(0, 0, 0, 0.02);
+}
+
+.material-table tbody tr:nth-child(even) {
+    background: rgba(0, 0, 0, 0.01);
+}
+
+.material-table tbody tr:nth-child(even):hover {
+    background: rgba(0, 0, 0, 0.03);
+}
+
+.material-table tbody td {
+    padding: 16px;
+    font-size: 14px;
+    color: var(--md-text-primary);
+    border-bottom: 1px solid var(--md-divider);
+}
+
+.material-table tbody td:last-child {
+    text-align: right;
+}
+
+/* ===================================
+   7. Material Badges
+   ================================== */
+.material-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 4px 12px;
+    border-radius: 12px;
+    font-size: 12px;
+    font-weight: 500;
+    line-height: 1.5;
+}
+
+.material-badge-primary {
+    background: rgba(25, 118, 210, 0.1);
+    color: var(--md-primary);
+}
+
+.material-badge-success {
+    background: rgba(56, 142, 60, 0.1);
+    color: var(--md-success);
+}
+
+.material-badge-warning {
+    background: rgba(245, 124, 0, 0.1);
+    color: var(--md-warning);
+}
+
+.material-badge-danger {
+    background: rgba(211, 47, 47, 0.1);
+    color: var(--md-danger);
+}
+
+.material-badge-info {
+    background: rgba(2, 136, 209, 0.1);
+    color: var(--md-info);
+}
+
+.material-badge-secondary {
+    background: rgba(66, 66, 66, 0.1);
+    color: var(--md-secondary);
+}
+
+/* ===================================
+   8. Material Alerts
+   ================================== */
+.material-alert {
+    display: flex;
+    align-items: center;
+    gap: var(--md-spacing-md);
+    padding: var(--md-spacing-md);
+    border-radius: var(--md-radius-sm);
+    margin-bottom: var(--md-spacing-md);
+    box-shadow: var(--md-shadow-1);
+}
+
+.material-alert .material-icons {
+    font-size: 24px;
+}
+
+.material-alert-success {
+    background: rgba(56, 142, 60, 0.1);
+    color: var(--md-success);
+    border-left: 4px solid var(--md-success);
+}
+
+.material-alert-warning {
+    background: rgba(245, 124, 0, 0.1);
+    color: var(--md-warning);
+    border-left: 4px solid var(--md-warning);
+}
+
+.material-alert-danger {
+    background: rgba(211, 47, 47, 0.1);
+    color: var(--md-danger);
+    border-left: 4px solid var(--md-danger);
+}
+
+.material-alert-info {
+    background: rgba(2, 136, 209, 0.1);
+    color: var(--md-info);
+    border-left: 4px solid var(--md-info);
+}
+
+/* ===================================
+   9. Filter Accordion
+   ================================== */
+.filter-accordion {
+    background: var(--md-surface);
+    border-radius: var(--md-radius-md);
+    box-shadow: var(--md-shadow-1);
+    margin-bottom: var(--md-spacing-lg);
+    overflow: hidden;
+}
+
+.filter-header {
+    display: flex;
+    align-items: center;
+    gap: var(--md-spacing-md);
+    padding: var(--md-spacing-md) var(--md-spacing-lg);
+    background: var(--md-surface);
+    cursor: pointer;
+    user-select: none;
+    transition: background var(--md-transition-fast);
+}
+
+.filter-header:hover {
+    background: rgba(0, 0, 0, 0.02);
+}
+
+.filter-header .material-icons {
+    color: var(--md-primary);
+}
+
+.filter-header span:nth-child(2) {
+    flex: 1;
+    font-size: 16px;
+    font-weight: 500;
+    color: var(--md-text-primary);
+}
+
+.filter-header .expand-icon {
+    transition: transform var(--md-transition-normal);
+}
+
+.filter-header.active .expand-icon {
+    transform: rotate(180deg);
+}
+
+.filter-body {
+    max-height: 0;
+    padding: 0;
+    overflow: hidden;
+    opacity: 0;
+    visibility: hidden;
+    transition: max-height var(--md-transition-slow), padding var(--md-transition-normal), opacity var(--md-transition-fast), visibility var(--md-transition-fast);
+}
+
+.filter-body.open {
+    max-height: 500px;
+    padding: var(--md-spacing-lg);
+    opacity: 1;
+    visibility: visible;
+}
+
+/* Filtre formu inputları - daha belirgin görünsün */
+.filter-body .form-control-material,
+.filter-body .form-select.form-control-material {
+    background: rgba(0, 0, 0, 0.02);
+    border: 1px solid var(--md-divider);
+    border-radius: var(--md-radius-sm);
+    padding: 10px 12px;
+    min-height: 42px;
+}
+
+.filter-body .form-control-material:focus,
+.filter-body .form-select.form-control-material:focus {
+    border-color: var(--md-primary);
+    background: var(--md-surface);
+}
+
+/* ===================================
+   10. Material Modals
+   ================================== */
+.modal-dialog-material {
+    max-width: 600px;
+}
+
+.material-modal {
+    border-radius: var(--md-radius-md);
+    border: none;
+    box-shadow: var(--md-shadow-4);
+}
+
+.material-modal-header {
+    background: var(--md-surface);
+    border-bottom: 1px solid var(--md-divider);
+    padding: var(--md-spacing-lg);
+}
+
+.material-modal-header .modal-title {
+    font-size: 20px;
+    font-weight: 500;
+    color: var(--md-text-primary);
+}
+
+.btn-close-material {
+    background: transparent;
+    border: none;
+    width: 36px;
+    height: 36px;
+    border-radius: var(--md-radius-circle);
+    cursor: pointer;
+    transition: background var(--md-transition-fast);
+}
+
+.btn-close-material:hover {
+    background: rgba(0, 0, 0, 0.08);
+}
+
+.material-modal-body {
+    padding: var(--md-spacing-lg);
+}
+
+.material-modal-footer {
+    background: var(--md-surface);
+    border-top: 1px solid var(--md-divider);
+    padding: var(--md-spacing-md) var(--md-spacing-lg);
+    display: flex;
+    gap: var(--md-spacing-sm);
+    justify-content: flex-end;
+}
+
+/* ===================================
+   11. Material Pagination
+   ================================== */
+.material-pagination {
+    display: flex;
+    justify-content: center;
+    margin-top: var(--md-spacing-lg);
+}
+
+.material-pagination .pagination {
+    display: flex;
+    gap: var(--md-spacing-xs);
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+.material-pagination .page-item .page-link {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 36px;
+    height: 36px;
+    padding: 0 12px;
+    border: none;
+    border-radius: var(--md-radius-sm);
+    background: transparent;
+    color: var(--md-text-primary);
+    text-decoration: none;
+    transition: all var(--md-transition-fast);
+}
+
+.material-pagination .page-item .page-link:hover {
+    background: rgba(25, 118, 210, 0.08);
+    color: var(--md-primary);
+}
+
+.material-pagination .page-item.active .page-link {
+    background: var(--md-primary);
+    color: white;
+    box-shadow: var(--md-shadow-1);
+}
+
+.material-pagination .page-item.disabled .page-link {
+    color: var(--md-text-disabled);
+    pointer-events: none;
+}
+
+/* ===================================
+   12. Material Info Grid (Detail Pages)
+   ================================== */
+.material-info-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: var(--md-spacing-lg);
+}
+
+.material-info-item {
+    display: flex;
+    flex-direction: column;
+    gap: var(--md-spacing-xs);
+}
+
+.material-info-label {
+    font-size: 12px;
+    font-weight: 500;
+    color: var(--md-text-secondary);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.material-info-value {
+    font-size: 16px;
+    color: var(--md-text-primary);
+    font-weight: 400;
+}
+
+/* ===================================
+   13. Animations & Transitions
+   ================================== */
+@keyframes ripple {
+    0% {
+        transform: scale(0);
+        opacity: 1;
+    }
+    100% {
+        transform: scale(4);
+        opacity: 0;
+    }
+}
+
+.ripple-effect {
+    position: relative;
+    overflow: hidden;
+}
+
+.ripple-effect::after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 0;
+    height: 0;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.5);
+    transform: translate(-50%, -50%);
+    transition: width 0.6s, height 0.6s;
+}
+
+.ripple-effect:active::after {
+    width: 200px;
+    height: 200px;
+}
+
+/* ===================================
+   14. Responsive Utilities
+   ================================== */
+@media (max-width: 768px) {
+    .material-card-body {
+        padding: var(--md-spacing-md);
+    }
+    
+    .material-table thead th,
+    .material-table tbody td {
+        padding: 12px;
+        font-size: 13px;
+    }
+    
+    .btn-material {
+        padding: 8px 16px;
+        font-size: 13px;
+    }
+    
+    .material-info-grid {
+        grid-template-columns: 1fr;
+    }
+    
+    .filter-body.open {
+        max-height: 600px;
+    }
+}
+
+/* ===================================
+   15. Helper Classes
+   ================================== */
+.text-material-primary { color: var(--md-primary) !important; }
+.text-material-success { color: var(--md-success) !important; }
+.text-material-warning { color: var(--md-warning) !important; }
+.text-material-danger { color: var(--md-danger) !important; }
+.text-material-info { color: var(--md-info) !important; }
+.text-material-secondary { color: var(--md-text-secondary) !important; }
+
+.bg-material-primary { background: var(--md-primary) !important; }
+.bg-material-success { background: var(--md-success) !important; }
+.bg-material-warning { background: var(--md-warning) !important; }
+.bg-material-danger { background: var(--md-danger) !important; }
+.bg-material-info { background: var(--md-info) !important; }

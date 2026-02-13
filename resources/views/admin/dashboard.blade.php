@@ -126,7 +126,7 @@
 
 <!-- Grafikler -->
 <div class="row g-4 mb-4">
-    <div class="col-lg-8">
+    <div class="col-12">
         <div class="material-card" style="padding:24px">
             <h5 style="margin-bottom:24px;display:flex;align-items:center;gap:8px">
                 <span class="material-icons" style="color:var(--primary-color)">show_chart</span>
@@ -136,13 +136,25 @@
         </div>
     </div>
     
-    <div class="col-lg-4">
+    <div class="col-lg-6">
         <div class="material-card" style="padding:24px">
             <h5 style="margin-bottom:24px;display:flex;align-items:center;gap:8px">
-                <span class="material-icons" style="color:var(--warning-color)">pie_chart</span>
-                Sipariş Durumları
+                <span class="material-icons" style="color:var(--primary-color)">receipt</span>
+                Ana Sipariş Durumları (Orders)
             </h5>
-            <canvas id="statusChart" style="max-height:300px"></canvas>
+            <p class="text-muted small mb-3">Sipariş bazlı genel durum dağılımı</p>
+            <canvas id="orderStatusChart" style="max-height:280px"></canvas>
+        </div>
+    </div>
+    
+    <div class="col-lg-6">
+        <div class="material-card" style="padding:24px">
+            <h5 style="margin-bottom:24px;display:flex;align-items:center;gap:8px">
+                <span class="material-icons" style="color:var(--warning-color)">inventory_2</span>
+                Alt Sipariş Durumları (Carts)
+            </h5>
+            <p class="text-muted small mb-3">Sipariş kalemleri bazlı detaylı durum dağılımı</p>
+            <canvas id="cartStatusChart" style="max-height:280px"></canvas>
         </div>
     </div>
 </div>
@@ -395,29 +407,23 @@ new Chart(monthlyCtx, {
     }
 });
 
-// Sipariş Durumları Grafiği
-const statusData = @json($ordersByStatus);
-const statusLabels = statusData.map(item => {
-    const statusNames = {
-        '1': 'Beklemede',
-        '2': 'Onaylandı',
-        '3': 'İptal',
-        '4': 'Tamamlandı',
-        '5': 'Kargoda'
-    };
-    return statusNames[item.status] || 'Bilinmiyor';
+// Ana Sipariş Durumları Grafiği (orders tablosu - 4 durum)
+const orderMainData = @json($ordersByMainStatus);
+const orderMainCounts = [0, 1, 2, 3].map(s => {
+    const found = orderMainData.find(item => String(item.status) === String(s));
+    return found ? found.count : 0;
 });
-const statusCounts = statusData.map(item => item.count);
-const statusColors = ['#f57c00', '#1976d2', '#d32f2f', '#388e3c', '#0288d1'];
+const orderMainLabels = ['Onay Bekliyor', 'İşlemde', 'Teslim Edildi', 'İptal'];
+const orderMainColors = ['#0288d1', '#f57c00', '#388e3c', '#d32f2f'];
 
-const statusCtx = document.getElementById('statusChart').getContext('2d');
-new Chart(statusCtx, {
+const orderStatusCtx = document.getElementById('orderStatusChart').getContext('2d');
+new Chart(orderStatusCtx, {
     type: 'doughnut',
     data: {
-        labels: statusLabels,
+        labels: orderMainLabels,
         datasets: [{
-            data: statusCounts,
-            backgroundColor: statusColors,
+            data: orderMainCounts,
+            backgroundColor: orderMainColors,
             borderWidth: 2,
             borderColor: '#fff'
         }]
@@ -426,21 +432,55 @@ new Chart(statusCtx, {
         responsive: true,
         maintainAspectRatio: true,
         plugins: {
-            legend: {
-                display: true,
-                position: 'bottom',
-            },
+            legend: { display: true, position: 'bottom' },
             tooltip: {
                 callbacks: {
                     label: function(context) {
                         let label = context.label || '';
-                        if (label) {
-                            label += ': ';
-                        }
+                        if (label) label += ': ';
                         label += context.parsed + ' sipariş';
                         const total = context.dataset.data.reduce((a, b) => a + b, 0);
-                        const percentage = ((context.parsed / total) * 100).toFixed(1);
-                        label += ` (${percentage}%)`;
+                        if (total > 0) label += ` (${((context.parsed / total) * 100).toFixed(1)}%)`;
+                        return label;
+                    }
+                }
+            }
+        }
+    }
+});
+
+// Alt Sipariş Durumları Grafiği (cart bazlı - OrderStatusHistory)
+const cartStatusData = @json($cartsByStatus);
+const orderStatusTitles = @json($orderStatusTitles);
+const cartStatusLabels = cartStatusData.map(item => orderStatusTitles[String(item.status)] || 'Bilinmiyor');
+const cartStatusCounts = cartStatusData.map(item => item.count);
+const cartStatusColors = ['#f57c00', '#1976d2', '#0288d1', '#7b1fa2', '#388e3c', '#c0ca33', '#ff9800', '#5d4037', '#d32f2f', '#757575'];
+
+const cartStatusCtx = document.getElementById('cartStatusChart').getContext('2d');
+new Chart(cartStatusCtx, {
+    type: 'doughnut',
+    data: {
+        labels: cartStatusLabels,
+        datasets: [{
+            data: cartStatusCounts,
+            backgroundColor: cartStatusColors,
+            borderWidth: 2,
+            borderColor: '#fff'
+        }]
+    },
+    options: {
+        responsive: true,
+        maintainAspectRatio: true,
+        plugins: {
+            legend: { display: true, position: 'bottom' },
+            tooltip: {
+                callbacks: {
+                    label: function(context) {
+                        let label = context.label || '';
+                        if (label) label += ': ';
+                        label += context.parsed + ' kalem';
+                        const total = context.dataset.data.reduce((a, b) => a + b, 0);
+                        if (total > 0) label += ` (${((context.parsed / total) * 100).toFixed(1)}%)`;
                         return label;
                     }
                 }

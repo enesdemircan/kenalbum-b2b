@@ -1,17 +1,20 @@
 @extends('admin.layout')
 
 @section('content')
+<div class="page-header d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h1 class="page-title">Detay Düzenle</h1>
+        <p class="page-subtitle">{{ $product->title }} - {{ $detail->title }}</p>
+    </div>
+    <a href="{{ route('admin.product-details.index', $product->id) }}" class="btn-material btn-material-secondary">
+        <span class="material-icons">arrow_back</span> Detaylara Dön
+    </a>
+</div>
+
 <div class="row justify-content-center">
     <div class="col-md-10">
-        <div class="d-flex justify-content-between align-items-center mb-3">
-            <h1 class="h3">Detay Düzenle - {{ $product->title }}</h1>
-            <a href="{{ route('admin.product-details.index', $product->id) }}" class="btn btn-secondary">
-                ← Detaylara Dön
-            </a>
-        </div>
-
         @if($errors->any())
-            <div class="alert alert-danger alert-dismissible fade show" role="alert">
+            <div class="material-alert material-alert-danger alert-dismissible fade show mb-3" role="alert">
                 <ul class="mb-0">
                     @foreach($errors->all() as $error)
                         <li>{{ $error }}</li>
@@ -21,8 +24,8 @@
             </div>
         @endif
 
-        <div class="card">
-            <div class="card-body">
+        <div class="material-card-elevated">
+            <div class="material-card-body">
                 <form action="{{ route('admin.product-details.update', [$product->id, $detail->id]) }}" method="POST">
                     @csrf
                     @method('PUT')
@@ -30,7 +33,7 @@
                     <div class="mb-3">
                         <label for="title" class="form-label">Başlık <span class="text-danger">*</span></label>
                         <input type="text" 
-                               class="form-control @error('title') is-invalid @enderror" 
+                               class="form-control form-control-material @error('title') is-invalid @enderror" 
                                id="title" 
                                name="title" 
                                value="{{ old('title', $detail->title) }}" 
@@ -43,8 +46,8 @@
 
                     <div class="mb-3">
                         <label for="text" class="form-label">İçerik <span class="text-danger">*</span></label>
-                        <div class="alert alert-info">
-                            <i class="bi bi-info-circle"></i>
+                        <div class="material-alert material-alert-info mb-2">
+                            <span class="material-icons">info</span>
                             <strong>Resim Yükleme Kuralları:</strong>
                             <ul class="mb-0 mt-2">
                                 <li>Sadece PNG ve JPG formatında resim yükleyebilirsiniz</li>
@@ -52,7 +55,7 @@
                                 <li>Resimler otomatik olarak sıkıştırılacak ve optimize edilecektir</li>
                             </ul>
                         </div>
-                        <textarea class="form-control @error('text') is-invalid @enderror" 
+                        <textarea class="form-control form-control-material @error('text') is-invalid @enderror" 
                                   id="text" 
                                   name="text" 
                                   rows="15" 
@@ -63,12 +66,9 @@
                         @enderror
                     </div>
 
-                    <div class="d-flex justify-content-between">
-                        <a href="{{ route('admin.product-details.index', $product->id) }}" class="btn btn-secondary">
-                            İptal
-                        </a>
-                        <button type="submit" class="btn btn-primary" onclick="syncEditorContent()">
-                            <i class="bi bi-check-circle"></i> Güncelle
+                    <div class="d-flex justify-content-end gap-2">
+                        <button type="submit" class="btn-material btn-material-primary" onclick="syncEditorContent()">
+                            <span class="material-icons">save</span> Güncelle
                         </button>
                     </div>
                 </form>
