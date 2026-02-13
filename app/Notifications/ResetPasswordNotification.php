@@ -6,8 +6,6 @@ use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Notifications\Messages\MailMessage;
 use Illuminate\Notifications\Notification;
-use Illuminate\Support\Facades\Mail;
-use App\Mail\PasswordResetMail;
 
 class ResetPasswordNotification extends Notification
 {
@@ -55,12 +53,8 @@ class ResetPasswordNotification extends Notification
             'email' => $notifiable->getEmailForPasswordReset(),
         ], false));
 
-        // Mailjet ile şifre sıfırlama e-postası gönder
-        Mail::to($notifiable->email)->send(new PasswordResetMail($notifiable, $url));
-
-        // Boş bir MailMessage döndür (Laravel notification sistemi için gerekli)
         return (new MailMessage)
-            ->subject('Şifre Sıfırlama')
-            ->line('Şifre sıfırlama e-postası gönderildi.');
+            ->subject('Şifre Sıfırlama Talebi')
+            ->view('emails.password-reset', ['user' => $notifiable, 'resetUrl' => $url]);
     }
-} 
+}

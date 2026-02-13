@@ -1,72 +1,65 @@
-<!DOCTYPE html>
-<html lang="tr">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Şifre Sıfırla</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
-</head>
-<body>
-<div class="container mt-5">
-    <div class="row justify-content-center">
-        <div class="col-md-6">
-            <div class="card">
-                <div class="card-header">
-                    <h3>🔐 Şifre Sıfırla</h3>
-                </div>
-                <div class="card-body">
-                    <form method="POST" action="{{ route('password.update') }}">
-                        @csrf
+@extends('frontend.master')
 
-                        <!-- Password Reset Token -->
+@section('content')
+<main>
+    <div class="mb-4 pb-4"></div>
+    <section class="login-register container">
+        <h2 class="d-none">Şifre Sıfırla</h2>
+        <ul class="nav nav-tabs mb-5" id="login_register" role="tablist">
+            <li class="nav-item" role="presentation">
+                <a class="nav-link nav-link_underscore" href="{{ route('login') }}">Giriş Yap</a>
+            </li>
+            <li class="nav-item" role="presentation">
+                <a class="nav-link nav-link_underscore" href="{{ route('register') }}">Kayıt Ol</a>
+            </li>
+            <li class="nav-item" role="presentation">
+                <a class="nav-link nav-link_underscore active" href="#">Şifre Sıfırla</a>
+            </li>
+        </ul>
+        <div class="tab-content pt-2" id="login_register_tab_content">
+            <div class="tab-pane fade show active" id="tab-item-reset" role="tabpanel">
+                <div class="login-form">
+                    <form name="reset-password-form" class="needs-validation" method="POST" action="{{ route('password.update') }}" novalidate>
+                        @csrf
                         <input type="hidden" name="token" value="{{ $request->route('token') }}">
 
-                        <div class="mb-3">
-                            <label for="email" class="form-label">E-posta Adresi</label>
-                            <input type="email" class="form-control @error('email') is-invalid @enderror" 
-                                   id="email" name="email" value="{{ old('email', $request->email) }}" required autofocus>
+                        <div class="form-floating mb-3">
+                            <input type="email" class="form-control @error('email') is-invalid @enderror" id="email" name="email" value="{{ old('email', $request->email) }}" required autofocus placeholder="E-posta Adresi">
                             @error('email')
-                                <div class="invalid-feedback">
-                                    {{ $message }}
-                                </div>
+                                <div class="invalid-feedback">{{ $message }}</div>
                             @enderror
+                            <label for="email">E-posta Adresi *</label>
                         </div>
 
-                        <div class="mb-3">
-                            <label for="password" class="form-label">Yeni Şifre</label>
-                            <input type="password" class="form-control @error('password') is-invalid @enderror" 
-                                   id="password" name="password" required>
+                        <div class="pb-3"></div>
+
+                        <div class="form-floating mb-3">
+                            <input type="password" class="form-control @error('password') is-invalid @enderror" id="password" name="password" required placeholder="Yeni Şifre">
                             @error('password')
-                                <div class="invalid-feedback">
-                                    {{ $message }}
-                                </div>
+                                <div class="invalid-feedback">{{ $message }}</div>
                             @enderror
+                            <label for="password">Yeni Şifre *</label>
                         </div>
 
-                        <div class="mb-3">
-                            <label for="password_confirmation" class="form-label">Yeni Şifre (Tekrar)</label>
-                            <input type="password" class="form-control" 
-                                   id="password_confirmation" name="password_confirmation" required>
+                        <div class="form-floating mb-3">
+                            <input type="password" class="form-control" id="password_confirmation" name="password_confirmation" required placeholder="Yeni Şifre (Tekrar)">
+                            <label for="password_confirmation">Yeni Şifre (Tekrar) *</label>
                         </div>
 
-                        <div class="d-grid">
-                            <button type="submit" class="btn btn-primary">
-                                Şifremi Sıfırla
-                            </button>
-                        </div>
+                        <div class="pb-3"></div>
 
-                        <div class="text-center mt-3">
-                            <a href="{{ route('login') }}" class="text-decoration-none">
-                                ← Giriş sayfasına dön
-                            </a>
+                        <button class="btn btn-primary w-100 text-uppercase" type="submit">Şifremi Sıfırla</button>
+
+                        <div class="customer-option mt-4 text-center">
+                            <span class="text-secondary">Hesabınızı hatırladınız mı?</span>
+                            <a href="{{ route('login') }}" class="btn-text">Giriş Yap</a>
                         </div>
                     </form>
                 </div>
             </div>
-            </div>
-  </div>
-</div>
-
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
-</body>
-</html> 
+        </div>
+    </section>
+</main>
+<br>
+<br>
+@endsection

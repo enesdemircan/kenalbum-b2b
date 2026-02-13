@@ -9,12 +9,14 @@ use Illuminate\Mail\Mailables\Content;
 use Illuminate\Mail\Mailables\Envelope;
 use Illuminate\Queue\SerializesModels;
 use App\Models\User;
+use App\Models\SiteSetting;
 
 class WelcomeMail extends Mailable
 {
     use Queueable, SerializesModels;
 
     public $user;
+    public $siteSettings;
 
     /**
      * Create a new message instance.
@@ -22,6 +24,7 @@ class WelcomeMail extends Mailable
     public function __construct(User $user)
     {
         $this->user = $user;
+        $this->siteSettings = SiteSetting::first();
     }
 
     /**

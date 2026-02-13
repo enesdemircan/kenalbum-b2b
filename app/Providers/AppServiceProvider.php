@@ -5,6 +5,7 @@ namespace App\Providers;
 use Illuminate\Support\ServiceProvider;
 use Illuminate\Support\Facades\Blade;
 use Illuminate\Support\Facades\Event;
+use Illuminate\Support\Facades\Mail;
 use App\Helpers\AuthorizationHelper;
 use App\Listeners\AssignCustomerRole;
 use Illuminate\Auth\Events\Registered;
@@ -24,6 +25,11 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
+        // Mail gönderiminde site ayarlarından "From" adını kullan (UTF-8 encoding için)
+        $settings = \App\Models\SiteSetting::first();
+        if ($settings && ($settings->company_title || $settings->title)) {
+            config(['mail.from.name' => $settings->company_title ?? $settings->title]);
+        }
         // Pagination View
         \Illuminate\Pagination\Paginator::defaultView('pagination.material');
         \Illuminate\Pagination\Paginator::defaultSimpleView('pagination.material');
