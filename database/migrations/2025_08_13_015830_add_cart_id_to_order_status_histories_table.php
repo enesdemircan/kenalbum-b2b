@@ -12,8 +12,9 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('order_status_histories', function (Blueprint $table) {
-            // cart_id alanını ekle
-            $table->foreignId('cart_id')->constrained()->onDelete('cascade');
+            if (!Schema::hasColumn('order_status_histories', 'cart_id')) {
+                $table->foreignId('cart_id')->constrained()->onDelete('cascade');
+            }
         });
     }
 
@@ -23,9 +24,10 @@ return new class extends Migration
     public function down(): void
     {
         Schema::table('order_status_histories', function (Blueprint $table) {
-            // cart_id alanını kaldır
-            $table->dropForeign(['cart_id']);
-            $table->dropColumn('cart_id');
+            if (Schema::hasColumn('order_status_histories', 'cart_id')) {
+                $table->dropForeign(['cart_id']);
+                $table->dropColumn('cart_id');
+            }
         });
     }
 };

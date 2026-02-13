@@ -11,9 +11,14 @@ return new class extends Migration
      */
     public function up(): void
     {
+        // Tablo yoksa bu migration'ı atla
+        if (!Schema::hasTable('cart_files')) {
+            return;
+        }
+        
         Schema::table('cart_files', function (Blueprint $table) {
-            // Önce eski sütunları kaldır
-            $table->dropColumn([
+            // Kolonların varlığını kontrol ederek kaldır
+            $columnsToCheck = [
                 'original_filename',
                 'file_size', 
                 'file_type',
@@ -21,10 +26,18 @@ return new class extends Migration
                 'customization_pivot_params_id',
                 'file_order',
                 'error_message'
-            ]);
+            ];
             
-            // Sadece cart_id ve s3_url kalsın
-            // s3_url artık zip dosyasının URL'sini tutacak
+            $columnsToDrop = [];
+            foreach ($columnsToCheck as $column) {
+                if (Schema::hasColumn('cart_files', $column)) {
+                    $columnsToDrop[] = $column;
+                }
+            }
+            
+            if (!empty($columnsToDrop)) {
+                $table->dropColumn($columnsToDrop);
+            }
         });
     }
 
