@@ -22,6 +22,12 @@ class Order extends Model
         return $this->belongsTo(User::class);
     }
 
+    // Order Status ilişkisi (status kolonuna göre)
+    public function orderStatus()
+    {
+        return $this->belongsTo(OrderStatus::class, 'status', 'id');
+    }
+
     // Sipariş kalemleri (carts tablosundan)
     public function cartItems()
     {
