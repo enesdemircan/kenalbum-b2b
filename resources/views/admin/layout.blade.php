@@ -123,8 +123,8 @@
             top: var(--topbar-height);
             width: var(--sidebar-width);
             height: calc(100vh - var(--topbar-height));
-            background: white;
-            box-shadow: 2px 0 4px rgba(0,0,0,0.1);
+            background: #fafafa;
+            box-shadow: 2px 0 8px rgba(0,0,0,0.08);
             overflow-y: auto;
             overflow-x: hidden;
             transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
@@ -132,82 +132,138 @@
         }
         
         .sidebar-section {
-            padding: 16px 0;
+            padding: 8px 0;
+        }
+        
+        .sidebar-section:not(:last-child) {
             border-bottom: 1px solid #e0e0e0;
         }
         
         .sidebar-section-title {
-            padding: 8px 24px;
-            font-size: 12px;
-            font-weight: 500;
-            color: #757575;
+            padding: 12px 16px 8px 16px;
+            font-size: 11px;
+            font-weight: 600;
+            color: #9e9e9e;
             text-transform: uppercase;
-            letter-spacing: 0.5px;
+            letter-spacing: 1px;
         }
         
         .sidebar-menu-item {
             display: flex;
             align-items: center;
-            padding: 12px 24px;
-            color: #424242;
+            padding: 10px 16px;
+            margin: 2px 8px;
+            color: #616161;
             text-decoration: none;
             transition: all 0.2s;
             cursor: pointer;
             position: relative;
+            border-radius: 8px;
+            font-size: 14px;
         }
         
         .sidebar-menu-item:hover {
-            background: rgba(25, 118, 210, 0.08);
+            background: white;
             color: var(--primary-color);
+            box-shadow: 0 2px 4px rgba(0,0,0,0.08);
         }
         
         .sidebar-menu-item.active {
-            background: rgba(25, 118, 210, 0.12);
+            background: white;
             color: var(--primary-color);
             font-weight: 500;
+            box-shadow: 0 2px 6px rgba(25, 118, 210, 0.15);
         }
         
         .sidebar-menu-item.active::before {
             content: '';
             position: absolute;
             left: 0;
-            top: 0;
-            bottom: 0;
-            width: 4px;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 3px;
+            height: 70%;
             background: var(--primary-color);
+            border-radius: 0 3px 3px 0;
         }
         
         .sidebar-menu-item .material-icons {
-            margin-right: 16px;
-            font-size: 24px;
+            margin-right: 12px;
+            font-size: 22px;
+            min-width: 22px;
         }
         
         .sidebar-menu-item span {
             flex: 1;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        
+        .sidebar-menu-item .expand-icon {
+            margin-left: auto;
+            margin-right: 0;
+            font-size: 20px;
+            transition: transform 0.3s;
+        }
+        
+        .sidebar-menu-item.expanded .expand-icon {
+            transform: rotate(180deg);
         }
         
         .sidebar-submenu {
             max-height: 0;
             overflow: hidden;
-            transition: max-height 0.3s ease;
+            transition: max-height 0.3s ease-out;
+            background: rgba(0,0,0,0.02);
+            border-radius: 8px;
+            margin: 0 8px 4px 8px;
         }
         
         .sidebar-submenu.open {
-            max-height: 500px;
+            max-height: 600px;
         }
         
         .sidebar-submenu-item {
-            padding: 10px 24px 10px 64px;
-            display: block;
-            color: #666;
+            padding: 8px 16px 8px 48px;
+            display: flex;
+            align-items: center;
+            color: #757575;
             text-decoration: none;
             transition: all 0.2s;
-            font-size: 14px;
+            font-size: 13px;
+            position: relative;
+        }
+        
+        .sidebar-submenu-item::before {
+            content: '';
+            position: absolute;
+            left: 32px;
+            width: 4px;
+            height: 4px;
+            background: #bdbdbd;
+            border-radius: 50%;
         }
         
         .sidebar-submenu-item:hover {
-            background: rgba(0,0,0,0.04);
+            background: rgba(25, 118, 210, 0.08);
             color: var(--primary-color);
+            padding-left: 50px;
+        }
+        
+        .sidebar-submenu-item:hover::before {
+            background: var(--primary-color);
+        }
+        
+        .sidebar-submenu-item.active {
+            color: var(--primary-color);
+            font-weight: 500;
+        }
+        
+        .sidebar-submenu-item.active::before {
+            background: var(--primary-color);
+            width: 6px;
+            height: 6px;
         }
         
         /* Main Content */
@@ -429,12 +485,12 @@
         </a>
         <a href="{{ route('admin.barcode.search') }}" class="sidebar-menu-item {{ request()->routeIs('admin.barcode.*') ? 'active' : '' }}">
             <span class="material-icons">qr_code_scanner</span>
-            <span>Barcode Arama</span>
+            <span>Barcode</span>
         </a>
     </div>
     
     <div class="sidebar-section">
-        <div class="sidebar-section-title">ÜRÜN YÖNETİMİ</div>
+        <div class="sidebar-section-title">ÜRÜN & MÜŞTERİ</div>
         <a href="{{ route('admin.products.index') }}" class="sidebar-menu-item {{ request()->routeIs('admin.products.*') ? 'active' : '' }}">
             <span class="material-icons">inventory_2</span>
             <span>Ürünler</span>
@@ -443,10 +499,6 @@
             <span class="material-icons">category</span>
             <span>Kategoriler</span>
         </a>
-    </div>
-    
-    <div class="sidebar-section">
-        <div class="sidebar-section-title">MÜŞTERİ YÖNETİMİ</div>
         <a href="{{ route('admin.customers.index') }}" class="sidebar-menu-item {{ request()->routeIs('admin.customers.*') ? 'active' : '' }}">
             <span class="material-icons">business</span>
             <span>Firmalar</span>
@@ -462,51 +514,33 @@
     </div>
     
     <div class="sidebar-section">
-        <div class="sidebar-section-title">SABİTLER</div>
-        <a href="{{ route('admin.customization-categories.index') }}" class="sidebar-menu-item {{ request()->routeIs('admin.customization-categories.*') ? 'active' : '' }}">
-            <span class="material-icons">tune</span>
-            <span>Özelleştirme Kategorileri</span>
+        <a href="#" class="sidebar-menu-item" data-toggle="submenu" onclick="toggleSubmenu(event, 'sabitlerSubmenu')">
+            <span class="material-icons">settings_applications</span>
+            <span>Sabitler</span>
+            <span class="material-icons expand-icon">expand_more</span>
         </a>
-        <a href="{{ route('admin.order-statuses.index') }}" class="sidebar-menu-item {{ request()->routeIs('admin.order-statuses.*') ? 'active' : '' }}">
-            <span class="material-icons">flag</span>
-            <span>Sipariş Durumları</span>
-        </a>
-        <a href="{{ route('admin.roles.index') }}" class="sidebar-menu-item {{ request()->routeIs('admin.roles.*') ? 'active' : '' }}">
-            <span class="material-icons">admin_panel_settings</span>
-            <span>Kullanıcı Rolleri</span>
-        </a>
-        <a href="{{ route('admin.routes.index') }}" class="sidebar-menu-item {{ request()->routeIs('admin.routes.*') ? 'active' : '' }}">
-            <span class="material-icons">route</span>
-            <span>Route Yönetimi</span>
-        </a>
+        <div class="sidebar-submenu" id="sabitlerSubmenu">
+            <a href="{{ route('admin.customization-categories.index') }}" class="sidebar-submenu-item {{ request()->routeIs('admin.customization-categories.*') ? 'active' : '' }}">Özelleştirme Kategorileri</a>
+            <a href="{{ route('admin.order-statuses.index') }}" class="sidebar-submenu-item {{ request()->routeIs('admin.order-statuses.*') ? 'active' : '' }}">Sipariş Durumları</a>
+            <a href="{{ route('admin.roles.index') }}" class="sidebar-submenu-item {{ request()->routeIs('admin.roles.*') ? 'active' : '' }}">Kullanıcı Rolleri</a>
+            <a href="{{ route('admin.routes.index') }}" class="sidebar-submenu-item {{ request()->routeIs('admin.routes.*') ? 'active' : '' }}">Route Yönetimi</a>
+        </div>
     </div>
     
     <div class="sidebar-section">
-        <div class="sidebar-section-title">AYARLAR</div>
-        <a href="{{ route('admin.site-settings.index') }}" class="sidebar-menu-item {{ request()->routeIs('admin.site-settings.*') ? 'active' : '' }}">
-            <span class="material-icons">settings</span>
-            <span>Site Ayarları</span>
+        <a href="#" class="sidebar-menu-item" data-toggle="submenu" onclick="toggleSubmenu(event, 'ayarlarSubmenu')">
+            <span class="material-icons">tune</span>
+            <span>Ayarlar</span>
+            <span class="material-icons expand-icon">expand_more</span>
         </a>
-        <a href="{{ route('admin.pages.index') }}" class="sidebar-menu-item {{ request()->routeIs('admin.pages.*') ? 'active' : '' }}">
-            <span class="material-icons">article</span>
-            <span>Sayfalar</span>
-        </a>
-        <a href="{{ route('admin.sliders.index') }}" class="sidebar-menu-item {{ request()->routeIs('admin.sliders.*') ? 'active' : '' }}">
-            <span class="material-icons">view_carousel</span>
-            <span>Slider</span>
-        </a>
-        <a href="{{ route('admin.bank-accounts.index') }}" class="sidebar-menu-item {{ request()->routeIs('admin.bank-accounts.*') ? 'active' : '' }}">
-            <span class="material-icons">account_balance</span>
-            <span>IBAN Hesapları</span>
-        </a>
-        <a href="{{ route('admin.s3-files.index') }}" class="sidebar-menu-item {{ request()->routeIs('admin.s3-files.*') ? 'active' : '' }}">
-            <span class="material-icons">cloud</span>
-            <span>S3 Dosyaları</span>
-        </a>
-        <a href="{{ route('admin.cart-files.index') }}" class="sidebar-menu-item {{ request()->routeIs('admin.cart-files.*') ? 'active' : '' }}">
-            <span class="material-icons">folder</span>
-            <span>Cart Dosyaları</span>
-        </a>
+        <div class="sidebar-submenu" id="ayarlarSubmenu">
+            <a href="{{ route('admin.site-settings.index') }}" class="sidebar-submenu-item {{ request()->routeIs('admin.site-settings.*') ? 'active' : '' }}">Site Ayarları</a>
+            <a href="{{ route('admin.pages.index') }}" class="sidebar-submenu-item {{ request()->routeIs('admin.pages.*') ? 'active' : '' }}">Sayfalar</a>
+            <a href="{{ route('admin.sliders.index') }}" class="sidebar-submenu-item {{ request()->routeIs('admin.sliders.*') ? 'active' : '' }}">Slider</a>
+            <a href="{{ route('admin.bank-accounts.index') }}" class="sidebar-submenu-item {{ request()->routeIs('admin.bank-accounts.*') ? 'active' : '' }}">IBAN Hesapları</a>
+            <a href="{{ route('admin.s3-files.index') }}" class="sidebar-submenu-item {{ request()->routeIs('admin.s3-files.*') ? 'active' : '' }}">S3 Dosyaları</a>
+            <a href="{{ route('admin.cart-files.index') }}" class="sidebar-submenu-item {{ request()->routeIs('admin.cart-files.*') ? 'active' : '' }}">Cart Dosyaları</a>
+        </div>
     </div>
 </aside>
 
@@ -536,16 +570,41 @@
         });
     }
     
-    // Submenu Toggle
-    document.querySelectorAll('.sidebar-menu-item[data-toggle="submenu"]').forEach(item => {
-        item.addEventListener('click', function(e) {
-            e.preventDefault();
-            const submenu = this.nextElementSibling;
-            if (submenu && submenu.classList.contains('sidebar-submenu')) {
-                submenu.classList.toggle('open');
-                const icon = this.querySelector('.material-icons:last-child');
-                if (icon) {
-                    icon.textContent = submenu.classList.contains('open') ? 'expand_less' : 'expand_more';
+    // Submenu Toggle Function
+    function toggleSubmenu(event, submenuId) {
+        event.preventDefault();
+        const menuItem = event.currentTarget;
+        const submenu = document.getElementById(submenuId);
+        
+        if (submenu) {
+            const isOpen = submenu.classList.contains('open');
+            
+            // Close all other submenus
+            document.querySelectorAll('.sidebar-submenu').forEach(item => {
+                item.classList.remove('open');
+            });
+            document.querySelectorAll('.sidebar-menu-item[data-toggle="submenu"]').forEach(item => {
+                item.classList.remove('expanded');
+            });
+            
+            // Toggle current submenu
+            if (!isOpen) {
+                submenu.classList.add('open');
+                menuItem.classList.add('expanded');
+            }
+        }
+    }
+    
+    // Auto-expand submenu if current page is in submenu
+    document.addEventListener('DOMContentLoaded', function() {
+        const activeSubmenuItems = document.querySelectorAll('.sidebar-submenu-item.active');
+        activeSubmenuItems.forEach(item => {
+            const submenu = item.closest('.sidebar-submenu');
+            if (submenu) {
+                submenu.classList.add('open');
+                const parentMenuItem = submenu.previousElementSibling;
+                if (parentMenuItem && parentMenuItem.hasAttribute('data-toggle')) {
+                    parentMenuItem.classList.add('expanded');
                 }
             }
         });
