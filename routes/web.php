@@ -29,6 +29,11 @@ Route::get('/approval-pending', function () {
     return view('frontend.approval-pending');
 })->name('approval.pending')->middleware('auth');
 
+// Firma ataması gerekli route
+Route::get('/customer-assignment-required', function () {
+    return view('frontend.customer-assignment-required');
+})->name('customer.assignment.required')->middleware('auth');
+
 // Auth routes
 Route::get('/login', [LoginController::class, 'showLoginForm'])->name('login');
 Route::post('/login', [LoginController::class, 'login']);
@@ -78,8 +83,8 @@ Route::middleware(['web', 'auth'])->group(function () {
 
 
 
-// Profile routes
-Route::middleware(['auth', 'approval', 'check.route.permission'])->group(function () {
+// Profile routes (firma ataması gerekli - sipariş sayfaları için)
+Route::middleware(['auth', 'approval', 'check.route.permission', 'ensure.customer'])->group(function () {
    
     
     Route::get('/profile/personels', [CustomerPanelController::class, 'personels'])->name('profile.personels');

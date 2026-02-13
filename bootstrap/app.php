@@ -16,6 +16,7 @@ return Application::configure(basePath: dirname(__DIR__))
             'role' => \App\Http\Middleware\RoleMiddleware::class,
             'approval' => \App\Http\Middleware\ApprovalMiddleware::class,
             'check.route.permission' => \App\Http\Middleware\CheckRoutePermission::class,
+            'ensure.customer' => \App\Http\Middleware\EnsureUserHasCustomer::class,
             'cors' => \App\Http\Middleware\CorsMiddleware::class,
             'api.role' => \App\Http\Middleware\ApiRoleMiddleware::class,
         ]);
