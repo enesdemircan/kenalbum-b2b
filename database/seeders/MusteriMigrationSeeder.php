@@ -69,13 +69,46 @@ class MusteriMigrationSeeder extends Seeder
 
     /**
      * musteri.sql dosyasından verileri parse et
+     * Eğer dosya yoksa, database'deki musteri tablosundan çek
      */
     private function parseMusteriSql(): array
     {
         $sqlFile = database_path('../musteri.sql');
         
+        // Önce musteri tablosunda veri var mı kontrol et
+        if (DB::getSchemaBuilder()->hasTable('musteri')) {
+            $this->command->info('musteri tablosundan veri çekiliyor...');
+            
+            $musteriRecords = DB::table('musteri')->get();
+            
+            if ($musteriRecords->count() > 0) {
+                $musteriData = [];
+                foreach ($musteriRecords as $record) {
+                    $musteriData[] = [
+                        'id' => $record->id,
+                        'musteri_id' => $record->musteri_id,
+                        'ad' => $record->ad,
+                        'soyad' => $record->soyad,
+                        'unvan' => $record->unvan,
+                        'telefon' => $record->telefon,
+                        'eposta' => $record->eposta,
+                        'hash' => $record->hash ?? null,
+                        'sifre' => $record->sifre ?? null,
+                        'durum' => $record->durum,
+                        'tip' => $record->tip ?? 0,
+                        'tc' => $record->tc ?? null,
+                        'tarih_kayit' => $record->tarih_kayit,
+                        'tarih_onay' => $record->tarih_onay ?? null,
+                    ];
+                }
+                return $musteriData;
+            }
+        }
+        
+        // musteri.sql dosyasını kontrol et
         if (!file_exists($sqlFile)) {
-            $this->command->error('musteri.sql dosyası bulunamadı!');
+            $this->command->error('musteri.sql dosyası bulunamadı ve musteri tablosu boş!');
+            $this->command->error('Lütfen musteri.sql dosyasını yükleyin veya musteri tablosuna veri ekleyin.');
             return [];
         }
 
