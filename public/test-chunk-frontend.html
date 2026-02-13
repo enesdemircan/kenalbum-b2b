@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Chunk Upload Test</title>
+    <meta charset="UTF-8">
+</head>
+<body>
+    <h1>Chunk Upload Test - 502 Debug</h1>
+    
+    <input type="file" id="testFile">
+    <button onclick="testUpload()">Test Upload</button>
+    
+    <div id="results" style="margin-top: 20px; white-space: pre-wrap; background: #f0f0f0; padding: 20px; font-family: monospace;"></div>
+    
+    <script>
+        async function testUpload() {
+            const file = document.getElementById('testFile').files[0];
+            if (!file) {
+                alert('Lütfen dosya seçin');
+                return;
+            }
+            
+            const results = document.getElementById('results');
+            results.textContent = 'Testing...';
+            
+            // Test 1: Debug endpoint
+            results.textContent += '\n\n🔍 TEST 1: Debug Endpoint\n';
+            
+            const chunk = file.slice(0, Math.min(1024 * 1024, file.size)); // 1MB
+            const formData = new FormData();
+            formData.append('chunk', new File([chunk], 'test.tmp'));
+            formData.append('file_index', '0');
+            formData.append('chunk_index', '0');
+            formData.append('total_chunks', '1');
+            formData.append('cart_id', '999');
+            formData.append('file_name', file.name);
+            
+            try {
+                const response = await fetch('/test-chunk-debug.php', {
+                    method: 'POST',
+                    body: formData
+                });
+                
+                const data = await response.json();
+                results.textContent += JSON.stringify(data, null, 2);
+                
+                if (data.success) {
+                    results.textContent += '\n\n✅ Debug endpoint OK!';
+                    
+                    // Test 2: Laravel endpoint
+                    results.textContent += '\n\n🔍 TEST 2: Laravel Endpoint (/upload-chunk)\n';
+                    
+                    try {
+                        const response2 = await fetch('/upload-chunk', {
+                            method: 'POST',
+                            body: formData,
+                            headers: {
+                                'Accept': 'application/json'
+                            },
+                            credentials: 'same-origin'
+                        });
+                        
+                        results.textContent += `Status: ${response2.status} ${response2.statusText}\n`;
+                        
+                        const data2 = await response2.json();
+                        results.textContent += JSON.stringify(data2, null, 2);
+                        
+                        if (response2.ok) {
+                            results.textContent += '\n\n✅ Laravel endpoint OK!';
+                        } else {
+                            results.textContent += `\n\n❌ Laravel endpoint FAILED: ${response2.status}`;
+                        }
+                        
+                    } catch (error) {
+                        results.textContent += `\n\n❌ Laravel endpoint ERROR: ${error.message}`;
+                    }
+                } else {
+                    results.textContent += '\n\n❌ Debug endpoint FAILED!';
+                }
+                
+            } catch (error) {
+                results.textContent += `\n\n❌ ERROR: ${error.message}`;
+            }
+        }
+    </script>
+</body>
+</html>
+

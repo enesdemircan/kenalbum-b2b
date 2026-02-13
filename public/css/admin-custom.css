@@ -1,0 +1,77 @@
+/* Admin Custom Styles */
+
+/* Category Selection Styling */
+.category-select {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+}
+
+.category-select option {
+    padding: 6px 12px;
+    font-size: 14px;
+}
+
+.category-select option[value=""] {
+    font-style: italic;
+    color: #6c757d;
+}
+
+/* Main category options */
+.category-select option:not([style*="&nbsp;"]) {
+    background-color: #d4edda;
+    color: #155724;
+    font-weight: 600;
+}
+
+/* Subcategory options (with indentation) */
+.category-select option[style*="&nbsp;"] {
+    background-color: #d1ecf1;
+    color: #0c5460;
+    font-weight: 400;
+}
+
+/* Hover effects */
+.category-select option:hover {
+    background-color: #007bff !important;
+    color: white !important;
+}
+
+/* Form label improvements */
+.form-label {
+    font-weight: 600;
+    color: #495057;
+    margin-bottom: 8px;
+}
+
+/* Select dropdown improvements */
+.form-select {
+    border-radius: 8px;
+    border: 2px solid #ced4da;
+    transition: all 0.3s ease;
+    font-size: 14px;
+}
+
+.form-select:focus {
+    border-color: #007bff;
+    box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25);
+    transform: translateY(-1px);
+}
+
+/* Multiple select improvements */
+.form-select[multiple] {
+    min-height: 120px;
+    max-height: 300px;
+}
+
+/* Help text improvements */
+.text-muted {
+    font-size: 13px;
+    line-height: 1.5;
+    color: #6c757d;
+}
+
+/* Responsive improvements */
+@media (max-width: 768px) {
+    .form-select.category-select {
+        font-size: 16px; /* Prevents zoom on iOS */
+    }
+} 
