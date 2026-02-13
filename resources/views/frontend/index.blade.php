@@ -54,7 +54,7 @@
     </section><!-- /.slideshow -->
 
   
-        @foreach($mainCategories as $category)
+        @foreach($homepageCategories as $category)
         <div class="mb-3 mb-xl-5 pb-3 pt-1 pb-xl-5"></div>
 
         @if($category->products->count() > 0)
@@ -114,4 +114,49 @@
 
   </main>
 
+@endsection
+
+@section('scripts')
+<script>
+$(document).ready(function() {
+    // Ana slider için Swiper initialize
+    if ($('.slideshow.type4').length) {
+        new Swiper('.slideshow.type4 .swiper-container', {
+            autoplay: {
+                delay: 5000
+            },
+            navigation: {
+                nextEl: '.slideshow__next',
+                prevEl: '.slideshow__prev'
+            },
+            pagination: false,
+            slidesPerView: 1,
+            effect: 'fade',
+            loop: true
+        });
+    }
+
+    // Kategori ürün swiperları için
+    $('.products-carousel .swiper-container').each(function(index, element) {
+        new Swiper(element, {
+            slidesPerView: 1,
+            spaceBetween: 30,
+            breakpoints: {
+                576: {
+                    slidesPerView: 2,
+                    spaceBetween: 30
+                },
+                768: {
+                    slidesPerView: 3,
+                    spaceBetween: 30
+                },
+                992: {
+                    slidesPerView: 4,
+                    spaceBetween: 30
+                }
+            }
+        });
+    });
+});
+</script>
 @endsection

@@ -86,8 +86,10 @@ class OrderApiController extends Controller
                 ], 422);
             }
 
-            // Cart'ların price değerlerini topla
-            $totalPrice = $carts->sum('price');
+            // Cart'ların price değerlerini topla (price * quantity)
+            $totalPrice = $carts->sum(function($cart) {
+                return $cart->price * $cart->quantity;
+            });
 
             // Sipariş numarası oluştur
             $orderNumber = 'ORD-' . strtoupper(uniqid());

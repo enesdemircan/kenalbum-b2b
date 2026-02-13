@@ -23,8 +23,8 @@ class FrontendController extends Controller
     }
     public function index()
     {
-        // Ana kategorileri al (ust_id = 0 olanlar)
-        $mainCategories = MainCategory::where('ust_id', 0)
+        // Ana sayfada gösterilecek kategorileri al (ust_id = 0 olanlar)
+        $homepageCategories = MainCategory::where('ust_id', 0)
             ->with(['children', 'products' => function($query) {
                 $query->where('status', 1)->orderBy('id', 'desc')->limit(8);
             }])
@@ -33,7 +33,7 @@ class FrontendController extends Controller
             ->get();
             
         // Her kategori için alt kategorilerdeki ürünleri de dahil et
-        foreach($mainCategories as $category) {
+        foreach($homepageCategories as $category) {
             // Alt kategorilerin ID'lerini al
             $childCategoryIds = $category->children->pluck('id');
             
@@ -52,12 +52,12 @@ class FrontendController extends Controller
         }
             
         // Debug için
-        foreach($mainCategories as $cat) {
+        foreach($homepageCategories as $cat) {
             \Log::info("Kategori: {$cat->title}, Toplam ürün sayısı: " . $cat->products->count());
         }
             
         $sliders = Slider::where('is_active', 1)->get();
-        return view('frontend.index', compact('mainCategories', 'sliders'));
+        return view('frontend.index', compact('homepageCategories', 'sliders'));
     }
 
     public function profile()

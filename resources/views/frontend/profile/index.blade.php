@@ -30,12 +30,16 @@
           </ul>
         </div>
         <div class="col-lg-9">
-          @if(Auth::user()->roles->contains('id', 3))
+          @if(Auth::user()->roles->contains('id', 3) && Auth::user()->customer)
           <div class="card">
             <div class="card-body">
         
-              <p class="card-text">Bakiyeniz: {{ auth()->user()->customer->balance }} TL</p>
+              <p class="card-text">Bakiyeniz: {{ number_format(auth()->user()->customer->balance, 2) }} TL</p>
             </div>
+          </div>
+          @elseif(Auth::user()->roles->contains('id', 3) && !Auth::user()->customer)
+          <div class="alert alert-warning">
+            <i class="fa fa-exclamation-triangle"></i> Firma atamanız bulunmamaktadır. Lütfen yönetici ile iletişime geçin.
           </div>
           @endif
           <div class="page-content my-account__dashboard">

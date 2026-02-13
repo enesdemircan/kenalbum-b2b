@@ -1,6 +1,6 @@
 
 <!DOCTYPE html>
-<html dir="ltr" lang="zxx">
+<html dir="ltr" lang="tr">
 <head>
 
   <meta http-equiv="content-type" content="text/html; charset=utf-8">
