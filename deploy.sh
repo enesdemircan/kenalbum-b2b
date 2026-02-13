@@ -9,6 +9,20 @@ cd /home/kentr/b2b.kenalbum.com.tr
 echo "📦 Composer install..."
 /usr/local/bin/ea-php82 /opt/cpanel/composer/bin/composer install --no-dev --optimize-autoloader --no-interaction
 
+# Storage link kontrolü
+echo "🔗 Storage link kontrol ediliyor..."
+if [ ! -L public/storage ]; then
+    echo "Storage link oluşturuluyor..."
+    /usr/local/bin/ea-php82 artisan storage:link
+else
+    echo "Storage link zaten mevcut."
+fi
+
+# Site klasörü kontrolü
+echo "📁 Site klasörü kontrol ediliyor..."
+mkdir -p storage/app/public/site
+chmod -R 755 storage/app/public/site
+
 # Migration'ları çalıştır
 echo "🗄️ Migration..."
 /usr/local/bin/ea-php82 artisan migrate --force

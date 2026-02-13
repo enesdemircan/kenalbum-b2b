@@ -23,6 +23,8 @@ class StoreSiteSettingRequest extends FormRequest
     {
         return [
             'logo' => 'nullable|file|mimes:jpeg,png,jpg,gif,svg|max:2048',
+            'logo_white' => 'nullable|file|mimes:jpeg,png,jpg,gif,svg|max:2048',
+            'favicon' => 'nullable|file|mimes:jpeg,png,jpg,gif,svg,ico|max:1024',
             'title' => 'required|string|max:255',
             'description' => 'nullable|string|max:500',
             'phone' => 'nullable|string|max:20',
@@ -49,6 +51,12 @@ class StoreSiteSettingRequest extends FormRequest
             'logo.file' => 'Logo dosyası geçerli bir dosya formatında olmalıdır.',
             'logo.mimes' => 'Logo dosyası jpeg, png, jpg, gif veya svg formatında olmalıdır.',
             'logo.max' => 'Logo dosyası 2MB\'dan büyük olamaz.',
+            'logo_white.file' => 'Beyaz logo dosyası geçerli bir dosya formatında olmalıdır.',
+            'logo_white.mimes' => 'Beyaz logo dosyası jpeg, png, jpg, gif veya svg formatında olmalıdır.',
+            'logo_white.max' => 'Beyaz logo dosyası 2MB\'dan büyük olamaz.',
+            'favicon.file' => 'Favicon dosyası geçerli bir dosya formatında olmalıdır.',
+            'favicon.mimes' => 'Favicon dosyası jpeg, png, jpg, gif, svg veya ico formatında olmalıdır.',
+            'favicon.max' => 'Favicon dosyası 1MB\'dan büyük olamaz.',
             'title.required' => 'Site başlığı zorunludur.',
             'title.max' => 'Site başlığı 255 karakterden uzun olamaz.',
             'description.max' => 'Açıklama 500 karakterden uzun olamaz.',
