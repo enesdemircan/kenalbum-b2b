@@ -190,7 +190,7 @@
         .sidebar-menu-item .material-icons {
             margin-right: 12px;
             font-size: 22px;
-            min-width: 22px;
+            max-width: 22px;
         }
         
         .sidebar-menu-item span {

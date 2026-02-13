@@ -264,10 +264,12 @@
                             <td>
                                 @if($order->orderStatus)
                                     <span class="badge" style="background-color:{{ $order->orderStatus->color ?? '#6c757d' }}">
-                                        {{ $order->orderStatus->name }}
+                                        {{ $order->orderStatus->title ?? $order->orderStatus->name ?? 'N/A' }}
                                     </span>
                                 @else
-                                    <span class="badge bg-secondary">Bilinmiyor</span>
+                                    <span class="badge {{ $order->statusBadgeClass }}">
+                                        {{ $order->statusText }}
+                                    </span>
                                 @endif
                             </td>
                             <td class="text-end">
