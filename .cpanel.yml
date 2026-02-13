@@ -1,0 +1,5 @@
+---
+deployment:
+  tasks:
+    - export DEPLOYPATH=/home/kentr/b2b.kenalbum.com.tr
+    - /bin/bash $DEPLOYPATH/deploy.sh
