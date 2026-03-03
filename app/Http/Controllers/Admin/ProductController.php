@@ -98,6 +98,12 @@ class ProductController extends Controller
         $data = $request->all();
         $data['suggested_products'] = $request->suggested_products ?? [];
         
+        // NOT NULL sütunlar için varsayılan değerler (boş form alanları NULL gönderir)
+        $data['price_difference_per_page'] = $request->filled('price_difference_per_page') ? (int) $request->price_difference_per_page : 0;
+        $data['decreasing_per_page'] = $request->filled('decreasing_per_page') ? (int) $request->decreasing_per_page : 0;
+        $data['min_pages'] = $request->filled('min_pages') ? (int) $request->min_pages : null;
+        $data['max_pages'] = $request->filled('max_pages') ? (int) $request->max_pages : null;
+        
         // Slug oluştur
         $slug = $request->slug;
         if (empty($slug)) {
@@ -230,6 +236,12 @@ class ProductController extends Controller
         $product = Product::findOrFail($id);
         $data = $request->all();
         $data['suggested_products'] = $request->suggested_products ?? [];
+        
+        // NOT NULL sütunlar için varsayılan değerler (boş form alanları NULL gönderir)
+        $data['price_difference_per_page'] = $request->filled('price_difference_per_page') ? (int) $request->price_difference_per_page : 0;
+        $data['decreasing_per_page'] = $request->filled('decreasing_per_page') ? (int) $request->decreasing_per_page : 0;
+        $data['min_pages'] = $request->filled('min_pages') ? (int) $request->min_pages : null;
+        $data['max_pages'] = $request->filled('max_pages') ? (int) $request->max_pages : null;
         
         // Slug oluştur
         $slug = $request->slug;
