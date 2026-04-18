@@ -173,10 +173,10 @@ class Cart extends Model
      * Generate cart identifier (special format for internal use)
      * Format: cart_id - date (YYMMDD) - customer_unvan - size - product_title - page_count
      */
-    public function generateCartIdentifier()
+    public function generateCartIdentifier($orderNumber = null)
     {
-        // Cart ID
-        $cartId = $this->id;
+        // Cart ID (sipariş numarası varsa onu kullan, yoksa DB id)
+        $cartId = $orderNumber ?? $this->id;
 
         // Date in YYMMDD format
         $date = $this->created_at->format('ymd');

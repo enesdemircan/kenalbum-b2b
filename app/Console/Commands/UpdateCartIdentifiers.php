@@ -14,18 +14,19 @@ class UpdateCartIdentifiers extends Command
     {
         $this->info('Updating existing carts with new identifiers...');
         
-        $carts = Cart::all();
+        $carts = Cart::with('order')->get();
         $count = 0;
         $bar = $this->output->createProgressBar($carts->count());
         $bar->start();
-        
+
         foreach ($carts as $cart) {
             try {
                 $oldCartId = $cart->cart_id;
                 $oldBarcode = $cart->barcode;
-                
-                // Generate new identifiers
-                $newCartId = $cart->generateCartIdentifier();
+
+                // Generate new identifiers (sipariş numarası varsa onu kullan)
+                $orderNumber = $cart->order ? $cart->order->order_number : null;
+                $newCartId = $cart->generateCartIdentifier($orderNumber);
                 $newBarcode = $cart->generateUniqueBarcode();
                 
                 // Update cart

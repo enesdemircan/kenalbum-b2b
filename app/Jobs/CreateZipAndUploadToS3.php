@@ -156,11 +156,14 @@ class CreateZipAndUploadToS3 implements ShouldQueue
                 throw new \Exception("Failed to create ZIP file");
             }
 
-            // Tüm yüklenen dosyaları ZIP'e ekle
+            // ZIP içinde klasör adı (ZIP dosya adıyla aynı, çıkarıldığında düzenli klasör olarak çıkar)
+            $folderName = $cart->cart_id;
+
+            // Tüm yüklenen dosyaları ZIP'e ekle (klasör içinde)
             if (!empty($this->mergedFiles)) {
                 foreach ($this->mergedFiles as $index => $mergedFile) {
                     $filePath = storage_path("app/public/" . $mergedFile['stored_path']);
-                    
+
                     if (!file_exists($filePath)) {
                         Log::warning("Merged file not found, skipping", [
                             'file_path' => $filePath,
@@ -169,9 +172,9 @@ class CreateZipAndUploadToS3 implements ShouldQueue
                         continue;
                     }
 
-                    // ZIP'e dosya ekle (orijinal dosya adıyla)
-                    $zip->addFile($filePath, $mergedFile['original_name']);
-                    
+                    // ZIP'e dosya ekle (klasör içinde, orijinal dosya adıyla)
+                    $zip->addFile($filePath, $folderName . '/' . $mergedFile['original_name']);
+
                     Log::info("File added to ZIP", [
                         'file_name' => $mergedFile['original_name'],
                         'file_size' => filesize($filePath)
@@ -179,11 +182,11 @@ class CreateZipAndUploadToS3 implements ShouldQueue
                 }
             }
 
-            // Sipariş detay PDF'ini oluştur ve ZIP'e ekle
+            // Sipariş detay PDF'ini oluştur ve ZIP'e ekle (klasör içinde)
             if ($cart->order_id) {
                 $pdfPath = $this->generateOrderDetailPdf($cart);
                 if ($pdfPath && file_exists($pdfPath)) {
-                    $zip->addFile($pdfPath, 'siparis-detay-' . $cart->cart_id . '.pdf');
+                    $zip->addFile($pdfPath, $folderName . '/siparis-detay-' . $cart->cart_id . '.pdf');
                     
                     Log::info("Order detail PDF added to ZIP", [
                         'cart_id' => $this->cartId,

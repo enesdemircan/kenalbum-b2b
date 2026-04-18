@@ -156,8 +156,8 @@ class CartController extends Controller
                 $totalDiscount += ($originalTotal - $discountedTotal);
             }
 
-            // Sipariş numarası oluştur
-            $orderNumber = 'ORD-' . date('Ymd') . '-' . str_pad(Order::count() + 1, 4, '0', STR_PAD_LEFT);
+            // Sipariş numarası oluştur (ken-000000001 formatında)
+            $orderNumber = Order::generateOrderNumber();
 
             // Acil üretim bilgilerini topla
             $urgentProductionNotes = [];
@@ -195,11 +195,12 @@ class CartController extends Controller
                 'status' => 0 // İşlemde durumu
             ]);
 
-            // Sepet kalemlerini siparişe bağla ve durumlarını güncelle
+            // Sepet kalemlerini siparişe bağla, durumlarını güncelle ve cart_id'yi sipariş numarasıyla yenile
             foreach ($cartItems as $cartItem) {
                 $cartItem->update([
                     'order_id' => $order->id,
                     'status' => 1, // Siparişe dönüştürülmüş
+                    'cart_id' => $cartItem->generateCartIdentifier($orderNumber),
                 ]);
             }
             // Müşterinin firmasının bakiyesinden sipariş tutarını düş

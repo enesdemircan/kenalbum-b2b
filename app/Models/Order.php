@@ -210,4 +210,22 @@ class Order extends Model
         
         return true;
     }
+
+    /**
+     * Yeni sipariş numarası oluştur (ken-000000001 formatında)
+     */
+    public static function generateOrderNumber(): string
+    {
+        $lastOrder = static::where('order_number', 'like', 'ken-%')
+            ->orderByRaw("CAST(SUBSTRING(order_number, 5) AS UNSIGNED) DESC")
+            ->first();
+
+        if ($lastOrder) {
+            $nextNumber = (int) substr($lastOrder->order_number, 4) + 1;
+        } else {
+            $nextNumber = static::count() + 1;
+        }
+
+        return 'ken-' . str_pad($nextNumber, 9, '0', STR_PAD_LEFT);
+    }
 }

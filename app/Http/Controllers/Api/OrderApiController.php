@@ -91,8 +91,8 @@ class OrderApiController extends Controller
                 return $cart->price * $cart->quantity;
             });
 
-            // Sipariş numarası oluştur
-            $orderNumber = 'ORD-' . strtoupper(uniqid());
+            // Sipariş numarası oluştur (ken-000000001 formatında)
+            $orderNumber = Order::generateOrderNumber();
 
             $order = Order::create([
                 'user_id' => $userId,
@@ -110,18 +110,11 @@ class OrderApiController extends Controller
                 'status' => $request->status ?? 0
             ]);
 
-            // Cart'ların order_id alanını güncelle (sadece bu kullanıcıya ait olanları)
-            $updated = Cart::whereIn('id', $request->carts_ids)
-                ->where('user_id', $userId)
-                ->update(['order_id' => $order->id]);
-
-            // Güncelleme kontrolü
-            if ($updated !== count($request->carts_ids)) {
-                \Log::warning('Some carts could not be updated', [
+            // Cart'ların order_id ve cart_id alanlarını güncelle
+            foreach ($carts as $cart) {
+                $cart->update([
                     'order_id' => $order->id,
-                    'carts_ids' => $request->carts_ids,
-                    'updated_count' => $updated,
-                    'expected_count' => count($request->carts_ids)
+                    'cart_id' => $cart->generateCartIdentifier($orderNumber),
                 ]);
             }
 
