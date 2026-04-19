@@ -665,9 +665,8 @@ class OrderController extends Controller
 
             // S3 URL'inden dosya yolunu çıkar (cart_id değişmiş olsa bile doğru dosyayı bulur)
             $s3Url = $cart->s3_zip;
-            $s3Domain = Storage::disk('s3')->url('');
-            $r2Path = str_replace($s3Domain, '', $s3Url);
-            $r2Path = ltrim($r2Path, '/');
+            $parsedUrl = parse_url($s3Url);
+            $r2Path = ltrim($parsedUrl['path'] ?? '', '/');
 
             \Log::info('Downloading from R2', [
                 'cart_id' => $cartId,
@@ -677,18 +676,14 @@ class OrderController extends Controller
             ]);
 
             // R2'den dosya içeriğini al
-            if (!Storage::disk('s3')->exists($r2Path)) {
+            if (!$r2Path || !Storage::disk('s3')->exists($r2Path)) {
                 abort(404, 'Dosya R2\'de bulunamadı');
             }
 
-            $fileContent = Storage::disk('s3')->get($r2Path);
             $fileName = $cart->cart_id . '.zip';
 
-            // Dosyayı doğru isimle indir
-            return response($fileContent)
-                ->header('Content-Type', 'application/zip')
-                ->header('Content-Disposition', 'attachment; filename="' . $fileName . '"')
-                ->header('Content-Length', strlen($fileContent));
+            // Dosyayı stream olarak indir (bellek dostu)
+            return Storage::disk('s3')->download($r2Path, $fileName);
 
         } catch (\Exception $e) {
             \Log::error('Cart file download failed', [
