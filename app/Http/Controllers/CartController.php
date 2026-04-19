@@ -197,11 +197,17 @@ class CartController extends Controller
 
             // Sepet kalemlerini siparişe bağla, durumlarını güncelle ve cart_id'yi sipariş numarasıyla yenile
             foreach ($cartItems as $cartItem) {
+                $oldCartId = $cartItem->cart_id;
+                $newCartId = $cartItem->generateCartIdentifier($orderNumber);
+
                 $cartItem->update([
                     'order_id' => $order->id,
-                    'status' => 1, // Siparişe dönüştürülmüş
-                    'cart_id' => $cartItem->generateCartIdentifier($orderNumber),
+                    'status' => 1,
+                    'cart_id' => $newCartId,
                 ]);
+
+                // S3'teki ZIP dosyasını yeni isimle güncelle
+                $this->renameS3Zip($cartItem, $oldCartId, $newCartId);
             }
             // Müşterinin firmasının bakiyesinden sipariş tutarını düş
             if ($user->customer && $user->customer->balance !== null) {
@@ -887,6 +893,40 @@ class CartController extends Controller
                 'success' => false,
                 'message' => 'Durum kontrol edilemedi: ' . $e->getMessage()
             ], 500);
+        }
+    }
+
+    /**
+     * S3'teki ZIP dosyasını yeni cart_id ile rename et
+     */
+    private function renameS3Zip($cart, $oldCartId, $newCartId)
+    {
+        try {
+            if (empty($cart->s3_zip) || $oldCartId === $newCartId) {
+                return;
+            }
+
+            $oldPath = "zips/{$cart->id}/{$oldCartId}.zip";
+            $newPath = "zips/{$cart->id}/{$newCartId}.zip";
+
+            if (Storage::disk('s3')->exists($oldPath)) {
+                Storage::disk('s3')->copy($oldPath, $newPath);
+                Storage::disk('s3')->delete($oldPath);
+
+                $newUrl = Storage::disk('s3')->url($newPath);
+                $cart->update(['s3_zip' => $newUrl]);
+
+                Log::info('S3 ZIP renamed', [
+                    'cart_id' => $cart->id,
+                    'old' => $oldPath,
+                    'new' => $newPath,
+                ]);
+            }
+        } catch (\Exception $e) {
+            Log::error('S3 ZIP rename failed', [
+                'cart_id' => $cart->id,
+                'error' => $e->getMessage(),
+            ]);
         }
     }
 }

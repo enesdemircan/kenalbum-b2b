@@ -110,12 +110,31 @@ class OrderApiController extends Controller
                 'status' => $request->status ?? 0
             ]);
 
-            // Cart'ların order_id ve cart_id alanlarını güncelle
+            // Cart'ların order_id ve cart_id alanlarını güncelle, S3 dosyasını rename et
             foreach ($carts as $cart) {
+                $oldCartId = $cart->cart_id;
+                $newCartId = $cart->generateCartIdentifier($orderNumber);
+
                 $cart->update([
                     'order_id' => $order->id,
-                    'cart_id' => $cart->generateCartIdentifier($orderNumber),
+                    'cart_id' => $newCartId,
                 ]);
+
+                // S3'teki ZIP dosyasını yeni isimle güncelle
+                if (!empty($cart->s3_zip) && $oldCartId !== $newCartId) {
+                    try {
+                        $oldPath = "zips/{$cart->id}/{$oldCartId}.zip";
+                        $newPath = "zips/{$cart->id}/{$newCartId}.zip";
+
+                        if (\Storage::disk('s3')->exists($oldPath)) {
+                            \Storage::disk('s3')->copy($oldPath, $newPath);
+                            \Storage::disk('s3')->delete($oldPath);
+                            $cart->update(['s3_zip' => \Storage::disk('s3')->url($newPath)]);
+                        }
+                    } catch (\Exception $e) {
+                        \Log::error('S3 ZIP rename failed', ['cart_id' => $cart->id, 'error' => $e->getMessage()]);
+                    }
+                }
             }
 
             return response()->json([

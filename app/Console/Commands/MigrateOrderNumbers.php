@@ -3,6 +3,7 @@
 namespace App\Console\Commands;
 
 use Illuminate\Console\Command;
+use Illuminate\Support\Facades\Storage;
 use App\Models\Order;
 use App\Models\Cart;
 
@@ -69,6 +70,22 @@ class MigrateOrderNumbers extends Command
                 $newCartId = $cart->generateCartIdentifier($orderNumber);
 
                 if ($oldCartId !== $newCartId) {
+                    // S3'teki ZIP dosyasını rename et
+                    if (!empty($cart->s3_zip)) {
+                        try {
+                            $oldPath = "zips/{$cart->id}/{$oldCartId}.zip";
+                            $newPath = "zips/{$cart->id}/{$newCartId}.zip";
+
+                            if (Storage::disk('s3')->exists($oldPath)) {
+                                Storage::disk('s3')->copy($oldPath, $newPath);
+                                Storage::disk('s3')->delete($oldPath);
+                                $cart->s3_zip = Storage::disk('s3')->url($newPath);
+                            }
+                        } catch (\Exception $e) {
+                            $this->warn("\n  S3 rename failed cart #{$cart->id}: " . $e->getMessage());
+                        }
+                    }
+
                     $cart->cart_id = $newCartId;
                     $cart->save();
                     $count++;
