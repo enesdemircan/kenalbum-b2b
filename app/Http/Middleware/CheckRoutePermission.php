@@ -45,9 +45,9 @@ class CheckRoutePermission
             abort(403, 'Bu sayfaya erişim izniniz yok.');
         }
      
-        // Administrator ve Satış Müdürü tüm admin panele erişebilir
+        // Administrator rolü kontrolü - Administrator tüm izinlere sahip
         foreach ($user->roles as $role) {
-            if ($role->id === 1 || $role->name === 'Administrator' || $role->id === 4 || $role->name === 'Satış Müdürü') {
+            if ($role->id === 1 || $role->name === 'administrator' || $role->name === 'Administrator') {
                 return $next($request);
             }
         }
