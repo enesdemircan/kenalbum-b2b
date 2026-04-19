@@ -16,8 +16,8 @@ class ImpersonationController extends Controller
     {
         $currentUser = Auth::user();
 
-        // Sadece Administrator (1) ve Satış Müdürü (4) kullanabilir
-        if (!$currentUser->hasRole(1) && !$currentUser->hasRole(4)) {
+        // Sadece Administrator ve Satış Müdürü kullanabilir
+        if (!$currentUser->hasRole('Administrator') && !$currentUser->hasRole('Satış Müdürü')) {
             abort(403, 'Bu işlem için yetkiniz yok.');
         }
 
