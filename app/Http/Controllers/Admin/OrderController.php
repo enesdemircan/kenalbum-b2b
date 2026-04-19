@@ -659,31 +659,8 @@ class OrderController extends Controller
                 abort(404, 'No files found for this cart item');
             }
             
-            if (isset($cart->s3_zip) && strpos($cart->s3_zip, 'sendgb') !== false) {
-               return redirect()->away($cart->s3_zip);
-            }
-
-            // S3 URL'inden dosya yolunu çıkar (cart_id değişmiş olsa bile doğru dosyayı bulur)
-            $s3Url = $cart->s3_zip;
-            $parsedUrl = parse_url($s3Url);
-            $r2Path = ltrim($parsedUrl['path'] ?? '', '/');
-
-            \Log::info('Downloading from R2', [
-                'cart_id' => $cartId,
-                'cart_identifier' => $cart->cart_id,
-                'r2_path' => $r2Path,
-                's3_zip' => $s3Url
-            ]);
-
-            // R2'den dosya içeriğini al
-            if (!$r2Path || !Storage::disk('s3')->exists($r2Path)) {
-                abort(404, 'Dosya R2\'de bulunamadı');
-            }
-
-            $fileName = $cart->cart_id . '.zip';
-
-            // Dosyayı stream olarak indir (bellek dostu)
-            return Storage::disk('s3')->download($r2Path, $fileName);
+            // Dosya public olduğu için direkt yönlendir (bellek/timeout sorunu olmaz)
+            return redirect()->away($cart->s3_zip);
 
         } catch (\Exception $e) {
             \Log::error('Cart file download failed', [
