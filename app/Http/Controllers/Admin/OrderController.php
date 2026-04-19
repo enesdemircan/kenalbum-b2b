@@ -662,16 +662,20 @@ class OrderController extends Controller
             if (isset($cart->s3_zip) && strpos($cart->s3_zip, 'sendgb') !== false) {
                return redirect()->away($cart->s3_zip);
             }
-          
-            // R2'den dosyayı al
-            $r2Path = "zips/{$cartId}/{$cart->cart_id}.zip";
-             
+
+            // S3 URL'inden dosya yolunu çıkar (cart_id değişmiş olsa bile doğru dosyayı bulur)
+            $s3Url = $cart->s3_zip;
+            $s3Domain = Storage::disk('s3')->url('');
+            $r2Path = str_replace($s3Domain, '', $s3Url);
+            $r2Path = ltrim($r2Path, '/');
+
             \Log::info('Downloading from R2', [
                 'cart_id' => $cartId,
                 'cart_identifier' => $cart->cart_id,
-                'r2_path' => $r2Path
+                'r2_path' => $r2Path,
+                's3_zip' => $s3Url
             ]);
-            
+
             // R2'den dosya içeriğini al
             if (!Storage::disk('s3')->exists($r2Path)) {
                 abort(404, 'Dosya R2\'de bulunamadı');
