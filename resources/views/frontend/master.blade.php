@@ -29,6 +29,12 @@
 </head>
 
 <body>
+  @if(session('impersonator_id'))
+  <div style="background: #d32f2f; color: #fff; padding: 10px 20px; text-align: center; font-size: 14px; font-weight: 500; position: sticky; top: 0; z-index: 9999; display: flex; align-items: center; justify-content: center; gap: 15px;">
+    <span><i class="fas fa-user-secret"></i> <strong>{{ Auth::user()->customer->unvan ?? Auth::user()->name }}</strong> adina islem yapiyorsunuz</span>
+    <a href="{{ route('impersonate.stop') }}" style="background: #fff; color: #d32f2f; padding: 5px 15px; border-radius: 4px; text-decoration: none; font-weight: 600; font-size: 13px;">Kendi Hesabima Don</a>
+  </div>
+  @endif
   <svg class="d-none">
     <symbol id="icon_nav" viewBox="0 0 25 18">
       <rect width="25" height="2"/><rect y="8" width="20" height="2"/><rect y="16" width="25" height="2"/>

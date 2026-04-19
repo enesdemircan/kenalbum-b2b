@@ -94,6 +94,12 @@
                             <button class="btn-material-icon btn-material-icon-success" title="Tahsilat" onclick="window.location.href='{{ route('admin.customers.collections', $customer->id) }}'">
                                 <span class="material-icons">payments</span>
                             </button>
+                            <form action="{{ route('admin.impersonate.start', $customer->id) }}" method="POST" class="d-inline" onsubmit="return confirm('{{ $customer->unvan }} adına giriş yapılacak. Devam etmek istiyor musunuz?')">
+                                @csrf
+                                <button type="submit" class="btn-material-icon btn-material-icon-primary" title="Firma adına giriş yap">
+                                    <span class="material-icons">login</span>
+                                </button>
+                            </form>
                             <form action="{{ route('admin.customers.destroy', $customer->id) }}" method="POST" class="d-inline" onsubmit="return confirm('Bu müşteriyi silmek istediğinizden emin misiniz?')">
                                 @csrf
                                 @method('DELETE')

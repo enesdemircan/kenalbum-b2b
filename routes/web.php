@@ -320,6 +320,14 @@ Route::prefix('admin')->name('admin.')->middleware(['check.route.permission'])->
     Route::post('barcode-search/remove-from-list', [\App\Http\Controllers\Admin\BarcodeController::class, 'removeFromCartList'])->name('barcode.remove-from-list');
     Route::post('barcode-search/clear-list', [\App\Http\Controllers\Admin\BarcodeController::class, 'clearCartList'])->name('barcode.clear-list');
     Route::post('barcode-search/update-statuses', [\App\Http\Controllers\Admin\BarcodeController::class, 'updateCartStatuses'])->name('barcode.update-statuses');
+
+    // Impersonation (Firma adına giriş)
+    Route::post('impersonate/{customer}', [\App\Http\Controllers\Admin\ImpersonationController::class, 'start'])->name('impersonate.start');
+});
+
+// Impersonation stop (frontend'den de erişilebilir)
+Route::middleware(['web', 'auth'])->group(function () {
+    Route::get('/impersonate/stop', [\App\Http\Controllers\Admin\ImpersonationController::class, 'stop'])->name('impersonate.stop');
 });
 
 // Customer Panel routes
