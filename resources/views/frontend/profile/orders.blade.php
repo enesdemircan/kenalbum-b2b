@@ -187,9 +187,6 @@
                                             <h6 class="mb-1">{{ $latestStatus->orderStatus->title }}</h6>
                                             <small class="text-muted">
                                               {{ $latestStatus->created_at->format('d.m.Y H:i') }}
-                                              @if($latestStatus->user)
-                                                • {{ $latestStatus->user->name }}
-                                              @endif
                                             </small>
                                           </div>
                                         </div>
