@@ -198,7 +198,7 @@ class OrderApiController extends Controller
                 ], 422);
             }
 
-            $order->update($request->all());
+            $order->update($request->except('order_number'));
 
             return response()->json([
                 'success' => true,
