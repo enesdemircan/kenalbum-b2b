@@ -16,6 +16,9 @@
             @if(auth()->user()->hasRole(1))
             <li><a href="{{ route('admin.dashboard') }}" class="menu-link menu-link_us-s">YÖNETİM PANELİ</a></li>
             @endif
+            @if(auth()->user()->hasRole('Satış Müdürü'))
+            <li><a href="{{ route('admin.customers.index') }}" class="menu-link menu-link_us-s">MÜŞTERİ LİSTESİ</a></li>
+            @endif
             @if(auth()->user()->hasRole(3))
                 <li><a href="{{ route('profile.personels') }}" class="menu-link menu-link_us-s">PERSONELLERİM</a></li>
             @endif
