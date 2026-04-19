@@ -67,6 +67,14 @@ class CheckRoutePermission
         }
         
         // Hiçbir role'de izin yoksa
+        \Log::warning('403 Access Denied', [
+            'user_id' => $user->id,
+            'user_name' => $user->name,
+            'route_name' => $currentRouteName,
+            'method' => $currentMethod,
+            'url' => $request->fullUrl(),
+            'roles' => $user->roles->pluck('name', 'id')->toArray(),
+        ]);
         abort(403, 'Bu sayfaya erişim izniniz yok.');
     }
 
