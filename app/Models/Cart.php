@@ -5,9 +5,11 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Facades\Log;
 use App\Models\DiscountGroup;
 use App\Models\User;
 use App\Models\Product;
+use ZipArchive;
 
 class Cart extends Model
 {
@@ -303,6 +305,64 @@ class Cart extends Model
         
         // Return 13-digit barcode
         return $uniqueNumber;
+    }
+
+    /**
+     * S3'teki ZIP dosyasını yeni cart_id ile güncelle (dosya adı + içindeki klasör adı)
+     */
+    public function renameS3Zip($oldCartId, $newCartId)
+    {
+        if (empty($this->s3_zip) || $oldCartId === $newCartId) {
+            return;
+        }
+
+        try {
+            $oldPath = "zips/{$this->id}/{$oldCartId}.zip";
+
+            if (!Storage::disk('s3')->exists($oldPath)) {
+                return;
+            }
+
+            // ZIP'i geçici dosyaya indir
+            $tempPath = storage_path("app/temp-zip-{$this->id}.zip");
+            file_put_contents($tempPath, Storage::disk('s3')->get($oldPath));
+
+            // ZIP içindeki klasör adını değiştir
+            $zip = new ZipArchive();
+            if ($zip->open($tempPath) === true) {
+                for ($i = 0; $i < $zip->numFiles; $i++) {
+                    $name = $zip->getNameIndex($i);
+                    if (strpos($name, $oldCartId . '/') === 0) {
+                        $newName = $newCartId . '/' . substr($name, strlen($oldCartId) + 1);
+                        $zip->renameName($name, $newName);
+                    }
+                }
+                $zip->close();
+            }
+
+            // Yeni isimle S3'e yükle ve eskiyi sil
+            $newPath = "zips/{$this->id}/{$newCartId}.zip";
+            Storage::disk('s3')->put($newPath, file_get_contents($tempPath), 'public');
+            Storage::disk('s3')->delete($oldPath);
+
+            // Geçici dosyayı sil
+            @unlink($tempPath);
+
+            // s3_zip URL'ini güncelle
+            $this->update(['s3_zip' => Storage::disk('s3')->url($newPath)]);
+
+            Log::info('S3 ZIP renamed (file + folder)', [
+                'cart_id' => $this->id,
+                'old' => $oldCartId,
+                'new' => $newCartId,
+            ]);
+        } catch (\Exception $e) {
+            @unlink($tempPath ?? '');
+            Log::error('S3 ZIP rename failed', [
+                'cart_id' => $this->id,
+                'error' => $e->getMessage(),
+            ]);
+        }
     }
 
     /**
