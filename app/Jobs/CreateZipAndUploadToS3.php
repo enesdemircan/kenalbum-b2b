@@ -140,6 +140,15 @@ class CreateZipAndUploadToS3 implements ShouldQueue
                 throw new \Exception("Cart or cart_id not found");
             }
 
+            // Sipariş varsa cart_id'yi sipariş numarasıyla güncelle
+            if ($cart->order && $cart->order->order_number) {
+                $newCartId = $cart->generateCartIdentifier($cart->order->order_number);
+                if ($cart->cart_id !== $newCartId) {
+                    $cart->cart_id = $newCartId;
+                    $cart->save();
+                }
+            }
+
             // Geçici ZIP dosyası oluştur
             $zipFileName = $cart->cart_id . '.zip';
             $zipPath = storage_path("app/public/zips/{$this->cartId}/{$zipFileName}");
