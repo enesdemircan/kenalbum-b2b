@@ -52,19 +52,16 @@ class ImpersonationController extends Controller
      */
     public function stop()
     {
-        $impersonatorId = session()->get('impersonator_id');
+        $impersonatorId = session()->pull('impersonator_id');
+        session()->forget('impersonator_name');
 
         if (!$impersonatorId) {
             return redirect('/');
         }
 
-        // Session'daki impersonation verilerini temizle
-        session()->forget('impersonator_id');
-        session()->forget('impersonator_name');
+        // Orijinal kullanıcıya geri dön (session regenerate etmeden)
+        Auth::loginUsingId($impersonatorId, true);
 
-        // Orijinal kullanıcıya geri dön
-        Auth::loginUsingId($impersonatorId);
-
-        return redirect()->route('admin.dashboard')->with('success', 'Kendi hesabınıza geri döndünüz.');
+        return redirect()->route('admin.customers.index')->with('success', 'Kendi hesabınıza geri döndünüz.');
     }
 }
