@@ -93,7 +93,26 @@ class CartController extends Controller
         // Kullanıcının adreslerini getir
         $addresses = $user->addresses()->orderBy('created_at', 'desc')->get();
 
-        return view('frontend.cart.checkout', compact('cartItems', 'subtotal', 'total', 'totalDiscount', 'totalUrgentPrice', 'addresses'));
+        // Dosya zorunluluğu: s3_zip boş olan ve ürünü zorunlu file/files kategorisi içeren itemları listele
+        $missingFileItems = [];
+        foreach ($cartItems as $item) {
+            if (!empty($item->s3_zip)) {
+                continue;
+            }
+
+            $requiresFile = \DB::table('customization_pivot_params as cpp')
+                ->join('customization_categories as cc', 'cc.id', '=', 'cpp.customization_category_id')
+                ->where('cpp.product_id', $item->product_id)
+                ->where('cpp.is_required', 1)
+                ->whereIn('cc.type', ['file', 'files'])
+                ->exists();
+
+            if ($requiresFile) {
+                $missingFileItems[] = $item->product->title ?? 'Ürün';
+            }
+        }
+
+        return view('frontend.cart.checkout', compact('cartItems', 'subtotal', 'total', 'totalDiscount', 'totalUrgentPrice', 'addresses', 'missingFileItems'));
     }
     
     public function complete(Request $request)
@@ -139,9 +158,29 @@ class CartController extends Controller
 
             $user = Auth::user();
             $cartItems = $user->cart()->where('status', 0)->with(['product', 'discountGroup'])->get();
-            
+
             if ($cartItems->isEmpty()) {
                 return redirect()->route('cart.index')->with('error', 'Sepetiniz boş.');
+            }
+
+            // Dosya zorunluluğu kontrolü: Ürün zorunlu file/files kategorisi içeriyorsa s3_zip dolu olmalı
+            foreach ($cartItems as $cartItem) {
+                if (!empty($cartItem->s3_zip)) {
+                    continue;
+                }
+
+                $requiresFile = \DB::table('customization_pivot_params as cpp')
+                    ->join('customization_categories as cc', 'cc.id', '=', 'cpp.customization_category_id')
+                    ->where('cpp.product_id', $cartItem->product_id)
+                    ->where('cpp.is_required', 1)
+                    ->whereIn('cc.type', ['file', 'files'])
+                    ->exists();
+
+                if ($requiresFile) {
+                    $productTitle = $cartItem->product->title ?? 'Ürün';
+                    return redirect()->route('cart.index')
+                        ->with('error', '"' . $productTitle . '" ürünü için dosya yüklemesi zorunludur. Lütfen sepete dönüp dosyayı yükleyin.');
+                }
             }
 
             // Toplam fiyatı hesapla (indirimli fiyatlar)

@@ -4,6 +4,14 @@
 
 <main>
     <div class="mb-4 pb-4"></div>
+    @if(session('error'))
+        <div class="container">
+            <div class="alert alert-danger alert-dismissible fade show" role="alert">
+                {{ session('error') }}
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            </div>
+        </div>
+    @endif
     <section class="shop-checkout container">
       <h2 @if(count($cartItems) == 0) style="display: none;" @endif class="page-title">Sepetim</h2>
       <div class="checkout-steps" @if(count($cartItems) == 0) style="display: none;" @endif>

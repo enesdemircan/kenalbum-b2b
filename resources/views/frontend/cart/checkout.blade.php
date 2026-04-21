@@ -451,8 +451,43 @@ function clearFieldError(fieldId) {
     }
 }
 
+// Dosya zorunluluğu kontrolü (backend tarafından hesaplanan eksik dosyalı ürünler)
+const missingFileItems = @json($missingFileItems ?? []);
+
 // Form submit validasyonu
 document.getElementById('checkoutForm').addEventListener('submit', function(e) {
+    // Önce dosya zorunluluğu kontrolü
+    if (missingFileItems.length > 0) {
+        e.preventDefault();
+        const productListText = missingFileItems.map(function(p){ return '• ' + p; }).join('\n');
+        const escapeHtml = function(s){
+            return String(s).replace(/[&<>"']/g, function(c){
+                return ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'})[c];
+            });
+        };
+        if (window.Swal) {
+            Swal.fire({
+                icon: 'warning',
+                title: 'Dosya Yüklemesi Zorunlu',
+                html: 'Aşağıdaki ürünler için dosya yüklemesi zorunludur:<br><br><strong>' +
+                      missingFileItems.map(function(p){ return '• ' + escapeHtml(p); }).join('<br>') +
+                      '</strong><br><br>Lütfen sepete dönüp dosyayı yükleyin.',
+                confirmButtonText: 'Sepete Dön',
+                showCancelButton: true,
+                cancelButtonText: 'Kapat'
+            }).then(function(result){
+                if (result.isConfirmed) {
+                    window.location.href = "{{ route('cart.index') }}";
+                }
+            });
+        } else {
+            if (confirm('Aşağıdaki ürünler için dosya yüklemesi zorunludur:\n\n' + productListText + '\n\nSepete dönmek ister misiniz?')) {
+                window.location.href = "{{ route('cart.index') }}";
+            }
+        }
+        return;
+    }
+
     const customerName = document.getElementById('customer_name').value.trim();
     const customerSurname = document.getElementById('customer_surname').value.trim();
     const customerPhone = document.getElementById('customer_phone').value.trim();
