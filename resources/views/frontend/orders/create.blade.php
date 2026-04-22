@@ -2682,13 +2682,15 @@
 
     <script>
     (function() {
+        var ZOOM_SELECTOR = '.radio-option-image';
+
         function addZoomButton(img) {
             if (img.dataset.zoomProcessed === '1') return;
             if (!img.getAttribute('src')) return;
             img.dataset.zoomProcessed = '1';
 
             var wrapper = document.createElement('span');
-            wrapper.style.cssText = 'position:relative; display:inline-block;';
+            wrapper.style.cssText = 'position:relative; display:inline-block; line-height:0;';
             img.parentNode.insertBefore(wrapper, img);
             wrapper.appendChild(img);
 
@@ -2697,7 +2699,7 @@
             btn.className = 'img-zoom-btn';
             btn.innerHTML = '<i class="fas fa-search-plus"></i>';
             btn.title = 'Görseli büyüt';
-            btn.style.cssText = 'position:absolute; bottom:6px; right:6px; background:rgba(0,0,0,0.65); color:#fff; border:0; border-radius:50%; width:32px; height:32px; display:flex; align-items:center; justify-content:center; cursor:pointer; z-index:10; padding:0; font-size:14px; line-height:1;';
+            btn.style.cssText = 'position:absolute; bottom:4px; right:4px; background:rgba(0,0,0,0.65); color:#fff; border:0; border-radius:50%; width:24px; height:24px; display:flex; align-items:center; justify-content:center; cursor:pointer; z-index:10; padding:0; font-size:11px; line-height:1;';
 
             btn.addEventListener('click', function(e) {
                 e.preventDefault();
@@ -2721,8 +2723,25 @@
             wrapper.appendChild(btn);
         }
 
+        function scanFor(root) {
+            if (!root || !root.querySelectorAll) return;
+            if (root.matches && root.matches(ZOOM_SELECTOR)) addZoomButton(root);
+            root.querySelectorAll(ZOOM_SELECTOR).forEach(addZoomButton);
+        }
+
         document.addEventListener('DOMContentLoaded', function() {
-            document.querySelectorAll('.package-option img').forEach(addZoomButton);
+            scanFor(document);
+
+            // AJAX ile yuklenen child-parameters icin de calissin
+            var observer = new MutationObserver(function(mutations) {
+                for (var i = 0; i < mutations.length; i++) {
+                    var added = mutations[i].addedNodes;
+                    for (var j = 0; j < added.length; j++) {
+                        if (added[j].nodeType === 1) scanFor(added[j]);
+                    }
+                }
+            });
+            observer.observe(document.body, { childList: true, subtree: true });
         });
     })();
     </script>
