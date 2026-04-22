@@ -189,7 +189,8 @@ class OrderApiController extends Controller
                 'total_price' => 'sometimes|numeric|min:0',
                 'discount_amount' => 'sometimes|numeric|min:0',
                 'status' => 'sometimes|integer|in:0,1,2,3',
-                'notes' => 'nullable|string'
+                'notes' => 'nullable|string',
+                'api_archive_code' => 'nullable|string|max:100'
             ]);
 
             if ($validator->fails()) {
