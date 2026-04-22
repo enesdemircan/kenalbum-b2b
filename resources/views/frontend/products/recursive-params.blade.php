@@ -120,25 +120,28 @@
                 </div>
             @elseif($param->category && $param->category->type === 'file')
                 <div class="file-group">
-                    <input type="file" 
-                           name="customization[{{ $pivot->id }}]" 
+                    <input type="file"
+                           name="customization[{{ $pivot->id }}]"
                            class="form-control customization-file"
                            data-pivot-id="{{ $pivot->id }}"
                            data-price="{{ $pivot->price ?? 0 }}">
+                    <small class="text-muted d-block mt-1">
+                        <i class="fas fa-info-circle"></i> Maksimum dosya boyutu: <strong>500 MB</strong> (toplam)
+                    </small>
                 </div>
             @elseif($param->category && $param->category->type === 'files')
                 <div class="files-group">
                     <label class="form-label fw-bold">
                         <i class="fas fa-file-archive"></i> {{ $param->key }}
                     </label>
-                    <input type="file" 
-                           name="customization[{{ $pivot->id }}]" 
+                    <input type="file"
+                           name="customization[{{ $pivot->id }}]"
                            class="form-control customization-zip-file"
                            data-pivot-id="{{ $pivot->id }}"
                            data-price="{{ $pivot->price ?? 0 }}"
                            accept=".zip,.rar,.7z">
                     <small class="text-muted d-block mt-1">
-                        <i class="fas fa-info-circle"></i> Sadece sıkıştırılmış dosya (.zip, .rar, .7z)
+                        <i class="fas fa-info-circle"></i> Sadece sıkıştırılmış dosya (.zip, .rar, .7z) — Maksimum: <strong>500 MB</strong>
                     </small>
                 </div>
             @endif

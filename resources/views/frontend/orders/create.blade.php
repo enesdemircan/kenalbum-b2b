@@ -1374,27 +1374,23 @@
                 return;
             }
             
-            // Dosya boyutu kontrolü (200MB üzeri uyarı)
-            const maxRecommendedSize = 200 * 1024 * 1024; // 200MB
-            if (file.size > maxRecommendedSize) {
+            // Dosya boyutu kontrolü (hard limit 500 MB)
+            const maxFileSize = 500 * 1024 * 1024; // 500 MB
+            if (file.size > maxFileSize) {
                 const sizeInMB = Math.round(file.size / 1024 / 1024);
                 Swal.fire({
-                    icon: 'warning',
-                    title: 'Büyük Dosya Uyarısı',
+                    icon: 'error',
+                    title: 'Dosya Boyutu Çok Büyük',
                     html: `
                         <p>Seçtiğiniz dosya <strong>${sizeInMB} MB</strong> boyutunda.</p>
-                        <p class="text-muted">Büyük dosyaların yüklenmesi uzun sürebilir (5-10 dakika).</p>
-                        <p>Devam etmek istiyor musunuz?</p>
+                        <p>Maksimum dosya boyutu <strong>500 MB</strong> olmalıdır.</p>
+                        <p class="text-muted">Lütfen daha küçük bir dosya seçin veya arşivi bölerek tekrar deneyin.</p>
                     `,
-                    showCancelButton: true,
-                    confirmButtonText: 'Evet, Devam Et',
-                    cancelButtonText: 'İptal'
-                }).then((result) => {
-                    if (!result.isConfirmed) {
-                        $(input).val(''); // Input'u temizle
-                        return;
-                    }
+                    confirmButtonText: 'Tamam'
                 });
+                $(input).val(''); // Input'u temizle
+                previewContainer.empty();
+                return;
             }
             
             // Basit dosya bilgisi göster
@@ -1422,14 +1418,37 @@
         // Dosya yükleme işlemi (file tipi için - resim vs)
         function handleFileUpload(input) {
             console.log(input);
-            
+
             const files = input.files;
             const paramId = $(input).data('param-id');
             const categoryId = $(input).data('category-id');
             const previewContainer = $(`#file_preview_${paramId}`);
-            
+
             if (files.length === 0) return;
-            
+
+            // Toplam dosya boyutu kontrolü (hard limit 500 MB)
+            const maxTotalSize = 500 * 1024 * 1024; // 500 MB
+            let totalSize = 0;
+            for (let i = 0; i < files.length; i++) {
+                totalSize += files[i].size;
+            }
+            if (totalSize > maxTotalSize) {
+                const totalMB = Math.round(totalSize / 1024 / 1024);
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Dosya Boyutu Çok Büyük',
+                    html: `
+                        <p>Seçtiğiniz ${files.length} dosyanın toplam boyutu <strong>${totalMB} MB</strong>.</p>
+                        <p>Toplam dosya boyutu en fazla <strong>500 MB</strong> olabilir.</p>
+                        <p class="text-muted">Lütfen daha az veya daha küçük dosyalar seçin.</p>
+                    `,
+                    confirmButtonText: 'Tamam'
+                });
+                $(input).val('');
+                previewContainer.empty();
+                return;
+            }
+
             // Preview container'ı temizle
             previewContainer.empty();
             

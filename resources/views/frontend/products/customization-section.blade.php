@@ -175,6 +175,10 @@
                     <!-- Yüklenen dosyaların önizlemesi -->
                     <div id="file_preview_{{ $param->id }}" class="mt-2"></div>
 
+                    <small class="text-muted d-block mt-1">
+                        <i class="fas fa-info-circle"></i> Maksimum dosya boyutu: <strong>500 MB</strong> (toplam)
+                    </small>
+
                 </div>
             </div>
         @endforeach
@@ -219,7 +223,7 @@
                 <div id="file_preview_{{ $param->id }}" class="mt-2"></div>
                 
                 <small class="text-muted d-block mt-1">
-                    <i class="fas fa-info-circle"></i> Sadece sıkıştırılmış dosya yükleyebilirsiniz (.zip, .rar, .7z)
+                    <i class="fas fa-info-circle"></i> Sadece sıkıştırılmış dosya yükleyebilirsiniz (.zip, .rar, .7z) — Maksimum dosya boyutu: <strong>500 MB</strong>
                 </small>
             </div>
         </div>
