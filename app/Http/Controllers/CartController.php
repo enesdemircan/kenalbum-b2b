@@ -95,20 +95,23 @@ class CartController extends Controller
 
         // Dosya zorunluluğu: s3_zip boş olan ve ürünü zorunlu file/files kategorisi içeren itemları listele
         $missingFileItems = [];
-        foreach ($cartItems as $item) {
-            if (!empty($item->s3_zip)) {
-                continue;
-            }
+        $hasIsRequired = \Schema::hasColumn('customization_pivot_params', 'is_required');
+        if ($hasIsRequired) {
+            foreach ($cartItems as $item) {
+                if (!empty($item->s3_zip)) {
+                    continue;
+                }
 
-            $requiresFile = \DB::table('customization_pivot_params as cpp')
-                ->join('customization_categories as cc', 'cc.id', '=', 'cpp.customization_category_id')
-                ->where('cpp.product_id', $item->product_id)
-                ->where('cpp.is_required', 1)
-                ->whereIn('cc.type', ['file', 'files'])
-                ->exists();
+                $requiresFile = \DB::table('customization_pivot_params as cpp')
+                    ->join('customization_categories as cc', 'cc.id', '=', 'cpp.customization_category_id')
+                    ->where('cpp.product_id', $item->product_id)
+                    ->where('cpp.is_required', 1)
+                    ->whereIn('cc.type', ['file', 'files'])
+                    ->exists();
 
-            if ($requiresFile) {
-                $missingFileItems[] = $item->product->title ?? 'Ürün';
+                if ($requiresFile) {
+                    $missingFileItems[] = $item->product->title ?? 'Ürün';
+                }
             }
         }
 
@@ -164,22 +167,24 @@ class CartController extends Controller
             }
 
             // Dosya zorunluluğu kontrolü: Ürün zorunlu file/files kategorisi içeriyorsa s3_zip dolu olmalı
-            foreach ($cartItems as $cartItem) {
-                if (!empty($cartItem->s3_zip)) {
-                    continue;
-                }
+            if (\Schema::hasColumn('customization_pivot_params', 'is_required')) {
+                foreach ($cartItems as $cartItem) {
+                    if (!empty($cartItem->s3_zip)) {
+                        continue;
+                    }
 
-                $requiresFile = \DB::table('customization_pivot_params as cpp')
-                    ->join('customization_categories as cc', 'cc.id', '=', 'cpp.customization_category_id')
-                    ->where('cpp.product_id', $cartItem->product_id)
-                    ->where('cpp.is_required', 1)
-                    ->whereIn('cc.type', ['file', 'files'])
-                    ->exists();
+                    $requiresFile = \DB::table('customization_pivot_params as cpp')
+                        ->join('customization_categories as cc', 'cc.id', '=', 'cpp.customization_category_id')
+                        ->where('cpp.product_id', $cartItem->product_id)
+                        ->where('cpp.is_required', 1)
+                        ->whereIn('cc.type', ['file', 'files'])
+                        ->exists();
 
-                if ($requiresFile) {
-                    $productTitle = $cartItem->product->title ?? 'Ürün';
-                    return redirect()->route('cart.index')
-                        ->with('error', '"' . $productTitle . '" ürünü için dosya yüklemesi zorunludur. Lütfen sepete dönüp dosyayı yükleyin.');
+                    if ($requiresFile) {
+                        $productTitle = $cartItem->product->title ?? 'Ürün';
+                        return redirect()->route('cart.index')
+                            ->with('error', '"' . $productTitle . '" ürünü için dosya yüklemesi zorunludur. Lütfen sepete dönüp dosyayı yükleyin.');
+                    }
                 }
             }
 
