@@ -63,7 +63,8 @@ class OrderApiController extends Controller
                 'carts_ids.*' => 'required|integer|exists:carts,id',
                 'discount_amount' => 'nullable|numeric|min:0',
                 'status' => 'nullable|integer|in:0,1,2,3', // Default 0
-                'notes' => 'nullable|string'
+                'notes' => 'nullable|string',
+                'api_archive_code' => 'nullable|string|max:100'
             ]);
 
             if ($validator->fails()) {
@@ -97,6 +98,7 @@ class OrderApiController extends Controller
             $order = Order::create([
                 'user_id' => $userId,
                 'order_number' => $orderNumber,
+                'api_archive_code' => $request->api_archive_code,
                 'customer_name' => $request->customer_name,
                 'customer_surname' => $request->customer_surname,
                 'customer_phone' => $request->customer_phone,

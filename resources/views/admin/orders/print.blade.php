@@ -251,6 +251,12 @@
                                     <span class="info-label">Sipariş No:</span>
                                     <span class="info-value">{{ $order->order_number }}</span>
                                 </div>
+                                @if(!empty($order->api_archive_code))
+                                    <div class="info-row">
+                                        <span class="info-label">D.Sipariş No:</span>
+                                        <span class="info-value">{{ $order->api_archive_code }}</span>
+                                    </div>
+                                @endif
                                 <div class="info-row">
                                     <span class="info-label">Tarih:</span>
                                     <span class="info-value">{{ $order->created_at->format('d.m.Y H:i') }}</span>
@@ -363,9 +369,33 @@
 
             </div>
 
+            @php
+                $cartNotes = null;
+                $urgentProduction = false;
+                if ($item->notes) {
+                    $parsedNotes = json_decode($item->notes, true);
+                    $cartNotes = $parsedNotes['order_note'] ?? null;
+                    $urgentProduction = !empty($parsedNotes['urgent_production']);
+                }
+            @endphp
+            @if(!empty($cartNotes) || $urgentProduction)
+                <div style="width: 100%; clear: both; margin-top: 10px;" class="cart-notes-section">
+                    <div class="customization-title">Sipariş Notu:</div>
+                    @if($urgentProduction)
+                        <div class="customization-item">
+                            <strong>Acil Üretim:</strong>
+                            <span class="text-muted">Evet</span>
+                        </div>
+                    @endif
+                    @if(!empty($cartNotes))
+                        <div class="customization-item">
+                            <span class="text-muted">{{ $cartNotes }}</span>
+                        </div>
+                    @endif
+                </div>
+            @endif
 
 
-       
         </div>
         </div>
     @endforeach
