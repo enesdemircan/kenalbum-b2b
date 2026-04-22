@@ -322,6 +322,54 @@ class CustomerPanelController extends Controller
         }
     }
 
+    public function updateOrderDelivery(Request $request, $id)
+    {
+        $user = Auth::user();
+        $order = $user->orders()->findOrFail($id);
+
+        // Sadece "Onay Bekliyor" durumundaki siparislerin teslimat bilgileri duzenlenebilir
+        if ((int) $order->status !== 0) {
+            return redirect()->route('profile.orders')
+                ->with('error', 'Bu sipariş için teslimat bilgileri artık düzenlenemez (sipariş onaylandı veya durumu değişti).');
+        }
+
+        $validated = $request->validate([
+            'customer_name' => 'required|string|min:2|max:255|regex:/^[A-Za-zğüşıöçĞÜŞİÖÇ\s]+$/',
+            'customer_surname' => 'required|string|min:2|max:255|regex:/^[A-Za-zğüşıöçĞÜŞİÖÇ\s]+$/',
+            'customer_phone' => 'required|string|min:10|max:20|regex:/^[0-9\s\-\+\(\)]+$/',
+            'city' => 'required|string|max:255',
+            'district' => 'required|string|max:255',
+            'shipping_address' => 'required|string|min:10|max:1000',
+        ], [
+            'customer_name.required' => 'Ad alanı zorunludur.',
+            'customer_name.min' => 'Ad en az 2 karakter olmalıdır.',
+            'customer_name.regex' => 'Ad sadece harf ve boşluk karakterleri içerebilir.',
+            'customer_surname.required' => 'Soyad alanı zorunludur.',
+            'customer_surname.min' => 'Soyad en az 2 karakter olmalıdır.',
+            'customer_surname.regex' => 'Soyad sadece harf ve boşluk karakterleri içerebilir.',
+            'customer_phone.required' => 'Telefon alanı zorunludur.',
+            'customer_phone.min' => 'Telefon numarası en az 10 karakter olmalıdır.',
+            'customer_phone.regex' => 'Geçerli bir telefon numarası giriniz.',
+            'city.required' => 'İl seçimi zorunludur.',
+            'district.required' => 'İlçe seçimi zorunludur.',
+            'shipping_address.required' => 'Teslimat adresi zorunludur.',
+            'shipping_address.min' => 'Teslimat adresi en az 10 karakter olmalıdır.',
+            'shipping_address.max' => 'Teslimat adresi 1000 karakterden uzun olamaz.',
+        ]);
+
+        // Race condition koruma: update sirasinda statusu bir daha kontrol et
+        $order->refresh();
+        if ((int) $order->status !== 0) {
+            return redirect()->route('profile.orders')
+                ->with('error', 'Bu sipariş için teslimat bilgileri artık düzenlenemez.');
+        }
+
+        $order->update($validated);
+
+        return redirect()->route('profile.orders')
+            ->with('success', 'Teslimat bilgileri başarıyla güncellendi.');
+    }
+
     public function updateAddress(Request $request, $id)
     {
         $request->validate([

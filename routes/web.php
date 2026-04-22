@@ -63,6 +63,7 @@ Route::middleware(['auth', 'approval'])->group(function () {
 
     Route::get('/profile', [CustomerPanelController::class, 'index'])->name('profile.index');
     Route::get('/profile/orders', [CustomerPanelController::class, 'orders'])->name('profile.orders');
+    Route::put('/profile/orders/{id}/delivery', [CustomerPanelController::class, 'updateOrderDelivery'])->name('profile.orders.delivery.update');
     Route::get('/profile/addresses', [CustomerPanelController::class, 'addresses'])->name('profile.addresses');
     Route::post('/profile/addresses', [CustomerPanelController::class, 'storeAddress'])->name('profile.addresses.store');
     Route::put('/profile/addresses/{id}', [CustomerPanelController::class, 'updateAddress'])->name('profile.addresses.update');

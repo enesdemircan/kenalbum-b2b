@@ -33,7 +33,30 @@
         </div>
         <div class="col-lg-9">
           <div class="page-content my-account__orders-list">
-            
+
+            @if(session('success'))
+                <div class="alert alert-success alert-dismissible fade show" role="alert">
+                    {{ session('success') }}
+                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                </div>
+            @endif
+            @if(session('error'))
+                <div class="alert alert-danger alert-dismissible fade show" role="alert">
+                    {{ session('error') }}
+                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                </div>
+            @endif
+            @if($errors->any())
+                <div class="alert alert-danger alert-dismissible fade show" role="alert">
+                    <ul class="mb-0">
+                        @foreach($errors->all() as $error)
+                            <li>{{ $error }}</li>
+                        @endforeach
+                    </ul>
+                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                </div>
+            @endif
+
             <!-- Filtreleme Formu -->
             <div class="card mb-4">
               <div class="card-header">
@@ -104,19 +127,84 @@
                             </div>
                           </div>
                           <div class="col-md-6">
-                            <h6 class="fw-bold text-primary mb-3">
-                              <i class="fas fa-shipping-fast me-2"></i>Teslimat Bilgileri
-                            </h6>
+                            <div class="d-flex justify-content-between align-items-center mb-3">
+                                <h6 class="fw-bold text-primary mb-0">
+                                  <i class="fas fa-shipping-fast me-2"></i>Teslimat Bilgileri
+                                </h6>
+                                @if((int) $order->status === 0)
+                                    <button type="button" class="btn btn-sm btn-outline-primary" data-bs-toggle="modal" data-bs-target="#editDeliveryModal{{ $order->id }}">
+                                        <i class="fas fa-edit"></i> Düzenle
+                                    </button>
+                                @endif
+                            </div>
                             <div class="card border-0">
                               <div class="card-body">
                                 <p class="mb-2"><strong>Ad Soyad:</strong> {{ $order->customer_name }} {{ $order->customer_surname }}</p>
                                 <p class="mb-2"><strong>Telefon:</strong> {{ $order->customer_phone }}</p>
                                 <p class="mb-2"><strong>İl/İlçe:</strong> {{ $order->city ?? 'Belirtilmemiş' }} / {{ $order->district ?? 'Belirtilmemiş' }}</p>
                                 <p class="mb-0"><strong>Adres:</strong> {{ $order->shipping_address }}</p>
+                                @if((int) $order->status !== 0)
+                                    <small class="text-muted d-block mt-2">
+                                        <i class="fas fa-lock"></i> Sipariş onaylandıktan sonra teslimat bilgileri değiştirilemez.
+                                    </small>
+                                @endif
                               </div>
                             </div>
                           </div>
                         </div>
+
+                        @if((int) $order->status === 0)
+                            <div class="modal fade" id="editDeliveryModal{{ $order->id }}" tabindex="-1" aria-labelledby="editDeliveryModalLabel{{ $order->id }}" aria-hidden="true">
+                                <div class="modal-dialog modal-lg">
+                                    <div class="modal-content">
+                                        <form method="POST" action="{{ route('profile.orders.delivery.update', $order->id) }}">
+                                            @csrf
+                                            @method('PUT')
+                                            <div class="modal-header">
+                                                <h5 class="modal-title" id="editDeliveryModalLabel{{ $order->id }}">
+                                                    <i class="fas fa-shipping-fast me-2"></i>Teslimat Bilgilerini Düzenle — {{ $order->order_number }}
+                                                </h5>
+                                                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Kapat"></button>
+                                            </div>
+                                            <div class="modal-body">
+                                                <div class="row g-3">
+                                                    <div class="col-md-6">
+                                                        <label class="form-label">Ad <span class="text-danger">*</span></label>
+                                                        <input type="text" class="form-control" name="customer_name" value="{{ $order->customer_name }}" required minlength="2" maxlength="255">
+                                                    </div>
+                                                    <div class="col-md-6">
+                                                        <label class="form-label">Soyad <span class="text-danger">*</span></label>
+                                                        <input type="text" class="form-control" name="customer_surname" value="{{ $order->customer_surname }}" required minlength="2" maxlength="255">
+                                                    </div>
+                                                    <div class="col-md-6">
+                                                        <label class="form-label">Telefon <span class="text-danger">*</span></label>
+                                                        <input type="text" class="form-control" name="customer_phone" value="{{ $order->customer_phone }}" required minlength="10" maxlength="20">
+                                                    </div>
+                                                    <div class="col-md-3">
+                                                        <label class="form-label">İl <span class="text-danger">*</span></label>
+                                                        <input type="text" class="form-control" name="city" value="{{ $order->city }}" required maxlength="255">
+                                                    </div>
+                                                    <div class="col-md-3">
+                                                        <label class="form-label">İlçe <span class="text-danger">*</span></label>
+                                                        <input type="text" class="form-control" name="district" value="{{ $order->district }}" required maxlength="255">
+                                                    </div>
+                                                    <div class="col-12">
+                                                        <label class="form-label">Teslimat Adresi <span class="text-danger">*</span></label>
+                                                        <textarea class="form-control" name="shipping_address" rows="3" required minlength="10" maxlength="1000">{{ $order->shipping_address }}</textarea>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <div class="modal-footer">
+                                                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">İptal</button>
+                                                <button type="submit" class="btn btn-primary">
+                                                    <i class="fas fa-save"></i> Kaydet
+                                                </button>
+                                            </div>
+                                        </form>
+                                    </div>
+                                </div>
+                            </div>
+                        @endif
                         <br>
                         <h6 class="fw-bold text-primary mb-3">
                           <i class="fas fa-boxes me-2"></i>Ürün Detayları
