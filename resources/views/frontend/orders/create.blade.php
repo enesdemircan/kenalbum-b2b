@@ -2679,4 +2679,51 @@
 
     });
     </script>
+
+    <script>
+    (function() {
+        function addZoomButton(img) {
+            if (img.dataset.zoomProcessed === '1') return;
+            if (!img.getAttribute('src')) return;
+            img.dataset.zoomProcessed = '1';
+
+            var wrapper = document.createElement('span');
+            wrapper.style.cssText = 'position:relative; display:inline-block;';
+            img.parentNode.insertBefore(wrapper, img);
+            wrapper.appendChild(img);
+
+            var btn = document.createElement('button');
+            btn.type = 'button';
+            btn.className = 'img-zoom-btn';
+            btn.innerHTML = '<i class="fas fa-search-plus"></i>';
+            btn.title = 'Görseli büyüt';
+            btn.style.cssText = 'position:absolute; bottom:6px; right:6px; background:rgba(0,0,0,0.65); color:#fff; border:0; border-radius:50%; width:32px; height:32px; display:flex; align-items:center; justify-content:center; cursor:pointer; z-index:10; padding:0; font-size:14px; line-height:1;';
+
+            btn.addEventListener('click', function(e) {
+                e.preventDefault();
+                e.stopPropagation();
+                var src = img.getAttribute('src');
+                if (window.Swal) {
+                    Swal.fire({
+                        imageUrl: src,
+                        imageAlt: img.alt || 'Görsel',
+                        showConfirmButton: false,
+                        showCloseButton: true,
+                        background: '#fff',
+                        width: 'auto',
+                        padding: '1em'
+                    });
+                } else {
+                    window.open(src, '_blank');
+                }
+            });
+
+            wrapper.appendChild(btn);
+        }
+
+        document.addEventListener('DOMContentLoaded', function() {
+            document.querySelectorAll('.package-option img').forEach(addZoomButton);
+        });
+    })();
+    </script>
 @endsection
