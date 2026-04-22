@@ -507,7 +507,26 @@ class CartController extends Controller
             'order_status_id' => 1, // İlk durum: İşlemde
             'user_id' => auth()->id()
         ]);
-        
+
+        // "Siparişi Tamamla" modunda: yeni cart disindaki bekleyen cart'lari temizle
+        // Kullanici mevcut sepetini atlayip dogrudan bu urunle checkout'a ilerlemek istiyor
+        if ($request->boolean('complete_order')) {
+            $otherCarts = Auth::user()->cart()
+                ->where('status', 0)
+                ->where('id', '!=', $cart->id)
+                ->get();
+
+            foreach ($otherCarts as $otherCart) {
+                $otherCart->deleteAssociatedFiles();
+                OrderStatusHistory::where('cart_id', $otherCart->id)->delete();
+            }
+
+            Auth::user()->cart()
+                ->where('status', 0)
+                ->where('id', '!=', $cart->id)
+                ->delete();
+        }
+
         // Ürünün extra_sales verilerini kontrol et
         $extraSales = null;
         $extraSalesProducts = \App\Models\ExtraSale::with('childProduct')

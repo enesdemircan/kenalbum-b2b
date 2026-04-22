@@ -474,10 +474,11 @@
                                 <i class="fas fa-bolt"></i> SİPARİŞİ TAMAMLA
                             </button>
                             <small class="text-muted text-center mt-1">
-                                Sepete eklemeden doğrudan teslimat ve ödeme adımına ilerler
+                                Sepetteki diğer ürünler silinir ve doğrudan teslimat/ödeme adımına ilerler
                             </small>
                         </div>
 
+                        <input type="hidden" name="complete_order" id="completeOrderInput" value="0">
 
                     </form>
                 </div>
@@ -1217,6 +1218,12 @@
             // Submit kaynagina gore complete mode'u ayarla (tek seferlik intent)
             window._completeOrderMode = (_nextSubmitIntent === 'complete');
             _nextSubmitIntent = null;
+
+            // Complete mode'u backend'e bildirmek icin hidden input'u guncelle
+            var completeInput = document.getElementById('completeOrderInput');
+            if (completeInput) {
+                completeInput.value = window._completeOrderMode ? '1' : '0';
+            }
             
             // Son fiyat kontrolü - hidden input'ları güncelle
             var selectedPageCount = $('#page-count-select').val();
