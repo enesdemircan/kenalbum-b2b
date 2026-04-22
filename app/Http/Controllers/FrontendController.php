@@ -65,6 +65,30 @@ class FrontendController extends Controller
         return view('frontend.profile.index');
     }
 
+    public function search(Request $request)
+    {
+        $q = trim((string) $request->get('q', ''));
+
+        $products = collect();
+        $categories = collect();
+
+        if (mb_strlen($q) >= 2) {
+            $products = Product::with('mainCategory')
+                ->where('status', 1)
+                ->where('title', 'LIKE', '%' . $q . '%')
+                ->orderBy('title')
+                ->limit(50)
+                ->get();
+
+            $categories = MainCategory::where('title', 'LIKE', '%' . $q . '%')
+                ->orderBy('title')
+                ->limit(20)
+                ->get();
+        }
+
+        return view('frontend.search', compact('q', 'products', 'categories'));
+    }
+
     public function category($slug)
     {
         $category = MainCategory::where('slug', $slug)->firstOrFail();

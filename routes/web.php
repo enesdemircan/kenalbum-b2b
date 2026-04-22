@@ -19,6 +19,7 @@ Route::get('/products', [FrontendController::class, 'index'])->name('products.in
 Route::get('/category/{slug}', [FrontendController::class, 'category'])->name('category.show');
 Route::get('/products/{slug}', [FrontendController::class, 'show'])->name('products.show');
 Route::get('/page/{slug}', [FrontendController::class, 'page'])->name('page.show');
+Route::get('/search', [FrontendController::class, 'search'])->name('search')->middleware('throttle:20,1');
 
 // Customization parameters routes
 Route::get('/products/{product}/customization-params', [FrontendController::class, 'getCustomizationParams'])->name('products.customization-params');
