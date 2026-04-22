@@ -468,8 +468,17 @@
                                 <i class="fas fa-shopping-cart"></i> SEPETE EKLE
                             </button>
                         </div>
-                        
-                       
+
+                        <div class="d-grid col-2 mt-2">
+                            <button type="button" id="completeOrderBtn" class="btn btn-success btn-lg">
+                                <i class="fas fa-bolt"></i> SİPARİŞİ TAMAMLA
+                            </button>
+                            <small class="text-muted text-center mt-1">
+                                Sepete eklemeden doğrudan teslimat ve ödeme adımına ilerler
+                            </small>
+                        </div>
+
+
                     </form>
                 </div>
             </div>
@@ -1185,9 +1194,29 @@
             return true;
         }
         
+        // "Siparişi Tamamla" butonu: tek kullanimlik intent flag'i ile submit'i tetikle
+        // Submit handler intent'i okur, _completeOrderMode'a aktarir; basarili olunca cart yerine checkout'a gider
+        window._completeOrderMode = false;
+        var _nextSubmitIntent = null;
+        var completeOrderBtn = document.getElementById('completeOrderBtn');
+        if (completeOrderBtn) {
+            completeOrderBtn.addEventListener('click', function() {
+                _nextSubmitIntent = 'complete';
+                if (typeof form.requestSubmit === 'function') {
+                    form.requestSubmit();
+                } else {
+                    form.dispatchEvent(new Event('submit', { cancelable: true, bubbles: true }));
+                }
+            });
+        }
+
         // Form gönderilmeden önce kontrol
         form.addEventListener('submit', function(e) {
             e.preventDefault(); // Form submit'i engelle
+
+            // Submit kaynagina gore complete mode'u ayarla (tek seferlik intent)
+            window._completeOrderMode = (_nextSubmitIntent === 'complete');
+            _nextSubmitIntent = null;
             
             // Son fiyat kontrolü - hidden input'ları güncelle
             var selectedPageCount = $('#page-count-select').val();
@@ -1276,6 +1305,11 @@
                     Swal.close();
                     
                     if (data.success) {
+                        // "Siparişi Tamamla" modunda dogrudan checkout'a git
+                        if (window._completeOrderMode) {
+                            window.location.href = '{{ route("cart.checkout") }}';
+                            return;
+                        }
                         // Extra sales ürünleri varsa modal göster
                         if (data.extra_sales && data.extra_sales.length > 0) {
                             showExtraSalesModal(data.extra_sales);
@@ -2349,7 +2383,13 @@
                     if (data.status === 'completed') {
                         // ZIP işlemi tamamlandı (sync mode)
                         console.log('✅ ZIP created successfully (sync)');
-                        
+
+                        // "Siparişi Tamamla" modunda dogrudan checkout'a git
+                        if (window._completeOrderMode) {
+                            window.location.href = '{{ route("cart.checkout") }}';
+                            return;
+                        }
+
                         // Extra sales kontrolü
                         if (extraSales && extraSales.length > 0) {
                             showExtraSalesModal(extraSales);
@@ -2405,7 +2445,13 @@
                             // İşlem tamamlandı
                             clearInterval(pollInterval);
                             console.log('✅ ZIP processing completed (silent polling)');
-                            
+
+                            // "Siparişi Tamamla" modunda dogrudan checkout'a git
+                            if (window._completeOrderMode) {
+                                window.location.href = '{{ route("cart.checkout") }}';
+                                return;
+                            }
+
                             // Extra sales kontrolü
                             if (extraSales && extraSales.length > 0) {
                                 showExtraSalesModal(extraSales);
@@ -2438,7 +2484,13 @@
                             // Timeout (çok uzun sürdü)
                             clearInterval(pollInterval);
                             console.warn('⏱️ ZIP processing timeout (silent polling)');
-                            
+
+                            // "Siparişi Tamamla" modunda dogrudan checkout'a git
+                            if (window._completeOrderMode) {
+                                window.location.href = '{{ route("cart.checkout") }}';
+                                return;
+                            }
+
                             Swal.fire({
                                 icon: 'warning',
                                 title: 'İşlem Devam Ediyor',
@@ -2468,17 +2520,23 @@
         // Sipariş işlemini tamamla
         function completeOrderProcess(cartId, zipPath = null, extraSales = null) {
             console.log('Order process completed');
-             
+
             // Loading'i kapat
             Swal.close();
-            
+
+            // "Siparişi Tamamla" modunda dogrudan checkout'a git
+            if (window._completeOrderMode) {
+                window.location.href = '{{ route("cart.checkout") }}';
+                return;
+            }
+
             // Extra sales kontrolü
             if (extraSales && extraSales.length > 0) {
                 console.log('Extra sales available, showing modal');
                 showExtraSalesModal(extraSales);
             } else {
                 // Başarı mesajı göster
-                Swal.fire({  
+                Swal.fire({
                     icon: 'success',
                     title: 'Başarılı!',
                     text: 'Ürün sepete eklendi ve dosyalar yüklendi.',
@@ -2608,6 +2666,11 @@
         
         // Extra Sales Modal
         function showExtraSalesModal(extraSales) {
+            // "Siparişi Tamamla" modunda extra sales modal'ini atla, dogrudan checkout'a git
+            if (window._completeOrderMode) {
+                window.location.href = '{{ route("cart.checkout") }}';
+                return;
+            }
             if (extraSales && extraSales.length > 0) {
                 // AJAX ile modal HTML'ini yükle
                 fetch('/modal/extra-sales', {
@@ -2653,6 +2716,12 @@
 
         // Başarı mesajını göster
         function showSuccessMessage() {
+            // "Siparişi Tamamla" modunda dogrudan checkout'a git
+            if (window._completeOrderMode) {
+                window.location.href = '{{ route("cart.checkout") }}';
+                return;
+            }
+
             Swal.fire({
                 icon: 'success',
                 title: 'Başarılı!',
