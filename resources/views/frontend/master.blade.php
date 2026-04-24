@@ -44,6 +44,19 @@
     .header-search-trigger:hover {
       color: #007bff;
     }
+    /* Slider (slideshow type4) yuksekligini kucult */
+    .slideshow.type4,
+    .slideshow.type4 .swiper-slide {
+      height: 22rem !important;
+      min-height: 22rem !important;
+    }
+    @media (max-width: 767px) {
+      .slideshow.type4,
+      .slideshow.type4 .swiper-slide {
+        height: 16rem !important;
+        min-height: 16rem !important;
+      }
+    }
   </style>
 
 </head>
@@ -355,7 +368,7 @@
       </div>
     </div>
     <div class="header-desk_type_8">
-      <div class="header-middle py-4">
+      <div class="header-middle py-2">
         <div class="container d-flex align-items-center my-2">
           <div class="flex-1 d-flex align-items-center gap-3">
             <div class="service-promotion__icon">
