@@ -80,8 +80,8 @@
         <thead>
             <tr>
                 <th>Sipariş No</th>
-                <th>Müşteri</th>
                 <th>Firma</th>
+                <th>Müşteri</th>
                 <th>Ürün Sayısı</th>
                 <th>Toplam Fiyat</th>
                 <th>Sipariş Durumu</th>
@@ -96,18 +96,18 @@
                         <strong style="color: var(--md-primary)">{{ $order->order_number }}</strong>
                     </td>
                     <td>
-                        <div>
-                            <strong>{{ $order->customer_name }} {{ $order->customer_surname }}</strong>
-                            <br>
-                            <small class="text-muted">{{ $order->customer_phone }}</small>
-                        </div>
-                    </td>
-                    <td>
                         @if($order->user && $order->user->customer && $order->user->customer->unvan)
                             <span class="material-badge material-badge-primary">{{ $order->user->customer->unvan }}</span>
                         @else
                             <span class="text-muted">-</span>
                         @endif
+                    </td>
+                    <td>
+                        <div>
+                            <strong>{{ $order->customer_name }} {{ $order->customer_surname }}</strong>
+                            <br>
+                            <small class="text-muted">{{ $order->customer_phone }}</small>
+                        </div>
                     </td>
                     <td>
                         <span class="material-badge material-badge-info">{{ $order->cartItems->count() }} ürün</span>
