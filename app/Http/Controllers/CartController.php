@@ -26,6 +26,12 @@ class CartController extends Controller
             return redirect()->route('login')->with('error', 'Sepeti görüntülemek için giriş yapmalısınız.');
         }
 
+        // Dosyasi yarim kalmis / hic yuklenememis orphan sepet kayitlarini temizle
+        $removed = $this->cleanupInvalidCartItems(Auth::user());
+        if (!empty($removed)) {
+            session()->flash('warning', 'Dosya yüklemesi tamamlanamadığı için şu ürün(ler) sepetten otomatik kaldırıldı: ' . implode(', ', $removed) . '. Lütfen tekrar sipariş oluşturun.');
+        }
+
         $cartItems = Auth::user()->cart()->where('status', 0)->with(['product', 'discountGroup'])->get();
         
         // Ara toplam ve indirim hesapla
@@ -55,15 +61,24 @@ class CartController extends Controller
         return view('frontend.cart.index', compact('cartItems', 'subtotal', 'totalDiscount', 'finalTotal'));
     }
     
-    public function checkout()  
+    public function checkout()
     {
         if (!Auth::check()) {
             return redirect()->route('login')->with('error', 'Sipariş vermek için giriş yapmalısınız.');
         }
 
         $user = Auth::user();
-                    $cartItems = $user->cart()->where('status', 0)->with(['product', 'discountGroup'])->get();
-        
+
+        // Dosyasi yuklenmemis orphan cart'lari temizle. Herhangi biri silindiyse
+        // kullaniciyi sepete dondur ve bilgilendir (yeniden siparis versin).
+        $removed = $this->cleanupInvalidCartItems($user);
+        if (!empty($removed)) {
+            return redirect()->route('cart.index')
+                ->with('warning', 'Dosya yüklemesi tamamlanamadığı için şu ürün(ler) sepetten otomatik kaldırıldı: ' . implode(', ', $removed) . '. Lütfen tekrar sipariş oluşturun.');
+        }
+
+        $cartItems = $user->cart()->where('status', 0)->with(['product', 'discountGroup'])->get();
+
         if ($cartItems->isEmpty()) {
             return redirect()->route('cart.index')->with('error', 'Sepetiniz boş.');
         }
@@ -71,14 +86,14 @@ class CartController extends Controller
         $subtotal = 0;
         $totalDiscount = 0;
         $totalUrgentPrice = 0;
-        
+
         foreach ($cartItems as $item) {
             $originalTotal = $item->original_price * $item->quantity;
             $discountedTotal = $item->price * $item->quantity;
-            
+
             $subtotal += $originalTotal;
             $totalDiscount += ($originalTotal - $discountedTotal);
-            
+
             // Acil üretim fiyatını hesapla
             if ($item->notes) {
                 $notes = json_decode($item->notes, true);
@@ -87,30 +102,15 @@ class CartController extends Controller
                 }
             }
         }
-        
+
         $total = $subtotal - $totalDiscount + $totalUrgentPrice;
 
         // Kullanıcının adreslerini getir
         $addresses = $user->addresses()->orderBy('created_at', 'desc')->get();
 
-        // KATI KURAL: Urun herhangi bir file/files kategorisi iceriyorsa s3_zip dolu olmak zorunda
-        // (is_required'den bagimsiz — R2 upload tamamlanmadan siparis acilmasin)
+        // Cleanup zaten sadece dosyasi tamam cart'lari birakti, popup logic'e
+        // bir sey gondermiyoruz ama view uyumlulugu icin bos dizi geciyoruz
         $missingFileItems = [];
-        foreach ($cartItems as $item) {
-            if (!empty($item->s3_zip)) {
-                continue;
-            }
-
-            $hasFileCategory = \DB::table('customization_pivot_params as cpp')
-                ->join('customization_categories as cc', 'cc.id', '=', 'cpp.customization_category_id')
-                ->where('cpp.product_id', $item->product_id)
-                ->whereIn('cc.type', ['file', 'files'])
-                ->exists();
-
-            if ($hasFileCategory) {
-                $missingFileItems[] = $item->product->title ?? 'Ürün';
-            }
-        }
 
         return view('frontend.cart.checkout', compact('cartItems', 'subtotal', 'total', 'totalDiscount', 'totalUrgentPrice', 'addresses', 'missingFileItems'));
     }
@@ -157,35 +157,18 @@ class CartController extends Controller
             ]);
 
             $user = Auth::user();
+
+            // Defense-in-depth: orphan cart'lari sil (frontend'den atlatilmis/yarida kalmis olabilir)
+            $removed = $this->cleanupInvalidCartItems($user);
+            if (!empty($removed)) {
+                return redirect()->route('cart.index')
+                    ->with('warning', 'Dosya yüklemesi tamamlanamadığı için şu ürün(ler) sepetten otomatik kaldırıldı: ' . implode(', ', $removed) . '. Lütfen tekrar sipariş oluşturun.');
+            }
+
             $cartItems = $user->cart()->where('status', 0)->with(['product', 'discountGroup'])->get();
 
             if ($cartItems->isEmpty()) {
                 return redirect()->route('cart.index')->with('error', 'Sepetiniz boş.');
-            }
-
-            // KATI KURAL: Urun herhangi bir file/files kategorisi iceriyorsa s3_zip dolu olmak zorunda
-            // (chunk upload + R2 upload tamamlanmadan siparis olusturulmasin)
-            foreach ($cartItems as $cartItem) {
-                if (!empty($cartItem->s3_zip)) {
-                    continue;
-                }
-
-                $hasFileCategory = \DB::table('customization_pivot_params as cpp')
-                    ->join('customization_categories as cc', 'cc.id', '=', 'cpp.customization_category_id')
-                    ->where('cpp.product_id', $cartItem->product_id)
-                    ->whereIn('cc.type', ['file', 'files'])
-                    ->exists();
-
-                if ($hasFileCategory) {
-                    $productTitle = $cartItem->product->title ?? 'Ürün';
-                    \Log::warning('Order creation blocked: missing s3_zip for product with file category', [
-                        'cart_id' => $cartItem->id,
-                        'product_id' => $cartItem->product_id,
-                        'user_id' => Auth::id(),
-                    ]);
-                    return redirect()->route('cart.index')
-                        ->with('error', '"' . $productTitle . '" ürünü için dosya yüklemesi henüz tamamlanmadı. Lütfen ürüne geri dönüp dosyayı tekrar yükleyin ve yükleme tamamlandıktan sonra siparişi tamamlayın.');
-                }
             }
 
             // Toplam fiyatı hesapla (indirimli fiyatlar)
@@ -768,6 +751,61 @@ class CartController extends Controller
     {
         $imageTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp'];
         return in_array(strtolower($fileType), $imageTypes);
+    }
+
+    /**
+     * Kullanicinin status=0 sepet kayitlarini gez.
+     * Urun file/files kategorisi iceriyor ama s3_zip NULL ise:
+     * iliskili dosyalari + OrderStatusHistory + cart'in kendisini sil.
+     * Kullaniciya hangi urunlerin kaldirildigini donmek icin baslik dizisi return eder.
+     */
+    private function cleanupInvalidCartItems($user): array
+    {
+        $removedTitles = [];
+
+        $cartItems = $user->cart()
+            ->where('status', 0)
+            ->with(['product'])
+            ->get();
+
+        foreach ($cartItems as $cartItem) {
+            if (!empty($cartItem->s3_zip)) {
+                continue;
+            }
+
+            $hasFileCategory = \DB::table('customization_pivot_params as cpp')
+                ->join('customization_categories as cc', 'cc.id', '=', 'cpp.customization_category_id')
+                ->where('cpp.product_id', $cartItem->product_id)
+                ->whereIn('cc.type', ['file', 'files'])
+                ->exists();
+
+            if (!$hasFileCategory) {
+                continue;
+            }
+
+            $title = $cartItem->product->title ?? 'Ürün';
+            Log::warning('Orphan cart auto-deleted (missing s3_zip + file category)', [
+                'cart_id' => $cartItem->id,
+                'product_id' => $cartItem->product_id,
+                'user_id' => $user->id,
+            ]);
+
+            try {
+                $cartItem->deleteAssociatedFiles();
+            } catch (\Throwable $e) {
+                Log::warning('deleteAssociatedFiles failed during orphan cleanup', [
+                    'cart_id' => $cartItem->id,
+                    'error' => $e->getMessage(),
+                ]);
+            }
+
+            OrderStatusHistory::where('cart_id', $cartItem->id)->delete();
+            $cartItem->delete();
+
+            $removedTitles[] = $title;
+        }
+
+        return $removedTitles;
     }
 
     /**
