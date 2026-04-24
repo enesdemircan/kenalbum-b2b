@@ -123,9 +123,9 @@
                     <td>{{ $order->created_at->format('d.m.Y H:i') }}</td>
                     <td>
                         <div class="d-flex gap-1 justify-content-end">
-                            <button class="btn-material-icon btn-material-icon-info" title="Detay" onclick="window.location.href='{{ route('admin.orders.show', $order->id) }}'">
+                            <a class="btn-material-icon btn-material-icon-info" title="Detay (yeni sekmede)" href="{{ route('admin.orders.show', $order->id) }}" target="_blank" rel="noopener">
                                 <span class="material-icons">visibility</span>
-                            </button>
+                            </a>
                             <button class="btn-material-icon btn-material-icon-success" title="Yazdır" onclick="window.open('{{ route('admin.orders.print', $order->id) }}', '_blank')">
                                 <span class="material-icons">print</span>
                             </button>
