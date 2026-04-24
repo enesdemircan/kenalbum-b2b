@@ -2391,6 +2391,17 @@
                         // ZIP işlemi tamamlandı (sync mode)
                         console.log('✅ ZIP created successfully (sync)');
 
+                        // KATI KURAL: s3_zip URL'i response'ta olmalı, yoksa R2 upload basarisiz sayilir
+                        if (!data.s3_zip) {
+                            Swal.fire({
+                                icon: 'error',
+                                title: 'Dosya Yükleme Başarısız',
+                                text: 'Dosyalarınız R2 sunucusuna yüklenemedi. Lütfen tekrar deneyin.',
+                                confirmButtonText: 'Tamam'
+                            });
+                            return;
+                        }
+
                         // "Siparişi Tamamla" modunda dogrudan checkout'a git
                         if (window._completeOrderMode) {
                             window.location.href = '{{ route("cart.checkout") }}';
@@ -2488,31 +2499,18 @@
                                 confirmButtonText: 'Tamam'
                             });
                         } else if (pollCount >= maxPolls) {
-                            // Timeout (çok uzun sürdü)
+                            // Timeout (çok uzun sürdü) - KATI KURAL: ZIP dogrulanmadan checkout'a yonlendirme
                             clearInterval(pollInterval);
                             console.warn('⏱️ ZIP processing timeout (silent polling)');
 
-                            // "Siparişi Tamamla" modunda dogrudan checkout'a git
-                            if (window._completeOrderMode) {
-                                window.location.href = '{{ route("cart.checkout") }}';
-                                return;
-                            }
-
                             Swal.fire({
-                                icon: 'warning',
-                                title: 'İşlem Devam Ediyor',
+                                icon: 'error',
+                                title: 'Dosya Yükleme Tamamlanamadı',
                                 html: `
-                                    <p>Dosyalarınız hala işleniyor.</p>
-                                    <p class="text-muted">Büyük dosyaların işlenmesi zaman alabilir.</p>
-                                    <p><strong>Ürün sepetinize eklendi</strong>, işlem tamamlandığında bilgilendirileceksiniz.</p>
+                                    <p>Dosyalarınızın R2 sunucusuna yüklenmesi tamamlanamadı (5 dk zaman aşımı).</p>
+                                    <p class="text-muted">Siparişiniz <strong>henüz oluşturulamaz</strong>. Lütfen tekrar dosya yüklemeyi deneyin veya destek ekibiyle iletişime geçin.</p>
                                 `,
-                                confirmButtonText: 'Sepete Git',
-                                cancelButtonText: 'Alışverişe Devam Et',
-                                showCancelButton: true
-                            }).then((result) => {
-                                if (result.isConfirmed) {
-                                    window.location.href = '{{ route("cart.index") }}';
-                                }
+                                confirmButtonText: 'Tamam'
                             });
                         }
                     })
