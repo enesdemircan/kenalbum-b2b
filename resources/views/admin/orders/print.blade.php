@@ -59,12 +59,13 @@
         }
         .cart-id-text {
             font-family: monospace;
-            font-size: 12px;
+            font-size: 18px;
             margin: 5px 0;
             font-weight: bold;
-            color: #333;
-            border: 1px solid #333;
-            padding: 3px;
+            color: #000;
+            border: 1px solid #000;
+            padding: 6px 8px;
+            letter-spacing: 0.5px;
             background-color: #f9f9f9;
         }
         
