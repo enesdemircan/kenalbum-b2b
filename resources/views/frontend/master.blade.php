@@ -25,7 +25,27 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   @yield('meta')
   <title>{{ $siteSettings->title }}</title>
-  
+
+  <style>
+    /* Logo boyutunu kucult */
+    .logo__image {
+      max-height: 60px !important;
+      width: auto !important;
+    }
+    /* Header arama ikonu */
+    .header-search-trigger {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      padding: 0 10px;
+      color: inherit;
+      text-decoration: none;
+    }
+    .header-search-trigger:hover {
+      color: #007bff;
+    }
+  </style>
+
 </head>
 
 <body>
@@ -196,6 +216,9 @@
         </a>
       </div><!-- /.logo -->
 
+                  <a href="#" class="header-tools__item header-search-trigger me-2" data-bs-toggle="modal" data-bs-target="#headerSearchModal" title="Ara" aria-label="Ara">
+              <i class="fas fa-search" style="font-size: 20px;"></i>
+            </a>
                   <a href="{{ route('cart.index') }}" class="header-tools__item header-tools__cart">
               <svg class="d-block" width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg"><use href="#icon_cart" /></svg>
               <span class="cart-amount d-block position-absolute js-cart-items-count" id="cart-count">{{ $cartCount ?? 0 }}</span>
@@ -347,38 +370,12 @@
           </div><!-- /.logo -->
 
           <div class="header-tools d-flex align-items-center flex-1 justify-content-end me-2">
-            <div class="header-tools__item hover-container">
-             
-    
-              <div class="search-popup js-hidden-content">
-                <form action="./search_result.html" method="GET" class="search-field container">
-                  <p class="text-uppercase text-secondary fw-medium mb-4">What are you looking for?</p>
-                  <div class="position-relative">
-                    <input class="search-field__input search-popup__input w-100 fw-medium" type="text" name="search-keyword" placeholder="Search products">
-                    <button class="btn-icon search-popup__submit" type="submit">
-                      <svg class="d-block" width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg"><use href="#icon_search" /></svg>
-                    </button>
-                    <button class="btn-icon btn-close-lg search-popup__reset" type="reset"></button>
-                  </div>
-    
-                  <div class="search-popup__results">
-                    <div class="sub-menu search-suggestion">
-                      <h6 class="sub-menu__title fs-base">Quicklinks</h6>
-                      <ul class="sub-menu__list list-unstyled">
-                        <li class="sub-menu__item"><a href="./shop2.html" class="menu-link menu-link_us-s">New Arrivals</a></li>
-                        <li class="sub-menu__item"><a href="#" class="menu-link menu-link_us-s">Dresses</a></li>
-                        <li class="sub-menu__item"><a href="./shop3.html" class="menu-link menu-link_us-s">Accessories</a></li>
-                        <li class="sub-menu__item"><a href="#" class="menu-link menu-link_us-s">Footwear</a></li>
-                        <li class="sub-menu__item"><a href="#" class="menu-link menu-link_us-s">Sweatshirt</a></li>
-                      </ul>
-                    </div>
-    
-                    <div class="search-result row row-cols-5"></div>
-                  </div>
-                </form><!-- /.header-search -->
-              </div><!-- /.search-popup -->
-            </div><!-- /.header-tools__item hover-container -->
-    
+            <div class="header-tools__item">
+              <a href="#" class="header-search-trigger" data-bs-toggle="modal" data-bs-target="#headerSearchModal" title="Ara" aria-label="Ara">
+                <i class="fas fa-search" style="font-size: 20px;"></i>
+              </a>
+            </div>
+
             <div class="header-tools__item hover-container">
            
                 <a href="{{ route('profile.index') }}">
@@ -599,6 +596,42 @@
 
   <!-- Page Overlay -->
   <div class="page-overlay"></div><!-- /.page-overlay -->
+
+  <!-- Header Search Modal -->
+  <div class="modal fade" id="headerSearchModal" tabindex="-1" aria-labelledby="headerSearchModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content">
+        <form method="GET" action="{{ route('search') }}">
+          <div class="modal-header">
+            <h5 class="modal-title" id="headerSearchModalLabel">
+              <i class="fas fa-search me-2"></i>Arama
+            </h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Kapat"></button>
+          </div>
+          <div class="modal-body">
+            <div class="input-group input-group-lg">
+              <input type="text" name="q" id="headerSearchInput" class="form-control" placeholder="Ürün veya kategori ara..." minlength="2" maxlength="100" required>
+              <button type="submit" class="btn btn-primary">
+                <i class="fas fa-search"></i>
+              </button>
+            </div>
+            <small class="text-muted d-block mt-2">En az 2 karakter giriniz.</small>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+  <script>
+    document.addEventListener('DOMContentLoaded', function() {
+      var modalEl = document.getElementById('headerSearchModal');
+      if (modalEl) {
+        modalEl.addEventListener('shown.bs.modal', function() {
+          var input = document.getElementById('headerSearchInput');
+          if (input) input.focus();
+        });
+      }
+    });
+  </script>
 
 
   <!-- External JavaScripts -->

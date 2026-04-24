@@ -53,17 +53,6 @@
       </div><!-- /.slideshow__next -->
     </section><!-- /.slideshow -->
 
-    <section class="homepage-search container mt-4 mt-lg-5">
-        <form method="GET" action="{{ route('search') }}" class="mx-auto" style="max-width: 700px;">
-            <div class="input-group input-group-lg">
-                <input type="text" name="q" value="{{ request('q') }}" class="form-control" placeholder="Ürün veya kategori ara..." minlength="2" maxlength="100" required>
-                <button type="submit" class="btn btn-primary">
-                    <i class="fas fa-search"></i> Ara
-                </button>
-            </div>
-        </form>
-    </section>
-
         @foreach($homepageCategories as $category)
         <div class="mb-3 mb-xl-5 pb-3 pt-1 pb-xl-5"></div>
 
