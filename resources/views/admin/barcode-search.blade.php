@@ -65,6 +65,7 @@
                                     <th>Sipariş ID</th>
                                     <th>Firma</th>
                                     <th>Ürün</th>
+                                    <th>Son Durum</th>
                                     <th style="width: 60px">İşlem</th>
                                 </tr>
                             </thead>
@@ -81,6 +82,15 @@
                                         <td>
                                             <small>{{ $item['product_title'] }}</small><br>
                                             <span class="material-badge material-badge-secondary">{{ $item['quantity'] }} adet</span>
+                                        </td>
+                                        <td>
+                                            <span class="material-badge material-badge-primary">{{ $item['current_status'] ?? 'Bilinmiyor' }}</span>
+                                            @if(!empty($item['current_status_at']))
+                                                <br><small class="text-muted">{{ $item['current_status_at'] }}</small>
+                                            @endif
+                                            @if(!empty($item['current_status_by']))
+                                                <br><small class="text-muted"><i class="material-icons" style="font-size: 12px; vertical-align: middle">person</i> {{ $item['current_status_by'] }}</small>
+                                            @endif
                                         </td>
                                         <td>
                                             <button type="button" class="btn-material-icon btn-material-icon-danger" onclick="removeFromCartList({{ $item['id'] }})" title="Kaldır">

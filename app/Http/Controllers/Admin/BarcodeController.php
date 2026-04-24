@@ -37,28 +37,43 @@ class BarcodeController extends Controller
             if ($cart) {
                 // Cart'ı otomatik olarak listeye ekle
                 $cartList = session('cart_list', []);
-                
-                // Cart zaten listede var mı kontrol et
-                if (!in_array($cart->id, array_column($cartList, 'id'))) {
-                    $cartList[] = [
-                        'id' => $cart->id,
-                        'cart_id' => $cart->cart_id,
-                        'barcode' => $cart->barcode,
-                        'order_number' => $cart->order->order_number ?? 'N/A',
-                        'customer_name' => ($cart->user->customer->name ?? '') . ' ' . ($cart->user->customer->surname ?? ''),
-                        'company_name' => $cart->user->customer->unvan ?? '',
-                        'product_title' => $cart->product->title ?? '',
-                        'quantity' => $cart->quantity,
-                        'page_count' => $cart->page_count,
-                        'current_status' => $this->getCurrentStatus($cart)
-                    ];
-                    
+
+                $statusInfo = $this->getCurrentStatusInfo($cart);
+                $itemData = [
+                    'id' => $cart->id,
+                    'cart_id' => $cart->cart_id,
+                    'barcode' => $cart->barcode,
+                    'order_number' => $cart->order->order_number ?? 'N/A',
+                    'customer_name' => ($cart->user->customer->name ?? '') . ' ' . ($cart->user->customer->surname ?? ''),
+                    'company_name' => $cart->user->customer->unvan ?? '',
+                    'product_title' => $cart->product->title ?? '',
+                    'quantity' => $cart->quantity,
+                    'page_count' => $cart->page_count,
+                    'current_status' => $statusInfo['title'],
+                    'current_status_at' => $statusInfo['at'],
+                    'current_status_by' => $statusInfo['by'],
+                ];
+
+                // Cart zaten listede var mi kontrol et
+                $existingIndex = null;
+                foreach ($cartList as $idx => $existing) {
+                    if ((int) ($existing['id'] ?? 0) === (int) $cart->id) {
+                        $existingIndex = $idx;
+                        break;
+                    }
+                }
+
+                if ($existingIndex === null) {
+                    $cartList[] = $itemData;
                     session(['cart_list' => $cartList]);
                     $message = 'Sipariş bulundu ve listeye eklendi!';
                     $messageType = 'success';
                 } else {
-                    $message = 'Bu Sipariş zaten listede bulunuyor.';
-                    $messageType = 'warning';
+                    // Zaten listede — en guncel statusu DB'den tazele
+                    $cartList[$existingIndex] = $itemData;
+                    session(['cart_list' => array_values($cartList)]);
+                    $message = 'Bu sipariş zaten listede. Durum bilgisi güncellendi.';
+                    $messageType = 'info';
                 }
             } else {
                 $message = 'Bu barcode ile eşleşen sipariş bulunamadı.';
@@ -201,15 +216,30 @@ class BarcodeController extends Controller
 
     private function getCurrentStatus($cart)
     {
-        // Cart'ın mevcut durumunu bul - cart_id alanında cart ID saklanıyor
+        $info = $this->getCurrentStatusInfo($cart);
+        return $info['title'];
+    }
+
+    private function getCurrentStatusInfo($cart)
+    {
+        // Cart'in mevcut durumunu bul
         $lastHistory = OrderStatusHistory::where('cart_id', $cart->id)
+            ->with(['orderStatus', 'user'])
             ->latest('created_at')
             ->first();
-            
+
         if ($lastHistory) {
-            return $lastHistory->orderStatus->title ?? 'Bilinmiyor';
+            return [
+                'title' => $lastHistory->orderStatus->title ?? 'Bilinmiyor',
+                'at' => optional($lastHistory->created_at)->format('d.m.Y H:i'),
+                'by' => $lastHistory->user->name ?? null,
+            ];
         }
-        
-        return 'Yeni Sipariş';
+
+        return [
+            'title' => 'Yeni Sipariş',
+            'at' => null,
+            'by' => null,
+        ];
     }
-} 
+}
