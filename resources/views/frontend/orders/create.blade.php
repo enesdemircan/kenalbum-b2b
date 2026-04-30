@@ -1306,7 +1306,7 @@
                 if (data.success && data.cart_id) {
                     console.log('Cart created successfully, starting file upload...');
                     // Chunk sistemi ile dosyaları yükle
-                    uploadFilesWithChunks(data.cart_id, data.extra_sales);
+                    uploadFilesToR2(data.cart_id, data.extra_sales);
                 } else {
                     // Loading'i kapat
                     Swal.close();
@@ -1917,609 +1917,247 @@
         }
         
         // ============================================
-        // SIMPLE & RELIABLE CHUNK UPLOAD SYSTEM
-        // Auto-adaptive chunk size with fallback
+        // CLOUDFLARE R2 DIRECT MULTIPART UPLOAD
+        // Browser → R2 (Cloudflare proxy bypass, no server hop)
         // ============================================
-        
-        const CHUNK_SIZES = [10240, 5120, 2048, 1024, 512]; // KB: 10MB, 5MB, 2MB, 1MB, 512KB
-        let currentChunkSizeIndex = 0; // Start with 10MB (index 0) - ÇOK DAHA HIZLI!
-        
-        const uploadStats = {
-            startTime: null,
-            totalFiles: 0,
-            uploadedFiles: 0,
-            totalChunks: 0,
-            uploadedChunks: 0,
-            failedAttempts: 0,
-            currentChunkSize: CHUNK_SIZES[currentChunkSizeIndex]
-        };
 
-        // Main upload function - SIMPLE & CLEAN
-        async function uploadFilesWithChunks(cartId, extraSales = null) {
-            uploadStats.startTime = Date.now();
-            const chunkSize = CHUNK_SIZES[currentChunkSizeIndex] * 1024; // KB to bytes
+        const R2_PART_SIZE = 10 * 1024 * 1024;   // 10 MB
+        const R2_PARALLEL_PARTS = 3;              // her dosyada eşzamanlı 3 part
+        const R2_MAX_PART_RETRIES = 5;            // her part için exponential backoff
+
+        function r2CsrfToken() {
+            return document.querySelector('meta[name="csrf-token"]')?.content
+                || document.querySelector('input[name="_token"]')?.value
+                || '';
+        }
+
+        function r2FormatBytes(bytes) {
+            if (bytes === 0 || !bytes) return '0 B';
+            const k = 1024;
+            const sizes = ['B', 'KB', 'MB', 'GB'];
+            const i = Math.floor(Math.log(bytes) / Math.log(k));
+            return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + ' ' + sizes[i];
+        }
+
+        async function uploadFilesToR2(cartId, extraSales = null) {
+            const startTime = Date.now();
             const files = getAllFilesFromForm();
-            
+
             if (files.length === 0) {
                 console.log('No files to upload');
                 completeOrderProcess(cartId, null, extraSales);
                 return;
-            } 
-            
-            console.log(`Starting chunk upload for ${files.length} files`);
-            
-            // Upload stats başlat
-            uploadStats.startTime = Date.now();
-            uploadStats.totalFiles = files.length;
-            uploadStats.uploadedFiles = 0;
-            uploadStats.totalChunks = 0;
-            uploadStats.uploadedChunks = 0;
-            uploadStats.failedAttempts = 0;
-            
-            // Upload progress başlat (ilk gösterim)
+            }
+
+            const totalBytes = files.reduce((s, f) => s + f.size, 0);
+            let uploadedBytes = 0;
+
             Swal.fire({
                 title: 'Dosyalar Yükleniyor...',
                 html: `
                     <div class="text-center">
                         <div class="mb-3">
-                            <strong>Dosya İlerlemesi:</strong> 0/${files.length} (0%)
+                            <strong>İlerleme:</strong> <span id="r2-progress-text">0/${files.length} (0%)</span>
                             <div class="progress mt-2">
-                                <div class="progress-bar progress-bar-striped progress-bar-animated" style="width: 0%"></div>
+                                <div id="r2-progress-bar" class="progress-bar progress-bar-striped progress-bar-animated" style="width: 0%"></div>
                             </div>
+                            <small class="text-muted mt-2 d-block" id="r2-progress-detail"></small>
                         </div>
                     </div>
                 `,
                 allowOutsideClick: false,
                 showConfirmButton: false,
-                showCloseButton: false,
-                didOpen: () => {
-                    Swal.showLoading();
-                }
+                showCloseButton: false
             });
-            
-            // Toplam chunk sayısını hesapla
-            let totalChunks = 0;
-            files.forEach(file => {
-                totalChunks += Math.ceil(file.size / chunkSize);
-            });
-            
-            uploadStats.totalChunks = totalChunks;
-            console.log(`📊 Upload starting: ${totalChunks} chunks from ${files.length} files (chunk size: ${chunkSize/1024}KB)`);
-            
-            let completedFiles = 0;
-            let completedChunks = 0;
-            let failedFiles = [];
-            
-            // Her dosyayı SIRAYLA yükle (aynı anda değil!)
+
+            const updateR2Progress = (fileIndex, file) => {
+                const pct = totalBytes > 0 ? Math.round((uploadedBytes / totalBytes) * 100) : 0;
+                const text = document.getElementById('r2-progress-text');
+                const bar = document.getElementById('r2-progress-bar');
+                const detail = document.getElementById('r2-progress-detail');
+                if (text) text.textContent = `${fileIndex + 1}/${files.length} (${pct}%)`;
+                if (bar) bar.style.width = `${pct}%`;
+                if (detail) detail.textContent = `${file.name} • ${r2FormatBytes(uploadedBytes)} / ${r2FormatBytes(totalBytes)}`;
+            };
+
+            const failedFiles = [];
+
             for (let fileIndex = 0; fileIndex < files.length; fileIndex++) {
                 const file = files[fileIndex];
-                
-                console.log(`📤 Starting upload for file ${fileIndex + 1}/${files.length}: ${file.name}`);
-                
-                // Progress callback fonksiyonu (bu dosya için)
-                const onChunkProgress = () => {
-                    completedChunks++;
-                    const chunkProgress = Math.round((completedChunks / totalChunks) * 100);
-                    updateUploadProgress(completedFiles, files.length, totalChunks, completedChunks, chunkProgress);
+                console.log(`📤 R2 upload ${fileIndex + 1}/${files.length}: ${file.name} (${r2FormatBytes(file.size)})`);
+
+                const onPartProgress = (delta) => {
+                    uploadedBytes += delta;
+                    updateR2Progress(fileIndex, file);
                 };
-                
-                // Dosyayı yükle ve sonucu bekle (chunk progress callback ile)
-                const fileCompleted = await new Promise((resolve) => {
-                    uploadFileInChunks(file, fileIndex, cartId, chunkSize, onChunkProgress, resolve);
-                });
-                
-                completedFiles++;
-                
-                if (fileCompleted) {
-                    console.log(`✅ File ${fileIndex + 1}/${files.length} completed: ${file.name}`);
-                } else {
+
+                const ok = await uploadFileToR2(file, fileIndex, cartId, onPartProgress);
+
+                if (!ok) {
                     failedFiles.push({ index: fileIndex, name: file.name });
-                    console.error(`❌ File ${fileIndex + 1}/${files.length} failed: ${file.name}`);
+                    console.error(`❌ R2 upload failed: ${file.name}`);
+                    break;
                 }
+                console.log(`✅ R2 upload completed: ${file.name}`);
             }
-            
-            // Tüm dosyalar tamamlandı - başarı kontrolü
-            console.log(`Upload summary: ${completedFiles - failedFiles.length}/${files.length} files successful`);
-            
+
+            const duration = Date.now() - startTime;
+            console.log(`📊 R2 finished in ${Math.round(duration / 1000)}s — ${files.length - failedFiles.length}/${files.length}`);
+
             if (failedFiles.length > 0) {
-                // Bazı dosyalar başarısız
-                console.error('❌ Failed files:', failedFiles);
-                
                 Swal.close();
                 Swal.fire({
                     icon: 'error',
-                    title: 'Sunucu Bağlantı Hatası!',
+                    title: 'Yükleme Hatası!',
                     html: `
                         <div class="text-start">
-                            <p><strong>Dosyalar yüklenemedi:</strong></p>
-                            <ul>
-                                ${failedFiles.map(f => `<li>${f.name}</li>`).join('')}
-                            </ul>
+                            <p><strong>Şu dosyalar yüklenemedi:</strong></p>
+                            <ul>${failedFiles.map(f => `<li>${f.name}</li>`).join('')}</ul>
                             <hr>
-                            <p class="text-danger"><strong>Muhtemel Neden:</strong></p>
-                            <p class="small">Sunucu bağlantınız kesildi (ERR_CONNECTION_CLOSED)</p>
-                            <p class="text-muted mt-3"><strong>Çözüm Önerileri:</strong></p>
-                            <ol class="small">
-                                <li>Dosya boyutunu küçültün (max 50MB önerilen)</li>
-                                <li>Farklı bir ağdan deneyin (WiFi → Mobil data)</li>
-                                <li>Daha küçük ZIP dosyaları hazırlayın</li>
-                                <li>Destek ekibiyle iletişime geçin: 05398636262</li>
-                            </ol>
+                            <p class="text-muted small">Lütfen tekrar deneyin. Sorun devam ederse destek ekibi: 05398636262</p>
                         </div>
                     `,
                     width: '600px',
                     confirmButtonText: 'Tamam'
                 });
-                
-                // Sepet item'ını sil (hatalı)
-                await fetch(`/cart/remove/${cartId}`, {
-                    method: 'DELETE',
+
+                try {
+                    await fetch(`/cart/remove/${cartId}`, {
+                        method: 'DELETE',
+                        headers: { 'X-CSRF-TOKEN': r2CsrfToken() }
+                    });
+                } catch (e) {
+                    console.warn('Cart cleanup failed:', e);
+                }
+                return;
+            }
+
+            completeOrderProcess(cartId, null, extraSales);
+        }
+
+        async function uploadFileToR2(file, fileIndex, cartId, onPartProgress) {
+            // 1) initiate
+            let initiate;
+            try {
+                const resp = await fetch('/upload/r2/initiate', {
+                    method: 'POST',
                     headers: {
-                        'X-CSRF-TOKEN': document.querySelector('input[name="_token"]').value
-                    }
-                });
-                
-            } else {
-                // Tüm dosyalar başarılı - yükleme popup'ını kapat
-                const totalDuration = Date.now() - uploadStats.startTime;
-                uploadStats.uploadedFiles = files.length;
-                console.log('✅ All files uploaded successfully, starting merge process...');
-                console.log('📊 UPLOAD STATS:', {
-                    totalDuration: `${Math.round(totalDuration/1000)}s`,
-                    totalFiles: uploadStats.totalFiles,
-                    uploadedFiles: uploadStats.uploadedFiles,
-                    totalChunks: uploadStats.totalChunks,
-                    uploadedChunks: uploadStats.uploadedChunks,
-                    successRate: `${Math.round((uploadStats.uploadedChunks / uploadStats.totalChunks) * 100)}%`,
-                    failedAttempts: uploadStats.failedAttempts,
-                    avgChunkTime: `${Math.round(totalDuration / uploadStats.totalChunks)}ms`,
-                    chunkSize: `${chunkSize/1024}KB`
-                });
-                
-                // Yükleme tamamlandı - popup'ı kapat
-                Swal.close();
-                
-                // Merge işlemini arka planda başlat (popup olmadan)
-                mergeAllFiles(cartId, extraSales);
-            }
-        }
-        
-        // Dosyayı chunk'lar halinde yükle (SEQUENTIAL - güvenlik için sırayla)
-        async function uploadFileInChunks(file, fileIndex, cartId, chunkSize, onProgress, callback) {
-            const totalChunksForFile = Math.ceil(file.size / chunkSize);
-            let uploadedChunks = 0;
-            let hasError = false;
-            
-            console.log(`Uploading file: ${file.name} in ${totalChunksForFile} chunks (sequential)`);
-            
-            // Chunk'ları SIRAYLA yükle (paralel değil - timeout sorununu önler)
-            for (let chunkIndex = 0; chunkIndex < totalChunksForFile; chunkIndex++) {
-                if (hasError) break;
-                
-                const start = chunkIndex * chunkSize;
-                const end = Math.min(start + chunkSize, file.size);
-                
-                // Chunk'ı oluştur ve yükle (her chunk ayrı scope'ta - memory leak önleme)
-                const chunk = file.slice(start, end);
-                
-                try {
-                    // Chunk'ı yükle (5 retry ile - connection stability için)
-                    const success = await uploadChunkWithRetry(
-                        chunk, fileIndex, chunkIndex, totalChunksForFile, 
-                        cartId, file.name, 5 // Max 5 retry with exponential backoff
-                    );
-                    
-                    if (success) {
-                        uploadedChunks++;
-                        if (onProgress) onProgress();
-                        console.log(`File ${fileIndex}: ${uploadedChunks}/${totalChunksForFile} chunks completed`);
-                    } else {
-                        hasError = true;
-                        console.error(`Chunk ${chunkIndex} upload failed for ${file.name}`);
-                        break;
-                    }
-                } catch (error) {
-                    hasError = true;
-                    console.error(`Chunk ${chunkIndex} exception:`, error);
-                    break;
-                }
-                
-                // Chunk'lar arası delay - MİNİMUM (HIZLI UPLOAD)
-                if (chunkIndex < totalChunksForFile - 1) {
-                    // Büyük chunk size (10MB) kullandığımız için delay'i minimize ediyoruz
-                    // Sadece connection stability için çok kısa bir delay
-                    const baseDelay = 50; // 50ms = ÇOK HIZLI! (önceden 100ms idi)
-                    
-                    // Her 50 chunk'ta kısa pause (connection refresh) - daha az sıklıkta
-                    if ((chunkIndex + 1) % 50 === 0) {
-                        console.log(`⏸️ Connection refresh after ${chunkIndex + 1} chunks (200ms pause)`);
-                        await new Promise(resolve => setTimeout(resolve, 200)); // 200ms pause (önceden 500ms idi)
-                    } else {
-                        await new Promise(resolve => setTimeout(resolve, baseDelay)); // 50ms delay
-                    }
-                }
-            }
-            
-            // Tüm chunk'lar başarılı mı?
-            if (uploadedChunks === totalChunksForFile && !hasError) {
-                console.log(`✅ File ${file.name} completed successfully`);
-                callback(true);
-            } else {
-                console.error(`❌ File ${file.name} failed - uploaded ${uploadedChunks}/${totalChunksForFile} chunks`);
-                callback(false);
-            }
-        }
-        
-        // Retry mekanizması ile chunk yükle - ENHANCED with exponential backoff
-        async function uploadChunkWithRetry(chunk, fileIndex, chunkIndex, totalChunks, cartId, fileName, maxRetries = 5) {
-            let lastError = null;
-            const chunkStartTime = Date.now();
-            
-            for (let attempt = 1; attempt <= maxRetries; attempt++) {
-                try {
-                    const attemptStartTime = Date.now();
-                    const success = await uploadChunk(chunk, fileIndex, chunkIndex, totalChunks, cartId, fileName);
-                    const attemptDuration = Date.now() - attemptStartTime;
-                    
-                    if (success) {
-                        if (attempt > 1) {
-                            console.log(`✅ Chunk ${chunkIndex} succeeded on attempt ${attempt}/${maxRetries} (${attemptDuration}ms)`);
-                            uploadStats.failedAttempts += (attempt - 1);
-                        }
-                        uploadStats.uploadedChunks++;
-                        return true;
-                    }
-                    
-                    // Başarısız ama exception yok - retry with exponential backoff
-                    if (attempt < maxRetries) {
-                        // Exponential backoff: 3s, 6s, 12s, 24s
-                        const delay = Math.min(3000 * Math.pow(2, attempt - 1), 30000);
-                        console.warn(`⚠️ Chunk ${chunkIndex} failed (no exception), retrying in ${delay}ms... (attempt ${attempt}/${maxRetries})`);
-                        await new Promise(resolve => setTimeout(resolve, delay));
-                    }
-                    
-                } catch (error) {
-                    lastError = error;
-                    const errorInfo = {
-                        chunkIndex: chunkIndex,
-                        attempt: attempt,
-                        maxRetries: maxRetries,
-                        errorMessage: error.message,
-                        errorType: error.name,
-                        chunkSize: chunk.size,
-                        timestamp: new Date().toISOString()
-                    };
-                    
-                    console.error(`❌ Chunk ${chunkIndex} error on attempt ${attempt}/${maxRetries}:`, errorInfo);
-                    
-                    if (attempt < maxRetries) {
-                        // Connection closed için daha uzun bekleme
-                        const isConnectionClosed = error.message?.includes('Failed to fetch') || 
-                                                  error.message?.includes('NetworkError') ||
-                                                  error.name === 'AbortError';
-                        
-                        if (isConnectionClosed) {
-                            // 502 Bad Gateway için HIZLI retry (CloudFlare timeout)
-                            const delay = 1000 * attempt; // 1s, 2s, 3s, 4s, 5s (HIZLI!)
-                            console.warn(`🔌 502 BAD GATEWAY - Quick retry in ${delay}ms (attempt ${attempt}/${maxRetries})`);
-                            await new Promise(resolve => setTimeout(resolve, delay));
-                        } else {
-                            // Diğer hatalar için normal backoff
-                            const delay = 2000 * attempt;
-                            await new Promise(resolve => setTimeout(resolve, delay));
-                        }
-                    }
-                }
-            }
-
-            // Tüm retry'lar başarısız
-            const failureInfo = {
-                chunkIndex: chunkIndex,
-                totalAttempts: maxRetries,
-                lastError: lastError?.message,
-                lastErrorType: lastError?.name,
-                chunkSize: chunk.size,
-                totalDuration: Date.now() - chunkStartTime
-            };
-            
-            console.error(`❌ Chunk ${chunkIndex} PERMANENTLY FAILED after ${maxRetries} attempts`, failureInfo);
-            uploadStats.failedAttempts += maxRetries;
-            
-            return false;
-        }
-        
-        // Tek chunk yükle (Promise döndürür) - FIXED: Connection stability
-        function uploadChunk(chunk, fileIndex, chunkIndex, totalChunks, cartId, fileName) {
-            return new Promise(async (resolve) => {
-                // AbortController manuel oluştur (timeout yerine daha güvenilir)
-                const controller = new AbortController();
-                const timeoutId = setTimeout(() => {
-                    console.warn(`⏱️ Chunk ${chunkIndex} timeout (60s), aborting...`);
-                    controller.abort();
-                }, 60000); // 60 saniye (CloudFlare proxy timeout 100s, bizim 60s)
-                
-                try {
-                    // FormData oluştur (her seferinde yeni)
-                    const formData = new FormData();
-                    
-                    // Chunk'ı file olarak ekle (Blob yerine File daha stabil)
-                    const chunkFile = new File([chunk], `chunk_${chunkIndex}.tmp`, {
-                        type: 'application/octet-stream'
-                    });
-                    
-                    formData.append('chunk', chunkFile);
-                    formData.append('file_index', fileIndex);
-                    formData.append('chunk_index', chunkIndex);
-                    formData.append('total_chunks', totalChunks);
-                    formData.append('cart_id', cartId);
-                    formData.append('file_name', fileName);
-
-                    console.log(`📤 Uploading chunk ${chunkIndex}/${totalChunks} (${chunk.size} bytes)`);
-
-                    // Fetch ile gönder
-                    const response = await fetch('/upload-chunk', {
-                        method: 'POST',
-                        body: formData,
-                        headers: {
-                            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.content || 
-                                            document.querySelector('input[name="_token"]')?.value || '',
-                            'Accept': 'application/json',
-                            // Connection'ı her request'te temizle (pool sorununu önler)
-                            'Connection': 'close'
-                        },
-                        signal: controller.signal,
-                        // Credentials ve cache ayarları
-                        credentials: 'same-origin',
-                        cache: 'no-store',
-                        keepalive: false // Connection pool kullanma
-                    });
-                    
-                    clearTimeout(timeoutId);
-                    
-                    console.log(`📥 Chunk ${chunkIndex} response:`, {
-                        status: response.status,
-                        ok: response.ok
-                    });
-                    
-                    if (!response.ok) {
-                        const text = await response.text();
-                        console.error('❌ HTTP Error:', {
-                            status: response.status,
-                            body: text.substring(0, 200)
-                        });
-                        resolve(false);
-                        return;
-                    }
-                    
-                    const data = await response.json();
-                    
-                    if (data.success) {
-                        console.log(`✅ Chunk ${chunkIndex} uploaded successfully`);
-                        resolve(true);
-                    } else {
-                        console.error('❌ Chunk upload failed:', data.message);
-                        resolve(false);
-                    }
-                    
-                } catch (error) {
-                    clearTimeout(timeoutId);
-                    
-                    // Timeout vs Network error ayır
-                    if (error.name === 'AbortError') {
-                        console.error(`⏱️ Chunk ${chunkIndex} TIMEOUT (90s)`);
-                    } else if (error.message === 'Failed to fetch') {
-                        console.error(`🔌 Chunk ${chunkIndex} CONNECTION CLOSED:`, {
-                            error: error.message,
-                            chunkSize: chunk.size,
-                            fileIndex: fileIndex,
-                            chunkIndex: chunkIndex
-                        });
-                    } else {
-                        console.error(`❌ Chunk ${chunkIndex} ERROR:`, {
-                            type: error.constructor.name,
-                            message: error.message
-                        });
-                    }
-                    
-                    resolve(false);
-                }
-            });
-        }
-        
-        // Tüm dosyaları merge et - FIXED: Connection stability
-        function mergeAllFiles(cartId, extraSales = null) {
-            console.log('Starting file merge process...');
-            
-            // Merge işlemi arka planda devam ediyor - popup gösterme
-            
-            fetch('/merge-files', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'X-CSRF-TOKEN': document.querySelector('input[name="_token"]').value,
-                    'Connection': 'close' // Connection pool sorununu önle
-                },
-                body: JSON.stringify({
-                    cart_id: cartId
-                }),
-                credentials: 'same-origin',
-                cache: 'no-store',
-                keepalive: false
-            })
-            .then(response => response.json())
-            .then(data => {
-                if (data.success) {
-                    console.log('Files merged successfully, creating ZIP...');
-                    createZipFile(cartId, extraSales);
-                } else {
-                    console.error('Merge failed:', data.message);
-                    showUploadError('Dosya birleştirme hatası: ' + data.message);
-                }
-            })
-            .catch(error => {
-                console.error('Merge error:', error);
-                showUploadError('Dosya birleştirme hatası');
-            });
-        }
-        
-        // ZIP dosyasını R2'ye yükle - FIXED: Connection stability
-        function createZipFile(cartId, extraSales = null) {
-            console.log('Uploading to R2...');
-            
-            // ZIP işlemi arka planda devam ediyor - popup gösterme
-            
-            fetch('/create-zip', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'X-CSRF-TOKEN': document.querySelector('input[name="_token"]').value,
-                    'Connection': 'close' // Connection pool sorununu önle
-                },
-                body: JSON.stringify({
-                    cart_id: cartId
-                }),
-                credentials: 'same-origin',
-                cache: 'no-store',
-                keepalive: false
-            })
-            .then(response => response.json())
-            .then(data => {
-                console.log('ZIP creation response:', data);
-                
-                if (data.success) {
-                    if (data.status === 'completed') {
-                        // ZIP işlemi tamamlandı (sync mode)
-                        console.log('✅ ZIP created successfully (sync)');
-
-                        // KATI KURAL: s3_zip URL'i response'ta olmalı, yoksa R2 upload basarisiz sayilir
-                        if (!data.s3_zip) {
-                            Swal.fire({
-                                icon: 'error',
-                                title: 'Dosya Yükleme Başarısız',
-                                text: 'Dosyalarınız R2 sunucusuna yüklenemedi. Lütfen tekrar deneyin.',
-                                confirmButtonText: 'Tamam'
-                            });
-                            return;
-                        }
-
-                        // "Siparişi Tamamla" modunda dogrudan checkout'a git
-                        if (window._completeOrderMode) {
-                            window.location.href = '{{ route("cart.checkout") }}';
-                            return;
-                        }
-
-                        // Extra sales kontrolü
-                        if (extraSales && extraSales.length > 0) {
-                            showExtraSalesModal(extraSales);
-                        } else {
-                            Swal.fire({
-                                icon: 'success',
-                                title: 'Başarılı!',
-                                text: 'Ürün sepete eklendi ve dosyalar başarıyla işlendi.',
-                                confirmButtonText: 'Sepete Git',
-                                cancelButtonText: 'Alışverişe Devam Et',
-                                showCancelButton: true
-                            }).then((result) => {
-                                if (result.isConfirmed) {
-                                    window.location.href = '{{ route("cart.index") }}';
-                                }
-                            });
-                        }
-                    } else if (data.status === 'processing') {
-                        // Arka planda işleniyor (async mode - fallback)
-                        // Popup açmadan sessizce polling yap
-                        console.log('ZIP processing started in background (silent polling)');
-                        startZipStatusPollingSilent(cartId, extraSales);
-                    }
-                } else {
-                    console.error('ZIP creation failed:', data.message);
-                    showUploadError('ZIP oluşturma hatası: ' + data.message);
-                }
-            })
-            .catch(error => {
-                console.error('ZIP creation error:', error);
-                showUploadError('ZIP oluşturma hatası');
-            });
-        }
-        
-
-        
-        // ZIP işlemi durumunu sessizce takip et (popup açmadan)
-        function startZipStatusPollingSilent(cartId, extraSales = null) {
-            let pollCount = 0;
-            const maxPolls = 60; // Maksimum 60 kez (5 dakika, 5 saniyede bir)
-            
-            console.log('Starting silent ZIP status polling...');
-            
-            const pollInterval = setInterval(function() {
-                pollCount++;
-                
-                fetch(`/check-zip-status/${cartId}`)
-                    .then(response => response.json())
-                    .then(data => {
-                        console.log('ZIP status:', data);
-                        
-                        if (data.success && data.status === 'completed') {
-                            // İşlem tamamlandı
-                            clearInterval(pollInterval);
-                            console.log('✅ ZIP processing completed (silent polling)');
-
-                            // "Siparişi Tamamla" modunda dogrudan checkout'a git
-                            if (window._completeOrderMode) {
-                                window.location.href = '{{ route("cart.checkout") }}';
-                                return;
-                            }
-
-                            // Extra sales kontrolü
-                            if (extraSales && extraSales.length > 0) {
-                                showExtraSalesModal(extraSales);
-                            } else {
-                                Swal.fire({
-                                    icon: 'success',
-                                    title: 'Başarılı!',
-                                    text: 'Ürün sepete eklendi ve dosyalar başarıyla işlendi.',
-                                    confirmButtonText: 'Sepete Git',
-                                    cancelButtonText: 'Alışverişe Devam Et',
-                                    showCancelButton: true
-                                }).then((result) => {
-                                    if (result.isConfirmed) {
-                                        window.location.href = '{{ route("cart.index") }}';
-                                    }
-                                });
-                            }
-                        } else if (data.status === 'error' || data.status === 'failed') {
-                            // İşlem başarısız
-                            clearInterval(pollInterval);
-                            console.error('❌ ZIP processing failed');
-                            
-                            Swal.fire({
-                                icon: 'error',
-                                title: 'İşlem Başarısız!',
-                                text: 'Dosya işleme sırasında bir hata oluştu. Lütfen tekrar deneyin veya destek ekibiyle iletişime geçin.',
-                                confirmButtonText: 'Tamam'
-                            });
-                        } else if (pollCount >= maxPolls) {
-                            // Timeout (çok uzun sürdü) - KATI KURAL: ZIP dogrulanmadan checkout'a yonlendirme
-                            clearInterval(pollInterval);
-                            console.warn('⏱️ ZIP processing timeout (silent polling)');
-
-                            Swal.fire({
-                                icon: 'error',
-                                title: 'Dosya Yükleme Tamamlanamadı',
-                                html: `
-                                    <p>Dosyalarınızın R2 sunucusuna yüklenmesi tamamlanamadı (5 dk zaman aşımı).</p>
-                                    <p class="text-muted">Siparişiniz <strong>henüz oluşturulamaz</strong>. Lütfen tekrar dosya yüklemeyi deneyin veya destek ekibiyle iletişime geçin.</p>
-                                `,
-                                confirmButtonText: 'Tamam'
-                            });
-                        }
+                        'Content-Type': 'application/json',
+                        'X-CSRF-TOKEN': r2CsrfToken(),
+                        'Accept': 'application/json'
+                    },
+                    credentials: 'same-origin',
+                    body: JSON.stringify({
+                        cart_id: cartId,
+                        file_index: fileIndex,
+                        file_size: file.size,
+                        file_name: file.name,
+                        content_type: file.type || 'application/octet-stream'
                     })
-                    .catch(error => {
-                        console.error('Status check error:', error);
-                        // Hata olsa bile devam et (retry)
+                });
+                initiate = await resp.json();
+                if (!resp.ok || !initiate.success) {
+                    console.error('R2 initiate failed', initiate);
+                    return false;
+                }
+            } catch (e) {
+                console.error('R2 initiate exception', e);
+                return false;
+            }
+
+            const { upload_id, key, part_size, part_count, part_urls } = initiate;
+            const partResults = new Array(part_count);
+
+            const uploadPart = async (partInfo) => {
+                const start = (partInfo.partNumber - 1) * part_size;
+                const end = Math.min(start + part_size, file.size);
+                const blob = file.slice(start, end);
+
+                for (let attempt = 1; attempt <= R2_MAX_PART_RETRIES; attempt++) {
+                    try {
+                        const resp = await fetch(partInfo.url, {
+                            method: 'PUT',
+                            body: blob
+                        });
+                        if (!resp.ok) {
+                            throw new Error(`R2 PUT ${resp.status}`);
+                        }
+                        let etag = resp.headers.get('ETag') || resp.headers.get('etag');
+                        if (!etag) {
+                            throw new Error('R2 ETag alınamadı (CORS expose-headers eksik)');
+                        }
+                        etag = etag.replace(/^"|"$/g, '');
+                        partResults[partInfo.partNumber - 1] = { PartNumber: partInfo.partNumber, ETag: etag };
+                        onPartProgress(blob.size);
+                        if (attempt > 1) {
+                            console.log(`✅ Part ${partInfo.partNumber} succeeded on attempt ${attempt}`);
+                        }
+                        return true;
+                    } catch (err) {
+                        console.warn(`⚠️ Part ${partInfo.partNumber} attempt ${attempt}/${R2_MAX_PART_RETRIES}:`, err.message);
+                        if (attempt < R2_MAX_PART_RETRIES) {
+                            const delay = Math.min(1000 * Math.pow(2, attempt - 1), 30000);
+                            await new Promise(r => setTimeout(r, delay));
+                        }
+                    }
+                }
+                console.error(`❌ Part ${partInfo.partNumber} permanently failed`);
+                return false;
+            };
+
+            // 2) parallel parts
+            const queue = [...part_urls];
+            let aborted = false;
+            const workers = [];
+            for (let w = 0; w < Math.min(R2_PARALLEL_PARTS, queue.length); w++) {
+                workers.push((async () => {
+                    while (!aborted && queue.length > 0) {
+                        const partInfo = queue.shift();
+                        if (!partInfo) break;
+                        const ok = await uploadPart(partInfo);
+                        if (!ok) {
+                            aborted = true;
+                            break;
+                        }
+                    }
+                })());
+            }
+            await Promise.all(workers);
+
+            if (aborted) {
+                try {
+                    await fetch('/upload/r2/abort', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': r2CsrfToken() },
+                        credentials: 'same-origin',
+                        body: JSON.stringify({ cart_id: cartId, key, upload_id })
                     });
-                
-            }, 5000); // 5 saniyede bir kontrol et
+                } catch (e) { /* best-effort */ }
+                return false;
+            }
+
+            // 3) complete
+            try {
+                const resp = await fetch('/upload/r2/complete', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRF-TOKEN': r2CsrfToken(),
+                        'Accept': 'application/json'
+                    },
+                    credentials: 'same-origin',
+                    body: JSON.stringify({ cart_id: cartId, key, upload_id, parts: partResults })
+                });
+                const data = await resp.json();
+                if (!resp.ok || !data.success) {
+                    console.error('R2 complete failed', data);
+                    return false;
+                }
+                return true;
+            } catch (e) {
+                console.error('R2 complete exception', e);
+                return false;
+            }
         }
 
         // Sipariş işlemini tamamla
@@ -2554,39 +2192,6 @@
                     }
                 });
             }
-        }
-        
-        // Upload progress güncelle
-        function updateUploadProgress(completedFiles, totalFiles, totalChunks, completedChunks, chunkProgress, status = null) {
-            if (status) {
-                Swal.update({
-                    title: 'Dosyalar İşleniyor...',
-                    html: `
-                        <div class="text-center">
-                            <p>${status}</p>
-                        </div>
-                    `
-                });
-            } else {
-                Swal.update({
-                    html: `
-                        <div class="text-center">
-                            <div class="mb-3">
-                                <strong>Yükleme İlerlemesi:</strong> ${completedChunks}/${totalChunks} (${chunkProgress}%)
-                                <div class="progress mt-2">
-                                    <div class="progress-bar progress-bar-striped progress-bar-animated" style="width: ${chunkProgress}%"></div>
-                                </div>
-                                <small class="text-muted mt-2 d-block">Dosya: ${completedFiles}/${totalFiles}</small>
-                            </div>
-                        </div>
-                    `
-                });
-            }
-        }
-        
-        // Chunk progress güncelle
-        function updateChunkProgress(fileIndex, completedChunks, totalChunks) {
-            console.log(`File ${fileIndex}: ${completedChunks}/${totalChunks} chunks completed`);
         }
         
         // Upload hatası göster

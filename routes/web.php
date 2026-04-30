@@ -73,13 +73,16 @@ Route::middleware(['auth', 'approval'])->group(function () {
     Route::post('/modal/extra-sales', [FrontendController::class, 'extraSalesModal'])->name('modal.extra-sales');
 });
 
-// Chunk upload routes (CSRF bypass, auth required)
-Route::middleware(['web', 'auth'])->group(function () {
-    Route::post('/upload-chunk', [App\Http\Controllers\ChunkUploadController::class, 'uploadChunk'])->name('upload.chunk');
-    Route::post('/merge-files', [App\Http\Controllers\ChunkUploadController::class, 'mergeFiles'])->name('merge.files');
-    Route::post('/create-zip', [App\Http\Controllers\ChunkUploadController::class, 'createZip'])->name('create.zip');
-    Route::get('/check-zip-status/{cartId}', [App\Http\Controllers\ChunkUploadController::class, 'checkZipStatus'])->name('check.zip.status');
-    Route::get('/test-chunk', [App\Http\Controllers\ChunkUploadController::class, 'testChunk'])->name('test.chunk'); // 502 debug
+// R2 direct multipart upload (auth + firma yetkisi + throttle)
+Route::middleware(['auth', 'approval', 'ensure.customer'])->group(function () {
+    Route::post('/upload/r2/initiate', [App\Http\Controllers\R2DirectUploadController::class, 'initiate'])
+        ->middleware('throttle:30,1')
+        ->name('upload.r2.initiate');
+    Route::post('/upload/r2/complete', [App\Http\Controllers\R2DirectUploadController::class, 'complete'])
+        ->middleware('throttle:60,1')
+        ->name('upload.r2.complete');
+    Route::post('/upload/r2/abort', [App\Http\Controllers\R2DirectUploadController::class, 'abort'])
+        ->name('upload.r2.abort');
 });
 
 

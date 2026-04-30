@@ -9,7 +9,6 @@ use Illuminate\Support\Facades\Log;
 use App\Models\DiscountGroup;
 use App\Models\User;
 use App\Models\Product;
-use ZipArchive;
 
 class Cart extends Model
 {
@@ -308,7 +307,9 @@ class Cart extends Model
     }
 
     /**
-     * S3'teki ZIP dosyasını yeni cart_id ile güncelle (dosya adı + içindeki klasör adı)
+     * Cart_id slug değişince R2'deki object key'lerini yeniden adlandır
+     * (CopyObject + DeleteObject — sunucu transferi yok, ZIP içeriği dokunulmaz).
+     * Eski Spaces URL'leri (geçmiş siparişler) dokunulmadan bırakılır.
      */
     public function renameS3Zip($oldCartId, $newCartId)
     {
@@ -316,51 +317,41 @@ class Cart extends Model
             return;
         }
 
-        try {
-            $oldPath = "zips/{$this->id}/{$oldCartId}.zip";
+        $r2 = app(\App\Services\R2UploadService::class);
+        $publicBase = rtrim((string) env('R2_PUBLIC_LINK', ''), '/');
+        $existingUrls = array_filter(array_map('trim', explode(',', (string) $this->s3_zip)));
+        $newUrls = [];
+        $renamed = 0;
 
-            if (!Storage::disk('s3')->exists($oldPath)) {
-                return;
+        foreach ($existingUrls as $url) {
+            if ($publicBase === '' || !str_starts_with($url, $publicBase . '/')) {
+                $newUrls[] = $url;
+                continue;
             }
 
-            // ZIP'i geçici dosyaya indir
-            $tempPath = storage_path("app/temp-zip-{$this->id}.zip");
-            file_put_contents($tempPath, Storage::disk('s3')->get($oldPath));
-
-            // ZIP içindeki klasör adını değiştir
-            $zip = new ZipArchive();
-            if ($zip->open($tempPath) === true) {
-                for ($i = 0; $i < $zip->numFiles; $i++) {
-                    $name = $zip->getNameIndex($i);
-                    if (strpos($name, $oldCartId . '/') === 0) {
-                        $newName = $newCartId . '/' . substr($name, strlen($oldCartId) + 1);
-                        $zip->renameName($name, $newName);
-                    }
-                }
-                $zip->close();
+            $oldKey = $r2->extractKeyFromUrl($url);
+            if (!$oldKey) {
+                $newUrls[] = $url;
+                continue;
             }
 
-            // Yeni isimle S3'e yükle ve eskiyi sil
-            $newPath = "zips/{$this->id}/{$newCartId}.zip";
-            Storage::disk('s3')->put($newPath, file_get_contents($tempPath), 'public');
-            Storage::disk('s3')->delete($oldPath);
+            $newKey = $r2->renameSlugInKey($oldKey, $oldCartId, $newCartId, (int) $this->id);
+            if ($newKey === null) {
+                $newUrls[] = $url;
+                continue;
+            }
 
-            // Geçici dosyayı sil
-            @unlink($tempPath);
+            $newUrls[] = $r2->publicUrl($newKey);
+            $renamed++;
+        }
 
-            // s3_zip URL'ini güncelle
-            $this->update(['s3_zip' => Storage::disk('s3')->url($newPath)]);
-
-            Log::info('S3 ZIP renamed (file + folder)', [
+        if ($renamed > 0) {
+            $this->update(['s3_zip' => implode(',', $newUrls)]);
+            Log::info('R2 object keys renamed for new cart_id', [
                 'cart_id' => $this->id,
-                'old' => $oldCartId,
-                'new' => $newCartId,
-            ]);
-        } catch (\Exception $e) {
-            @unlink($tempPath ?? '');
-            Log::error('S3 ZIP rename failed', [
-                'cart_id' => $this->id,
-                'error' => $e->getMessage(),
+                'old_slug' => $oldCartId,
+                'new_slug' => $newCartId,
+                'renamed_count' => $renamed,
             ]);
         }
     }
