@@ -53,12 +53,11 @@
 @if($category->params && $category->params->count() > 0)
     @if($category->type == 'radio' || $category->type == 'hidden')
 
+        <div class="row g-3 option-card-grid">
         @foreach($categoryParams as $pivot)
             @php
                 $param = $pivot->param;
-                // Bu parametrenin child'ları var mı kontrol et - customization_params_ust_id pivot ID'si
                 $hasChildren = $product->customizationPivotParams->where('customization_params_ust_id', $pivot->id)->count() > 0;
-                // Bu parametrenin resmi var mı kontrol et (option2 = true ise)
                 $hasImage = $param->option2 == 'true' && !empty($param->value);
 
                 // Hidden tipi için kullanıcı kontrolü
@@ -66,25 +65,22 @@
                 if ($category->type == 'hidden') {
                     $user = auth()->user();
                     if ($user && $user->customer_id) {
-                        // Pivot tablosunda bu kullanıcının firması için kayıt var mı kontrol et
                         $hasAccess = \App\Models\CustomizationParamsCustomersPivot::where([
                             'customer_id' => $user->customer_id,
                             'customization_params_id' => $param->id,
                             'product_id' => $product->id
                         ])->exists();
-
                         $showHiddenCategory = $hasAccess;
                     } else {
-                        // Kullanıcı giriş yapmamış veya customer_id yoksa gizle
                         $showHiddenCategory = false;
                     }
                 }
             @endphp
 
             @if($showHiddenCategory)
-            <div class="col-12 col-md-6 col-lg-4 ">
-                <div class="form-check radio-with-image">
-                    <input class="form-check-input customization-radio"
+            <div class="col-6 col-md-4 col-lg-3">
+                <label class="option-card" for="param_{{ $param->id }}">
+                    <input class="option-card-input customization-radio"
                            type="radio"
                            name="customizations[0][{{ $category->id }}]"
                            value="{{ $pivot->id }}"
@@ -97,42 +93,48 @@
                            data-parent-id="0"
                            data-category-id="{{ $category->id }}"
                            data-category-title="{{ $category->title }}">
-                    <label class="form-check-label d-flex align-items-start" for="param_{{ $param->id }}">
+                    <div class="option-card-image-wrap">
                         @if($hasImage)
-                            <div class="radio-image-container me-3">
-                                <img src="{{ asset('storage/' . $param->value) }}"
-                                     alt="{{ $param->key }}"
-                                     class="radio-option-image"
-                                     style="width: 80px; height: 80px; object-fit: cover; border-radius: 8px; border: 2px solid #e9ecef;">
+                            <img src="{{ asset('storage/' . $param->value) }}"
+                                 alt="{{ $param->key }}"
+                                 class="option-card-image"
+                                 loading="lazy">
+                        @else
+                            <div class="option-card-no-image">
+                                <i class="fas fa-cube"></i>
                             </div>
                         @endif
-                        <div class="radio-content">
-                            <div class="fw-bold">{{ $param->key }}</div>
-                            @if(($pivot->price ?: 0) > 0)
-                                @if(Auth::check() and Auth::user()->roles->contains('id', 3) or Auth::user()->roles->contains('id', 1))
-                                <div class="text-success-2">(+{{ number_format($pivot->price ?: 0, 2) }} TL)</div>
-                                @endif
+                        <span class="option-card-checkmark"><i class="fas fa-check"></i></span>
+                    </div>
+                    <div class="option-card-body">
+                        <div class="option-card-title">{{ $param->key }}</div>
+                        @if(($pivot->price ?: 0) > 0)
+                            @if(Auth::check() and Auth::user()->roles->contains('id', 3) or Auth::user()->roles->contains('id', 1))
+                            <div class="option-card-price">+{{ number_format($pivot->price ?: 0, 2) }} ₺</div>
                             @endif
-                            @if($hasChildren)
-                                <small class="text-muted">(Alt seçenekler mevcut)</small>
-                            @endif
-                        </div>
-                    </label>
-                </div>
+                        @endif
+                        @if($hasChildren)
+                            <small class="option-card-hint">Alt seçenekler var</small>
+                        @endif
+                    </div>
+                </label>
             </div>
             @endif
         @endforeach
+        </div>
 
 
     @elseif($category->type == 'checkbox')
 
+        <div class="row g-3 option-card-grid">
         @foreach($categoryParams as $pivot)
             @php
                 $param = $pivot->param;
+                $hasImage = $param->option2 == 'true' && !empty($param->value);
             @endphp
-            <div class="col-md-6 mb-2">
-                <div class="form-check">
-                    <input class="form-check-input customization-checkbox"
+            <div class="col-6 col-md-4 col-lg-3">
+                <label class="option-card option-card-multi" for="param_checkbox_{{ $param->id }}">
+                    <input class="option-card-input customization-checkbox"
                            type="checkbox"
                            name="customizations[0][{{ $category->id }}][]"
                            value="{{ $pivot->id }}"
@@ -141,17 +143,31 @@
                            data-title="{{ $param->key }}"
                            data-category-id="{{ $category->id }}"
                            data-category-title="{{ $category->title }}">
-                    <label class="form-check-label" for="param_checkbox_{{ $param->id }}">
-                        {{ $param->key }}
+                    <div class="option-card-image-wrap">
+                        @if($hasImage)
+                            <img src="{{ asset('storage/' . $param->value) }}"
+                                 alt="{{ $param->key }}"
+                                 class="option-card-image"
+                                 loading="lazy">
+                        @else
+                            <div class="option-card-no-image">
+                                <i class="fas fa-plus-square"></i>
+                            </div>
+                        @endif
+                        <span class="option-card-checkmark"><i class="fas fa-check"></i></span>
+                    </div>
+                    <div class="option-card-body">
+                        <div class="option-card-title">{{ $param->key }}</div>
                         @if(($pivot->price ?: 0) > 0)
                             @if(Auth::check() and Auth::user()->roles->contains('id', 3) or Auth::user()->roles->contains('id', 1))
-                            <span class="text-success-2">(+{{ number_format($pivot->price ?: 0, 2) }} TL)</span>
+                            <div class="option-card-price">+{{ number_format($pivot->price ?: 0, 2) }} ₺</div>
                             @endif
                         @endif
-                    </label>
-                </div>
+                    </div>
+                </label>
             </div>
         @endforeach
+        </div>
 
 
     @elseif($category->type == 'file')
@@ -272,10 +288,9 @@
 
 
         @elseif($category->type == 'select')
-        <div class="col-md-6">
-            <div class="form-group">
 
-        <select class="form-select customization-select"
+        {{-- Hidden select for backward-compat (cascade child loading kullanılıyor) --}}
+        <select class="form-select customization-select d-none"
                 name="customization[{{ $category->id }}]"
                 data-category="{{ $category->id }}"
                 data-category-title="{{ $category->title }}"
@@ -286,7 +301,6 @@
             @foreach($categoryParams as $pivot)
                 @php
                     $param = $pivot->param;
-                    // Bu parametrenin child'ları var mı kontrol et - customization_params_ust_id pivot ID'si
                     $hasChildren = $product->customizationPivotParams->where('customization_params_ust_id', $pivot->id)->count() > 0;
                     $isChild = $pivot->customization_params_ust_id > 0;
                 @endphp
@@ -296,21 +310,53 @@
                         data-title="{{ $param->key }}"
                         data-pivot-id="{{ $pivot->id }}"
                         data-has-children="{{ $hasChildren ? 'true' : 'false' }}"
-                        data-is-child="{{ $isChild ? 'true' : 'false' }}"
-                        data-parent-id="{{ $isChild ? $pivot->customization_params_ust_id : '0' }}"
+                        data-is-child="false"
+                        data-parent-id="0"
                         data-category-id="{{ $category->id }}"
-                        data-category-title="{{ $category->title }}">
-                    {{ $param->key }}
-                    @if(($pivot->price ?: 0) > 0)
-                        @if(Auth::check() and Auth::user()->roles->contains('id', 3) or Auth::user()->roles->contains('id', 1))
-                        (+{{ number_format($pivot->price ?: 0, 2) }} TL)
-                        @endif
-                    @endif
-                </option>
+                        data-category-title="{{ $category->title }}">{{ $param->key }}</option>
                 @endif
             @endforeach
         </select>
-        </div>
+
+        {{-- Görsel kart UI'ı (radio gibi davranıyor — seçilince hidden select'i de günceller) --}}
+        <div class="row g-3 option-card-grid" data-mirror-select="{{ $category->id }}">
+        @foreach($categoryParams as $pivot)
+            @php
+                $param = $pivot->param;
+                $hasImage = $param->option2 == 'true' && !empty($param->value);
+                $hasChildren = $product->customizationPivotParams->where('customization_params_ust_id', $pivot->id)->count() > 0;
+                $isChild = $pivot->customization_params_ust_id > 0;
+                if ($isChild) continue;
+            @endphp
+            <div class="col-6 col-md-4 col-lg-3">
+                <label class="option-card option-card-mirror-select" data-target-select="select.customization-select[data-category='{{ $category->id }}']" data-pivot-id="{{ $pivot->id }}">
+                    <div class="option-card-image-wrap">
+                        @if($hasImage)
+                            <img src="{{ asset('storage/' . $param->value) }}"
+                                 alt="{{ $param->key }}"
+                                 class="option-card-image"
+                                 loading="lazy">
+                        @else
+                            <div class="option-card-no-image">
+                                <i class="fas fa-th-large"></i>
+                            </div>
+                        @endif
+                        <span class="option-card-checkmark"><i class="fas fa-check"></i></span>
+                    </div>
+                    <div class="option-card-body">
+                        <div class="option-card-title">{{ $param->key }}</div>
+                        @if(($pivot->price ?: 0) > 0)
+                            @if(Auth::check() and Auth::user()->roles->contains('id', 3) or Auth::user()->roles->contains('id', 1))
+                            <div class="option-card-price">+{{ number_format($pivot->price ?: 0, 2) }} ₺</div>
+                            @endif
+                        @endif
+                        @if($hasChildren)
+                            <small class="option-card-hint">Alt seçenekler var</small>
+                        @endif
+                    </div>
+                </label>
+            </div>
+        @endforeach
         </div>
 
     @endif

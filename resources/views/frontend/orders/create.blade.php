@@ -393,10 +393,17 @@
                         @endif
                         
                         @php
-                            // Wizard step'leri: dinamik customization step'leri + sabit Ekstralar + Sipariş Özeti
+                            // Yeni wizard: HER customization category = ayrı step
+                            // + Page count step (varsa, ürün > 1 sayfa) + Ekstralar + Sipariş Özeti
                             $hasPageCount = $product->price_difference_per_page > 0 && $product->min_pages > 0 && $product->max_pages > 0;
                             $hasExtras = isset($extraSales) && $extraSales->count() > 0;
-                            $totalSteps = $stepGroups->count() + ($hasExtras ? 1 : 0) + 1; // +Özeti
+
+                            $customStepCount = $customizationSteps->count();
+                            $pageCountStepIdx = $hasPageCount ? 0 : null;
+                            $firstCustomIdx = $hasPageCount ? 1 : 0;
+                            $totalSteps = ($hasPageCount ? 1 : 0) + $customStepCount + ($hasExtras ? 1 : 0) + 1;
+                            $extrasIdx = ($hasPageCount ? 1 : 0) + $customStepCount;
+                            $summaryIdx = $totalSteps - 1;
                         @endphp
 
                         @if(!$hasPageCount)
@@ -405,19 +412,26 @@
 
                         <!-- Wizard Step Indicator -->
                         <div class="wizard-progress mb-4" id="wizard-progress">
-                            @foreach($stepGroups as $i => $step)
-                                <div class="wizard-step-indicator{{ $i === 0 ? ' active' : '' }}" data-step-index="{{ $i }}">
-                                    <span class="wsi-num">{{ $i + 1 }}</span>
-                                    <span class="wsi-label">{{ $step['label'] }}</span>
+                            @if($hasPageCount)
+                                <div class="wizard-step-indicator active" data-step-index="0">
+                                    <span class="wsi-num">1</span>
+                                    <span class="wsi-label">Yaprak Adeti</span>
+                                </div>
+                            @endif
+                            @foreach($customizationSteps as $i => $step)
+                                @php $idx = $firstCustomIdx + $i; @endphp
+                                <div class="wizard-step-indicator{{ $idx === 0 ? ' active' : '' }}" data-step-index="{{ $idx }}">
+                                    <span class="wsi-num">{{ $idx + 1 }}</span>
+                                    <span class="wsi-label">{{ $step['category']->title }}</span>
                                 </div>
                             @endforeach
                             @if($hasExtras)
-                                <div class="wizard-step-indicator" data-step-index="{{ $stepGroups->count() }}">
-                                    <span class="wsi-num">{{ $stepGroups->count() + 1 }}</span>
+                                <div class="wizard-step-indicator" data-step-index="{{ $extrasIdx }}">
+                                    <span class="wsi-num">{{ $extrasIdx + 1 }}</span>
                                     <span class="wsi-label">Ekstralar</span>
                                 </div>
                             @endif
-                            <div class="wizard-step-indicator" data-step-index="{{ $totalSteps - 1 }}">
+                            <div class="wizard-step-indicator" data-step-index="{{ $summaryIdx }}">
                                 <span class="wsi-num">{{ $totalSteps }}</span>
                                 <span class="wsi-label">Sipariş Özeti</span>
                             </div>
@@ -426,42 +440,54 @@
                         <!-- Wizard Steps Container -->
                         <div class="wizard-steps-container">
 
-                            {{-- Customization step'leri (dinamik) --}}
-                            @foreach($stepGroups as $i => $step)
-                                <div class="wizard-step{{ $i === 0 ? ' active' : '' }}" data-step-index="{{ $i }}">
-                                    <h3 class="wizard-step-title">{{ $step['label'] }}</h3>
-
-                                    {{-- İlk step'in içine page_count dropdown'ı (varsa) --}}
-                                    @if($i === 0 && $hasPageCount)
-                                        <div class="mb-4">
-                                            <h4>Yaprak Adeti</h4>
-                                            <div class="form-group col-md-6">
-                                                <select name="page_count" id="page-count-select" class="form-control" required>
-                                                    <option value="">Yaprak adeti seçiniz</option>
-                                                    @for($j = $product->min_pages; $j <= $product->max_pages; $j++)
-                                                        <option value="{{ $j }}" {{ $j == 10 ? 'selected' : '' }}>
-                                                            {{ $j }} yaprak ({{ $j * 2 }} sayfa)
-                                                        </option>
-                                                    @endfor
-                                                </select>
+                            {{-- Page Count step (varsa, ilk step) --}}
+                            @if($hasPageCount)
+                                <div class="wizard-step active" data-step-index="0" data-step-kind="page_count">
+                                    <h3 class="wizard-step-title">Yaprak Adeti</h3>
+                                    <p class="text-muted mb-3">Albümünüzün toplam yaprak sayısını seçin.</p>
+                                    <div class="row g-3 option-card-grid">
+                                        @for($j = $product->min_pages; $j <= $product->max_pages; $j++)
+                                            <div class="col-6 col-md-4 col-lg-3">
+                                                <label class="option-card option-card-mirror-select" data-target-select="#page-count-select" data-pivot-id="{{ $j }}">
+                                                    <div class="option-card-image-wrap">
+                                                        <div class="option-card-no-image">
+                                                            <span class="display-6 fw-bold">{{ $j }}</span>
+                                                        </div>
+                                                        <span class="option-card-checkmark"><i class="fas fa-check"></i></span>
+                                                    </div>
+                                                    <div class="option-card-body">
+                                                        <div class="option-card-title">{{ $j }} yaprak</div>
+                                                        <small class="option-card-hint">{{ $j * 2 }} sayfa</small>
+                                                    </div>
+                                                </label>
                                             </div>
-                                        </div>
-                                    @endif
+                                        @endfor
+                                    </div>
+                                    <select name="page_count" id="page-count-select" class="d-none" required>
+                                        <option value="">Yaprak adeti seçiniz</option>
+                                        @for($j = $product->min_pages; $j <= $product->max_pages; $j++)
+                                            <option value="{{ $j }}" {{ $j == 10 ? 'selected' : '' }}>{{ $j }} yaprak ({{ $j * 2 }} sayfa)</option>
+                                        @endfor
+                                    </select>
+                                </div>
+                            @endif
 
-                                    @foreach($step['categories'] as $categoryId => $categoryParams)
-                                        @php $category = $categoryParams->first()->param->category; @endphp
-                                        @include('frontend.products.customization-section', [
-                                            'category' => $category,
-                                            'categoryParams' => $categoryParams,
-                                            'product' => $product,
-                                        ])
-                                    @endforeach
+                            {{-- Customization step'leri (HER category = AYRI step) --}}
+                            @foreach($customizationSteps as $i => $step)
+                                @php $idx = $firstCustomIdx + $i; @endphp
+                                <div class="wizard-step{{ $idx === 0 ? ' active' : '' }}" data-step-index="{{ $idx }}" data-step-kind="customization">
+                                    <h6 class="text-muted mb-1" style="opacity:.7;">{{ $step['step_label'] }}</h6>
+                                    @include('frontend.products.customization-section', [
+                                        'category' => $step['category'],
+                                        'categoryParams' => $step['params'],
+                                        'product' => $product,
+                                    ])
                                 </div>
                             @endforeach
 
                             {{-- Ekstralar step (varsa) --}}
                             @if($hasExtras)
-                                <div class="wizard-step" data-step-index="{{ $stepGroups->count() }}">
+                                <div class="wizard-step" data-step-index="{{ $extrasIdx }}" data-step-kind="extras">
                                     <h3 class="wizard-step-title">Ekstralar</h3>
                                     <p class="text-muted">Siparişinize ek ürünler ekleyebilirsiniz. Hiçbirini istemiyorsanız "İleri" diyerek atlayabilirsiniz.</p>
                                     <div class="row g-3 extras-grid">
@@ -492,8 +518,8 @@
                                 </div>
                             @endif
 
-                            {{-- Sipariş Özeti step (her zaman) --}}
-                            <div class="wizard-step" data-step-index="{{ $totalSteps - 1 }}">
+                            {{-- Sipariş Özeti step (her zaman, son step) --}}
+                            <div class="wizard-step" data-step-index="{{ $summaryIdx }}" data-step-kind="summary">
                                 <h3 class="wizard-step-title">Sipariş Özeti</h3>
                                 <div id="wizard-summary" class="wizard-summary mb-3">
                                     {{-- JS ile dolduruluyor --}}
@@ -941,6 +967,123 @@
         .wizard-step-indicator .wsi-label { display: none; }
         .wizard-step-indicator { min-width: auto; padding: 8px; }
     }
+
+    /* ============ OPTION CARD STYLES (image-based selection) ============ */
+    .option-card-grid { margin: 0; }
+    .option-card {
+        display: flex;
+        flex-direction: column;
+        cursor: pointer;
+        background: #fff;
+        border: 2px solid #e9ecef;
+        border-radius: 12px;
+        overflow: hidden;
+        transition: all .15s ease;
+        height: 100%;
+        margin: 0;
+        position: relative;
+    }
+    .option-card:hover {
+        border-color: #0d6efd;
+        transform: translateY(-2px);
+        box-shadow: 0 6px 18px rgba(13,110,253,.12);
+    }
+    .option-card-input {
+        position: absolute;
+        opacity: 0;
+        pointer-events: none;
+        width: 1px; height: 1px;
+    }
+    .option-card.selected,
+    .option-card:has(.option-card-input:checked) {
+        border-color: #0d6efd;
+        background: #f0f7ff;
+        box-shadow: 0 4px 14px rgba(13,110,253,.18);
+    }
+    .option-card-image-wrap {
+        position: relative;
+        width: 100%;
+        aspect-ratio: 1;
+        background: linear-gradient(135deg, #f8f9fa, #e9ecef);
+        overflow: hidden;
+    }
+    .option-card-image {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        display: block;
+    }
+    .option-card-no-image {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 100%;
+        height: 100%;
+        color: #adb5bd;
+        font-size: 2.5rem;
+    }
+    .option-card-checkmark {
+        position: absolute;
+        top: 8px;
+        right: 8px;
+        width: 28px; height: 28px;
+        background: #0d6efd;
+        color: #fff;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        opacity: 0;
+        transform: scale(.7);
+        transition: opacity .15s, transform .15s;
+        font-size: 13px;
+        box-shadow: 0 2px 6px rgba(0,0,0,.2);
+    }
+    .option-card.selected .option-card-checkmark,
+    .option-card:has(.option-card-input:checked) .option-card-checkmark {
+        opacity: 1;
+        transform: scale(1);
+    }
+    .option-card-body {
+        padding: 12px;
+        text-align: center;
+    }
+    .option-card-title {
+        font-weight: 600;
+        color: #212529;
+        margin-bottom: 4px;
+        line-height: 1.3;
+    }
+    .option-card-price {
+        color: #198754;
+        font-weight: 700;
+        font-size: 0.9em;
+    }
+    .option-card-hint {
+        display: block;
+        color: #6c757d;
+        font-size: 0.8em;
+        margin-top: 4px;
+    }
+    .option-card-multi.selected,
+    .option-card-multi:has(.option-card-input:checked) {
+        border-color: #198754;
+        background: #f0f9f4;
+    }
+    .option-card-multi.selected .option-card-checkmark,
+    .option-card-multi:has(.option-card-input:checked) .option-card-checkmark {
+        background: #198754;
+    }
+
+    /* Customization section spacing inside wizard step */
+    .wizard-step .customization-section h4 {
+        font-size: 1.5rem;
+        margin-bottom: 18px;
+        padding-bottom: 12px;
+        border-bottom: 2px solid #0d6efd;
+        color: #0d6efd;
+    }
+    .wizard-step .child-parameters-container { margin-top: 20px; }
 </style>
    
   </main>
@@ -1150,6 +1293,72 @@
                 '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'
             })[m]);
         }
+
+        // ============ AUTO-ADVANCE + MIRROR-SELECT LOGIC ============
+
+        // Mirror-select cards: tıklanınca arkadaki <select>'i günceller (+ child loading tetikler)
+        document.querySelectorAll('.option-card-mirror-select').forEach(card => {
+            card.addEventListener('click', function (e) {
+                if (e.target.tagName === 'INPUT') return;
+                e.preventDefault();
+                const targetSelector = this.getAttribute('data-target-select');
+                const pivotId = this.getAttribute('data-pivot-id');
+                if (!targetSelector || !pivotId) return;
+                const select = document.querySelector(targetSelector);
+                if (!select) return;
+                select.value = pivotId;
+
+                // Visual selected state — kardeşler arasında
+                const grid = this.closest('.option-card-grid') || this.parentElement?.parentElement;
+                if (grid) {
+                    grid.querySelectorAll('.option-card.selected').forEach(c => c.classList.remove('selected'));
+                }
+                this.classList.add('selected');
+
+                // Trigger change events: hem native select change hem de jQuery change (mevcut kod jQuery dinliyor)
+                select.dispatchEvent(new Event('change', { bubbles: true }));
+                if (window.jQuery) {
+                    window.jQuery(select).trigger('change');
+                }
+
+                // Sadece child seçenek YOKSA auto-advance et (cascade'de kullanıcının child'ları seçmesi gerek)
+                const hasChildren = (select.options[select.selectedIndex]?.dataset?.hasChildren === 'true');
+                const isPageCount = select.id === 'page-count-select';
+                if (isPageCount || !hasChildren) {
+                    setTimeout(() => tryAutoAdvance(), 350);
+                }
+            });
+        });
+
+        // Radio cards: native input olduğu için change tetikleniyor
+        document.querySelectorAll('.option-card-input[type="radio"]').forEach(input => {
+            input.addEventListener('change', () => {
+                if (!input.checked) return;
+                // Cascade child seçenek yoksa auto-advance et
+                const hasChildren = input.getAttribute('data-has-children') === 'true';
+                if (!hasChildren) {
+                    setTimeout(() => tryAutoAdvance(), 350);
+                }
+            });
+        });
+
+        // Card UI'da tıklanan label area'dan dışa input change'i tetikleniyor zaten — visual state CSS :has ile
+        // Eski kod (initializeCustomizationSystem vb.) jQuery kullanıyor; mevcut logic dokunulmadan korunuyor.
+
+        function tryAutoAdvance() {
+            // Sadece customization veya page_count step'lerinde otomatik ilerle
+            const step = wizardSteps[currentStep];
+            if (!step) return;
+            const kind = step.getAttribute('data-step-kind');
+            if (kind !== 'customization' && kind !== 'page_count') return;
+
+            // Validation geçerse next step'e
+            if (validateCurrentStep()) {
+                showStep(currentStep + 1);
+            }
+        }
+
+        // ============ /AUTO-ADVANCE ============
 
         // Init
         showStep(0);

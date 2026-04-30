@@ -62,31 +62,39 @@ class OrderController extends Controller
             })
             ->groupBy('param.customization_category_id');
 
-        // Step gruplaması: customization_categories.step_label'a göre
-        // Her step bir wizard sayfası. Step'in sıralaması, içindeki kategorilerin minimum order'ı ile.
-        $stepGroups = collect();
+        // Yeni: HER kategori AYRI bir wizard step'i. step_label sadece görsel grouping için.
+        // Hidden tipi için kullanıcı erişimi yoksa step gösterilmiyor.
+        $customizationSteps = collect();
+        $authUser = auth()->user();
         foreach ($mainCustomizationParams as $categoryId => $catParams) {
             $category = $catParams->first()->param->category;
-            $stepLabel = $category->step_label ?? 'Sipariş Detayı';
-            $catOrder = (int) ($category->order ?? 0);
 
-            if (!$stepGroups->has($stepLabel)) {
-                $stepGroups->put($stepLabel, [
-                    'label' => $stepLabel,
-                    'min_order' => $catOrder,
-                    'categories' => collect(),
-                ]);
+            // Hidden type: sadece yetkili kullanıcı görür
+            if ($category->type === 'hidden') {
+                if (!$authUser || !$authUser->customer_id) {
+                    continue;
+                }
+                $hasAccess = false;
+                foreach ($catParams as $p) {
+                    $exists = \App\Models\CustomizationParamsCustomersPivot::where([
+                        'customer_id' => $authUser->customer_id,
+                        'customization_params_id' => $p->param->id,
+                        'product_id' => $product->id,
+                    ])->exists();
+                    if ($exists) { $hasAccess = true; break; }
+                }
+                if (!$hasAccess) continue;
             }
 
-            $existing = $stepGroups->get($stepLabel);
-            $existing['categories']->put($categoryId, $catParams);
-            if ($catOrder < $existing['min_order']) {
-                $existing['min_order'] = $catOrder;
-            }
-            $stepGroups->put($stepLabel, $existing);
+            $customizationSteps->push([
+                'category' => $category,
+                'category_id' => $categoryId,
+                'params' => $catParams,
+                'step_label' => $category->step_label ?? 'Sipariş Detayı',
+                'order' => (int) ($category->order ?? 0),
+            ]);
         }
-
-        $stepGroups = $stepGroups->sortBy('min_order')->values();
+        $customizationSteps = $customizationSteps->sortBy('order')->values();
 
         // Ekstra ürünler (wizard'ın "Ekstralar" step'i için — eski popup'ın yerine)
         $extraSales = \App\Models\ExtraSale::with('childProduct')
@@ -116,7 +124,7 @@ class OrderController extends Controller
         return view('frontend.orders.create', compact(
             'product',
             'mainCustomizationParams',
-            'stepGroups',
+            'customizationSteps',
             'extraSales',
             'suggestedProducts',
             'childProducts'
