@@ -17,7 +17,9 @@ class AppServiceProvider extends ServiceProvider
      */
     public function register(): void
     {
-        //
+        // R2UploadService singleton — S3Client init'i her cart item için tekrarlanmasın
+        // (checkout'ta loop içinde cart_id rename yaparken instance reuse edilsin)
+        $this->app->singleton(\App\Services\R2UploadService::class);
     }
 
     /**

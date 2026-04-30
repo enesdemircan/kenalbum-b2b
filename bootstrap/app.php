@@ -23,14 +23,6 @@ return Application::configure(basePath: dirname(__DIR__))
  
         // ShareViewData'yı sadece web route'larına uygula
         $middleware->appendToGroup('web', \App\Http\Middleware\ShareViewData::class);
-        
-        // CSRF token kontrolünden chunk upload endpoint'lerini çıkar
-        $middleware->validateCsrfTokens(except: [
-            'upload-chunk',
-            'merge-files',
-            'create-zip',
-            'check-zip-status/*'
-        ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         // API route'larında authentication hatası olduğunda JSON response dön
