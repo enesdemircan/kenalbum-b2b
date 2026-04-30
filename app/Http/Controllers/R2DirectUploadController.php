@@ -149,11 +149,29 @@ class R2DirectUploadController extends Controller
         if (!$cart) {
             abort(404, 'Cart bulunamadı.');
         }
-        $userId = auth()->id();
-        if (!$userId || $cart->user_id !== $userId) {
+        $user = auth()->user();
+        if (!$user) {
             abort(403, 'Bu sepete dosya yükleme yetkiniz yok.');
         }
-        return $cart;
+
+        // 1) Cart'ı oluşturan kullanıcının kendisi
+        if ((int) $cart->user_id === (int) $user->id) {
+            return $cart;
+        }
+
+        // 2) Aynı firma altındaki personel (proje OrderController::show pattern'i)
+        if ($user->customer_id && $cart->user && (int) $cart->user->customer_id === (int) $user->customer_id) {
+            return $cart;
+        }
+
+        Log::warning('R2 cart auth denied', [
+            'cart_id' => $cart->id,
+            'cart_user_id' => $cart->user_id,
+            'cart_user_customer_id' => $cart->user?->customer_id,
+            'auth_user_id' => $user->id,
+            'auth_customer_id' => $user->customer_id,
+        ]);
+        abort(403, 'Bu sepete dosya yükleme yetkiniz yok.');
     }
 
     private function assertKeyBelongsToCart(string $key, int $cartId): void
