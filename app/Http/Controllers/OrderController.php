@@ -62,39 +62,75 @@ class OrderController extends Controller
             })
             ->groupBy('param.customization_category_id');
 
-        // Yeni: HER kategori AYRI bir wizard step'i. step_label sadece görsel grouping için.
-        // Hidden tipi için kullanıcı erişimi yoksa step gösterilmiyor.
+        // Yeni: HER kategori AYRI bir wizard step'i. Cascade child kategorileri de
+        // (Ebat → Kumaş → Renk → Paket) kendi step'lerinde gözükecek.
+        // step_label sadece görsel grouping (h6) için kullanılıyor.
         $customizationSteps = collect();
         $authUser = auth()->user();
+        $processedCategories = [];
+
+        $shouldShowHidden = function ($category, $catParams) use ($product, $authUser) {
+            if ($category->type !== 'hidden') return true;
+            if (!$authUser || !$authUser->customer_id) return false;
+            foreach ($catParams as $p) {
+                $exists = \App\Models\CustomizationParamsCustomersPivot::where([
+                    'customer_id' => $authUser->customer_id,
+                    'customization_params_id' => $p->param->id,
+                    'product_id' => $product->id,
+                ])->exists();
+                if ($exists) return true;
+            }
+            return false;
+        };
+
         foreach ($mainCustomizationParams as $categoryId => $catParams) {
             $category = $catParams->first()->param->category;
 
-            // Hidden type: sadece yetkili kullanıcı görür
-            if ($category->type === 'hidden') {
-                if (!$authUser || !$authUser->customer_id) {
-                    continue;
-                }
-                $hasAccess = false;
-                foreach ($catParams as $p) {
-                    $exists = \App\Models\CustomizationParamsCustomersPivot::where([
-                        'customer_id' => $authUser->customer_id,
-                        'customization_params_id' => $p->param->id,
-                        'product_id' => $product->id,
-                    ])->exists();
-                    if ($exists) { $hasAccess = true; break; }
-                }
-                if (!$hasAccess) continue;
-            }
+            if (in_array($category->type, ['file', 'files'])) continue;
+            if (!$shouldShowHidden($category, $catParams)) continue;
+            if (in_array((int)$categoryId, $processedCategories)) continue;
 
             $customizationSteps->push([
                 'category' => $category,
-                'category_id' => $categoryId,
+                'category_id' => (int)$categoryId,
                 'params' => $catParams,
+                'is_cascade' => false,
+                'parent_category_id' => null,
                 'step_label' => $category->step_label ?? 'Sipariş Detayı',
-                'order' => (int) ($category->order ?? 0),
+                'order' => (int)($category->order ?? 0),
             ]);
+            $processedCategories[] = (int)$categoryId;
+
+            // Cascade chain'i takip et: Ebat → Kumaş → Renk → Paket
+            // Bir top-level pivot'tan başlayıp child pivot zincirini izleyerek
+            // kategorileri sırayla ekle.
+            $currentPivot = $catParams->first();
+            $parentCatId = (int)$categoryId;
+            while ($currentPivot) {
+                $childPivot = $product->customizationPivotParams
+                    ->where('customization_params_ust_id', $currentPivot->id)
+                    ->first();
+                if (!$childPivot) break;
+                $childCategory = $childPivot->param->category;
+                $childCatId = (int)$childCategory->id;
+                if (in_array($childCatId, $processedCategories)) break;
+                if (in_array($childCategory->type, ['file', 'files'])) break;
+                if (!$shouldShowHidden($childCategory, collect([$childPivot]))) break;
+
+                $customizationSteps->push([
+                    'category' => $childCategory,
+                    'category_id' => $childCatId,
+                    'params' => collect(), // boş — AJAX ile dinamik dolacak
+                    'is_cascade' => true,
+                    'parent_category_id' => $parentCatId,
+                    'step_label' => $childCategory->step_label ?? 'Sipariş Detayı',
+                    'order' => (int)($childCategory->order ?? 0),
+                ]);
+                $processedCategories[] = $childCatId;
+                $parentCatId = $childCatId;
+                $currentPivot = $childPivot;
+            }
         }
-        $customizationSteps = $customizationSteps->sortBy('order')->values();
 
         // Ekstra ürünler (wizard'ın "Ekstralar" step'i için — eski popup'ın yerine)
         $extraSales = \App\Models\ExtraSale::with('childProduct')

@@ -475,13 +475,32 @@
                             {{-- Customization step'leri (HER category = AYRI step) --}}
                             @foreach($customizationSteps as $i => $step)
                                 @php $idx = $firstCustomIdx + $i; @endphp
-                                <div class="wizard-step{{ $idx === 0 ? ' active' : '' }}" data-step-index="{{ $idx }}" data-step-kind="customization">
+                                <div class="wizard-step{{ $idx === 0 ? ' active' : '' }}"
+                                     data-step-index="{{ $idx }}"
+                                     data-step-kind="customization"
+                                     data-step-category-id="{{ $step['category_id'] }}"
+                                     @if($step['is_cascade']) data-step-cascade="true" data-step-parent-cat="{{ $step['parent_category_id'] }}" @endif>
                                     <h6 class="text-muted mb-1" style="opacity:.7;">{{ $step['step_label'] }}</h6>
-                                    @include('frontend.products.customization-section', [
-                                        'category' => $step['category'],
-                                        'categoryParams' => $step['params'],
-                                        'product' => $product,
-                                    ])
+                                    @if($step['is_cascade'])
+                                        {{-- Cascade child step: parent seçilince AJAX ile içerik dolacak --}}
+                                        <div class="customization-section mb-4 cascade-target-section"
+                                             data-category="{{ $step['category_id'] }}"
+                                             data-type="{{ $step['category']->type }}"
+                                             data-required="{{ $step['category']->required }}">
+                                            <h4>{{ $step['category']->title }}</h4>
+                                            <div class="cascade-placeholder text-center py-4 text-muted">
+                                                <i class="fas fa-arrow-circle-up fa-2x mb-2"></i>
+                                                <p class="mb-0">Önceki adımda seçim yaptıktan sonra burada görünecek.</p>
+                                            </div>
+                                            <div class="cascade-content"></div>
+                                        </div>
+                                    @else
+                                        @include('frontend.products.customization-section', [
+                                            'category' => $step['category'],
+                                            'categoryParams' => $step['params'],
+                                            'product' => $product,
+                                        ])
+                                    @endif
                                 </div>
                             @endforeach
 
@@ -1331,16 +1350,89 @@
         });
 
         // Radio cards: native input olduğu için change tetikleniyor
+        // (NOT: cascade child step kullanılıyorsa hasChildren olsa bile auto-advance ETMELİ
+        //  çünkü child'lar bir sonraki step'te yüklenecek)
         document.querySelectorAll('.option-card-input[type="radio"]').forEach(input => {
             input.addEventListener('change', () => {
                 if (!input.checked) return;
-                // Cascade child seçenek yoksa auto-advance et
-                const hasChildren = input.getAttribute('data-has-children') === 'true';
-                if (!hasChildren) {
-                    setTimeout(() => tryAutoAdvance(), 350);
-                }
+                setTimeout(() => tryAutoAdvance(), 350);
             });
         });
+
+        // ============ CASCADE CHILD → AYRI STEP'E TAŞI ============
+        // Mevcut loadChildParameters jQuery AJAX'ı `.child-parameters-container`'ı dolduruyor.
+        // O dolduğunda içeriği cascade step'in içine taşıyıp, oradaki .cascade-target-section'a
+        // yerleştiriyoruz. Tetikleyici: MutationObserver (.child-parameters-container'a dom append).
+
+        function relocateCascadeContent() {
+            // .child-parameters-container içine yüklenen .customization-section'ları
+            // cascade step'lere TAŞI (clone değil — event listeners korunur).
+            document.querySelectorAll('.child-parameters-container .customization-section').forEach(section => {
+                const catId = section.getAttribute('data-category');
+                if (!catId) return;
+                if (section.dataset.relocated === 'true') return;
+
+                const cascadeStep = document.querySelector(
+                    '.wizard-step[data-step-cascade="true"][data-step-category-id="' + catId + '"]'
+                );
+                if (!cascadeStep) return;
+
+                const cascadeSection = cascadeStep.querySelector('.cascade-target-section');
+                const placeholder = cascadeSection?.querySelector('.cascade-placeholder');
+                const content = cascadeSection?.querySelector('.cascade-content');
+                if (!cascadeSection || !content) return;
+
+                section.dataset.relocated = 'true';
+
+                // Placeholder gizle, content'i temizle, section'ın iç child'larını TAŞI
+                if (placeholder) placeholder.style.display = 'none';
+                content.innerHTML = '';
+
+                // Section'ın çocuklarını sırayla taşı (h4 hariç — zaten cascade step'te var)
+                Array.from(section.children).forEach(child => {
+                    if (child.tagName === 'H4') return;
+                    content.appendChild(child); // appendChild aynı node'u taşır (event'lar korunur)
+                });
+
+                cascadeSection.setAttribute('data-required', section.getAttribute('data-required') || '0');
+                cascadeSection.setAttribute('data-type', section.getAttribute('data-type') || '');
+
+                // Boşalan eski section'ı gizle
+                section.style.display = 'none';
+
+                // Card-style auto-advance handler'ları yeni gelen radio/select'lere bağla
+                bindCascadeStepHandlers(content);
+            });
+        }
+
+        function bindCascadeStepHandlers(container) {
+            container.querySelectorAll('input[type="radio"]').forEach(input => {
+                if (input.dataset.cascadeBound === 'true') return;
+                input.dataset.cascadeBound = 'true';
+                input.addEventListener('change', () => {
+                    if (input.checked) setTimeout(() => tryAutoAdvance(), 350);
+                });
+            });
+            container.querySelectorAll('select').forEach(sel => {
+                if (sel.dataset.cascadeBound === 'true') return;
+                sel.dataset.cascadeBound = 'true';
+                sel.addEventListener('change', () => {
+                    if (sel.value) setTimeout(() => tryAutoAdvance(), 350);
+                });
+            });
+        }
+
+        // Mutation observer: .child-parameters-container içeriği değişince relocate
+        const cascadeObserver = new MutationObserver(() => relocateCascadeContent());
+        document.querySelectorAll('.child-parameters-container').forEach(c => {
+            cascadeObserver.observe(c, { childList: true, subtree: true });
+        });
+        // Tüm DOM için de izle — yeni eklenen container'lar olabilir
+        cascadeObserver.observe(document.body, { childList: true, subtree: true });
+
+        // İlk yüklenmede de check et
+        setTimeout(() => relocateCascadeContent(), 500);
+        // ============ /CASCADE STEP TAŞIMA ============
 
         // Card UI'da tıklanan label area'dan dışa input change'i tetikleniyor zaten — visual state CSS :has ile
         // Eski kod (initializeCustomizationSystem vb.) jQuery kullanıyor; mevcut logic dokunulmadan korunuyor.
