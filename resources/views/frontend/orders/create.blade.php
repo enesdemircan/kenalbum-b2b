@@ -616,9 +616,9 @@
 
                         </div>{{-- /wizard-steps-container --}}
 
-                        <!-- Wizard Navigation (sticky bottom + price center) -->
+                        <!-- Wizard Navigation (sticky bottom + price center, compact) -->
                         <div class="wizard-nav">
-                            <button type="button" class="btn btn-outline-secondary" id="wizardPrevBtn" style="visibility:hidden;">
+                            <button type="button" class="btn btn-sm btn-outline-secondary" id="wizardPrevBtn" style="visibility:hidden;">
                                 <i class="fas fa-arrow-left"></i> Geri
                             </button>
                             <div class="wizard-nav-price" id="wizard-nav-price">
@@ -627,7 +627,7 @@
                                 <span id="wizard-bottom-price">{{ number_format($product->price, 2, ',', '.') }} ₺</span>
                                 @endif
                             </div>
-                            <button type="button" class="btn btn-primary" id="wizardNextBtn">
+                            <button type="button" class="btn btn-sm btn-primary" id="wizardNextBtn">
                                 İleri <i class="fas fa-arrow-right"></i>
                             </button>
                         </div>
@@ -1048,34 +1048,38 @@
         display: none;
     }
 
-    /* Wizard nav (sticky bottom) with price center */
+    /* Wizard nav (sticky bottom + price center, compact) */
     .wizard-nav {
         position: sticky;
         bottom: 0;
         background: #fff;
-        padding: 12px 0;
-        margin-top: 20px;
+        padding: 8px 0;
+        margin-top: 14px;
         border-top: 1px solid #e9ecef;
         display: flex;
         align-items: center;
-        gap: 12px;
+        gap: 10px;
         z-index: 10;
+    }
+    .wizard-nav .btn-sm {
+        padding: 4px 12px;
+        font-size: 0.82rem;
     }
     .wizard-nav-price {
         flex: 1;
         text-align: center;
-        font-size: 1.2rem;
+        font-size: 1rem;
         font-weight: 700;
         color: #198754;
         line-height: 1;
     }
     .wizard-nav-price .label {
         display: block;
-        font-size: 0.7rem;
+        font-size: 0.65rem;
         color: #6c757d;
         font-weight: 500;
-        margin-bottom: 2px;
-        letter-spacing: .5px;
+        margin-bottom: 1px;
+        letter-spacing: .4px;
         text-transform: uppercase;
     }
     .extras-grid .extra-card {
@@ -1308,9 +1312,12 @@
             const step = wizardSteps[currentStep];
             if (!step) return true;
 
-            // Validate native required fields
+            // Native required fields (visible olanlar — gizli/hidden input'ları skip et)
             const requiredFields = step.querySelectorAll('[required]');
             for (const f of requiredFields) {
+                if (f.type === 'hidden') continue;
+                // Görünmeyen elementleri (parent display:none olanları) skip et
+                if (f.offsetParent === null && f.type !== 'hidden') continue;
                 if (!f.value || (f.type === 'checkbox' && !f.checked)) {
                     f.focus();
                     Swal.fire({ icon: 'warning', title: 'Eksik Alan', text: 'Lütfen tüm zorunlu alanları doldurun.' });
@@ -1318,37 +1325,60 @@
                 }
             }
 
-            // Customization sections marked with data-required="1" — require selection
+            // Customization sections — type-aware validation
+            // Sadece data-required="1" olan section'lar zorunlu.
+            // Step başına SADECE step'in kendi category'sine ait section'ı doğrula
+            // (cascade child loaded içerikleri etkilemesin diye step'in :scope > kullan).
+            const stepCatId = step.getAttribute('data-step-category-id');
             const sections = step.querySelectorAll('.customization-section[data-required="1"]');
-            for (const section of sections) {
-                const radios = section.querySelectorAll('input[type="radio"]');
-                const checks = section.querySelectorAll('input[type="checkbox"]');
-                const inputs = section.querySelectorAll('input[type="text"], textarea, select');
 
-                if (radios.length > 0) {
-                    let ok = false;
-                    radios.forEach(r => { if (r.checked) ok = true; });
-                    if (!ok) {
-                        Swal.fire({ icon: 'warning', title: 'Eksik Seçim', html: 'Lütfen <strong>' + (section.querySelector('h4')?.textContent || 'seçim') + '</strong> yapın.' });
-                        section.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                        return false;
+            for (const section of sections) {
+                // Sadece step'in kendi kategorisi için validation (nested cascade-loaded skip)
+                if (stepCatId && section.getAttribute('data-category') !== stepCatId) continue;
+
+                const sectionType = section.getAttribute('data-type') || '';
+                const sectionTitle = section.querySelector('h4')?.textContent?.trim()
+                    || step.querySelector('.wizard-step-title')?.textContent?.trim()
+                    || 'seçim';
+
+                let valid = true;
+                let isFieldType = false;
+
+                if (sectionType === 'select') {
+                    const sel = section.querySelector(':scope > select.customization-select')
+                        || section.querySelector('select.customization-select');
+                    valid = !!(sel && sel.value);
+                } else if (sectionType === 'radio' || sectionType === 'hidden') {
+                    // Görünür wrapper'lar içindeki radio'lar (cascade filter sonrası)
+                    const visibleRadios = Array.from(section.querySelectorAll('input[type="radio"]'))
+                        .filter(r => r.offsetParent !== null);
+                    if (visibleRadios.length === 0) {
+                        // Cascade step henüz parent seçilmediği için boş olabilir
+                        valid = false;
+                    } else {
+                        valid = visibleRadios.some(r => r.checked);
                     }
-                } else if (checks.length > 0) {
-                    let ok = false;
-                    checks.forEach(c => { if (c.checked) ok = true; });
-                    if (!ok) {
-                        Swal.fire({ icon: 'warning', title: 'Eksik Seçim', html: 'Lütfen <strong>' + (section.querySelector('h4')?.textContent || 'seçim') + '</strong> yapın.' });
-                        section.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                        return false;
-                    }
-                } else if (inputs.length > 0) {
-                    let ok = false;
-                    inputs.forEach(inp => { if (inp.value && inp.value.trim()) ok = true; });
-                    if (!ok) {
-                        Swal.fire({ icon: 'warning', title: 'Eksik Alan', html: 'Lütfen <strong>' + (section.querySelector('h4')?.textContent || 'alanı') + '</strong> doldurun.' });
-                        section.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                        return false;
-                    }
+                } else if (sectionType === 'checkbox') {
+                    const visibleChecks = Array.from(section.querySelectorAll('input[type="checkbox"]'))
+                        .filter(c => c.offsetParent !== null);
+                    valid = visibleChecks.some(c => c.checked);
+                } else if (sectionType === 'input') {
+                    isFieldType = true;
+                    const inputs = section.querySelectorAll('input[type="text"], textarea');
+                    valid = Array.from(inputs).some(inp => inp.value && inp.value.trim());
+                } else {
+                    // unknown type — pass through
+                    valid = true;
+                }
+
+                if (!valid) {
+                    Swal.fire({
+                        icon: 'warning',
+                        title: isFieldType ? 'Eksik Alan' : 'Eksik Seçim',
+                        html: 'Lütfen <strong>' + sectionTitle + '</strong> ' + (isFieldType ? 'doldurun' : 'yapın') + '.',
+                    });
+                    section.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    return false;
                 }
             }
             return true;
