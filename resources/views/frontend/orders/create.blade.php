@@ -291,32 +291,39 @@
                     </ul>
                 </div>
             @endif
-            <div class="row">
-        
-                <div class="col-md-12">
-                    <h1 class="mb-3">{{ $product->title }}</h1>
-                    
-                    @if($product->mainCategory)
-                    <p class="text-muted mb-3">
-                        <i class="fas fa-tag"></i> {{ $product->mainCategory->title }}
-                    </p>
-                    @endif
-                    
-                    <div class="mb-4">
-                        <h3 class="price-display mb-2">
-                            @if(Auth::check() and Auth::user()->roles->contains('id', 3) or Auth::user()->roles->contains('id', 1))
-                            <span id="base-price">
-                            
-                                {{$product->price }}</span> 
+            @php
+                // Galeri için ürün resimlerini parse et
+                $galleryImages = [];
+                if (!empty($product->images)) {
+                    if (is_string($product->images) && strpos($product->images, ',') !== false) {
+                        $galleryImages = array_filter(array_map('trim', explode(',', $product->images)));
+                    } elseif (is_array($product->images)) {
+                        $galleryImages = $product->images;
+                    } else {
+                        $galleryImages = [$product->images];
+                    }
+                }
+                $mainGalleryImage = $galleryImages[0] ?? null;
+            @endphp
 
-                                TL
-                                @endif
-                        </h3>
-                        <p class="text-muted">
-                          {{ $product->description }}
-                        </p>
-                    </div>
-        
+            <!-- Compact Product Header -->
+            <div class="product-header-compact">
+                <h2>{{ $product->title }}</h2>
+                <p class="ph-meta">
+                    @if($product->mainCategory)
+                        <i class="fas fa-tag"></i> {{ $product->mainCategory->title }}
+                    @endif
+                    @if(Auth::check() and Auth::user()->roles->contains('id', 3) or Auth::user()->roles->contains('id', 1))
+                        · <strong class="text-success" id="base-price">{{ number_format($product->price, 2, ',', '.') }} ₺</strong>
+                    @endif
+                </p>
+                @if(!empty($product->description))
+                    <p class="ph-desc">{{ $product->description }}</p>
+                @endif
+            </div>
+
+            <div class="row">
+                <div class="col-md-12">
                     <form method="POST" action="" id="product-form">
                         @csrf
                         <input type="hidden" name="product_id" value="{{ $product->id }}">
@@ -437,7 +444,32 @@
                             </div>
                         </div>
 
-                        <!-- Wizard Steps Container -->
+                        <!-- 2-column layout: Gallery (left) + Wizard steps (right) -->
+                        <div class="row g-4">
+                            <!-- LEFT: Gallery (sticky) -->
+                            <div class="col-lg-5">
+                                <div class="product-gallery-sticky">
+                                    <div class="gallery-main">
+                                        @if($mainGalleryImage)
+                                            <img id="gallery-main-image" src="{{ $mainGalleryImage }}" alt="{{ $product->title }}">
+                                        @else
+                                            <div class="text-muted"><i class="fas fa-image fa-4x"></i></div>
+                                        @endif
+                                    </div>
+                                    @if(count($galleryImages) > 1)
+                                    <div class="gallery-thumbs">
+                                        @foreach($galleryImages as $i => $img)
+                                            <div class="gallery-thumb {{ $i === 0 ? 'active' : '' }}" data-img="{{ $img }}">
+                                                <img src="{{ $img }}" alt="thumb">
+                                            </div>
+                                        @endforeach
+                                    </div>
+                                    @endif
+                                </div>
+                            </div>
+
+                            <!-- RIGHT: Wizard Steps Container -->
+                            <div class="col-lg-7">
                         <div class="wizard-steps-container">
 
                             {{-- Page Count step (varsa, ilk step) --}}
@@ -480,7 +512,10 @@
                                      data-step-kind="customization"
                                      data-step-category-id="{{ $step['category_id'] }}"
                                      @if($step['is_cascade']) data-step-cascade="true" data-step-parent-cat="{{ $step['parent_category_id'] }}" @endif>
-                                    <h6 class="text-muted mb-1" style="opacity:.7;">{{ $step['step_label'] }}</h6>
+                                    <h4 class="wizard-step-title">{{ $step['category']->title }}</h4>
+                                    @if(!empty($step['category']->description))
+                                        <p class="wizard-step-desc">{{ $step['category']->description }}</p>
+                                    @endif
                                     @if($step['is_cascade'])
                                         {{-- Cascade child step: parent seçilince AJAX ile içerik dolacak --}}
                                         <div class="customization-section mb-4 cascade-target-section"
@@ -593,15 +628,24 @@
 
                         </div>{{-- /wizard-steps-container --}}
 
-                        <!-- Wizard Navigation -->
-                        <div class="wizard-nav d-flex justify-content-between mt-4">
+                        <!-- Wizard Navigation (sticky bottom + price center) -->
+                        <div class="wizard-nav">
                             <button type="button" class="btn btn-outline-secondary" id="wizardPrevBtn" style="visibility:hidden;">
                                 <i class="fas fa-arrow-left"></i> Geri
                             </button>
+                            <div class="wizard-nav-price" id="wizard-nav-price">
+                                @if(Auth::check() and Auth::user()->roles->contains('id', 3) or Auth::user()->roles->contains('id', 1))
+                                <span class="label">Toplam</span>
+                                <span id="wizard-bottom-price">{{ number_format($product->price, 2, ',', '.') }} ₺</span>
+                                @endif
+                            </div>
                             <button type="button" class="btn btn-primary" id="wizardNextBtn">
                                 İleri <i class="fas fa-arrow-right"></i>
                             </button>
                         </div>
+
+                            </div>{{-- /col-lg-7 --}}
+                        </div>{{-- /row 2-col --}}
 
                     </form>
                 </div>
@@ -881,39 +925,96 @@
         color: #6c757d;
     }
 
-    /* ============ WIZARD STYLES ============ */
+    /* ============ WIZARD STYLES (compact) ============ */
+    .product-header-compact {
+        padding: 12px 0 16px;
+        border-bottom: 1px solid #e9ecef;
+        margin-bottom: 16px;
+    }
+    .product-header-compact h2 {
+        font-size: 1.4rem;
+        margin: 0 0 4px;
+        font-weight: 600;
+    }
+    .product-header-compact .ph-meta {
+        font-size: 0.85rem;
+        color: #6c757d;
+        margin: 0;
+    }
+    .product-header-compact .ph-desc {
+        font-size: 0.85rem;
+        color: #495057;
+        margin: 6px 0 0;
+        line-height: 1.4;
+        max-height: 2.8em;
+        overflow: hidden;
+    }
+
+    /* Sticky gallery (left column) */
+    .product-gallery-sticky {
+        position: sticky;
+        top: 16px;
+    }
+    .gallery-main {
+        background: #f8f9fa;
+        border-radius: 10px;
+        overflow: hidden;
+        aspect-ratio: 1;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+    .gallery-main img { width: 100%; height: 100%; object-fit: cover; cursor: zoom-in; }
+    .gallery-thumbs {
+        display: grid;
+        grid-template-columns: repeat(5, 1fr);
+        gap: 6px;
+        margin-top: 8px;
+    }
+    .gallery-thumb {
+        aspect-ratio: 1;
+        border-radius: 6px;
+        overflow: hidden;
+        cursor: pointer;
+        opacity: .65;
+        border: 2px solid transparent;
+        transition: opacity .15s, border-color .15s;
+    }
+    .gallery-thumb:hover { opacity: 1; }
+    .gallery-thumb.active { opacity: 1; border-color: #0d6efd; }
+    .gallery-thumb img { width: 100%; height: 100%; object-fit: cover; display: block; }
+
+    /* Step indicator — compact horizontal */
     .wizard-progress {
         display: flex;
-        gap: 8px;
+        gap: 4px;
         flex-wrap: wrap;
-        padding: 16px 0;
+        padding: 10px 0;
         border-bottom: 1px solid #e9ecef;
-        margin-bottom: 24px;
+        margin-bottom: 16px;
+        justify-content: center;
     }
     .wizard-step-indicator {
         display: flex;
         align-items: center;
-        gap: 8px;
-        padding: 8px 14px;
-        border-radius: 20px;
-        background: #f8f9fa;
-        color: #6c757d;
-        font-size: 14px;
+        gap: 6px;
+        padding: 4px 10px;
+        border-radius: 14px;
+        background: #f1f3f5;
+        color: #868e96;
+        font-size: 12px;
         cursor: default;
-        transition: background .2s, color .2s;
-        flex: 1 1 auto;
-        min-width: 130px;
-        justify-content: center;
+        transition: background .15s, color .15s;
     }
     .wizard-step-indicator .wsi-num {
         display: inline-flex;
-        width: 24px; height: 24px;
+        width: 20px; height: 20px;
         align-items: center; justify-content: center;
         background: #dee2e6;
         color: #495057;
         border-radius: 50%;
         font-weight: 700;
-        font-size: 13px;
+        font-size: 11px;
     }
     .wizard-step-indicator.active {
         background: #0d6efd;
@@ -931,9 +1032,7 @@
         background: #198754;
         color: #fff;
     }
-    .wizard-step {
-        display: none;
-    }
+    .wizard-step { display: none; }
     .wizard-step.active {
         display: block;
         animation: wizardFadeIn .2s ease;
@@ -943,10 +1042,53 @@
         to   { opacity: 1; transform: translateY(0); }
     }
     .wizard-step-title {
-        margin-bottom: 18px;
-        padding-bottom: 12px;
-        border-bottom: 2px solid #0d6efd;
-        color: #0d6efd;
+        font-size: 1.1rem;
+        margin-bottom: 4px;
+        color: #212529;
+        font-weight: 600;
+    }
+    .wizard-step-desc {
+        font-size: 0.85rem;
+        color: #6c757d;
+        margin-bottom: 14px;
+        line-height: 1.4;
+    }
+
+    /* Wizard step zaten kategori başlığını .wizard-step-title olarak gösteriyor —
+       customization-section içindeki kendi h4'ünü gizle (duplicate olmasın) */
+    .wizard-step[data-step-kind="customization"] .customization-section > h4 {
+        display: none;
+    }
+
+    /* Wizard nav (sticky bottom) with price center */
+    .wizard-nav {
+        position: sticky;
+        bottom: 0;
+        background: #fff;
+        padding: 12px 0;
+        margin-top: 20px;
+        border-top: 1px solid #e9ecef;
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        z-index: 10;
+    }
+    .wizard-nav-price {
+        flex: 1;
+        text-align: center;
+        font-size: 1.2rem;
+        font-weight: 700;
+        color: #198754;
+        line-height: 1;
+    }
+    .wizard-nav-price .label {
+        display: block;
+        font-size: 0.7rem;
+        color: #6c757d;
+        font-weight: 500;
+        margin-bottom: 2px;
+        letter-spacing: .5px;
+        text-transform: uppercase;
     }
     .extras-grid .extra-card {
         transition: transform .15s, box-shadow .15s;
@@ -987,25 +1129,40 @@
         .wizard-step-indicator { min-width: auto; padding: 8px; }
     }
 
-    /* ============ OPTION CARD STYLES (image-based selection) ============ */
-    .option-card-grid { margin: 0; }
+    /* ============ OPTION CARD STYLES (compact grid) ============ */
+    /* CSS Grid — 5 per row on lg, responsive */
+    .option-card-grid {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 8px;
+        margin: 0;
+    }
+    @media (min-width: 576px) { .option-card-grid { grid-template-columns: repeat(3, 1fr); } }
+    @media (min-width: 992px) { .option-card-grid { grid-template-columns: repeat(4, 1fr); } }
+    @media (min-width: 1400px) { .option-card-grid { grid-template-columns: repeat(5, 1fr); } }
+
+    /* Bootstrap col wrapper'ları display:contents ile kaldır (grid direct child olması için) */
+    .option-card-grid > [class*="col-"] {
+        display: contents;
+    }
+
     .option-card {
         display: flex;
         flex-direction: column;
         cursor: pointer;
         background: #fff;
-        border: 2px solid #e9ecef;
-        border-radius: 12px;
+        border: 1px solid #dee2e6;
+        border-radius: 8px;
         overflow: hidden;
-        transition: all .15s ease;
+        transition: all .12s ease;
         height: 100%;
         margin: 0;
         position: relative;
     }
     .option-card:hover {
         border-color: #0d6efd;
-        transform: translateY(-2px);
-        box-shadow: 0 6px 18px rgba(13,110,253,.12);
+        transform: translateY(-1px);
+        box-shadow: 0 4px 12px rgba(13,110,253,.10);
     }
     .option-card-input {
         position: absolute;
@@ -1016,8 +1173,8 @@
     .option-card.selected,
     .option-card:has(.option-card-input:checked) {
         border-color: #0d6efd;
+        border-width: 2px;
         background: #f0f7ff;
-        box-shadow: 0 4px 14px rgba(13,110,253,.18);
     }
     .option-card-image-wrap {
         position: relative;
@@ -1039,13 +1196,13 @@
         width: 100%;
         height: 100%;
         color: #adb5bd;
-        font-size: 2.5rem;
+        font-size: 1.6rem;
     }
     .option-card-checkmark {
         position: absolute;
-        top: 8px;
-        right: 8px;
-        width: 28px; height: 28px;
+        top: 6px;
+        right: 6px;
+        width: 22px; height: 22px;
         background: #0d6efd;
         color: #fff;
         border-radius: 50%;
@@ -1054,9 +1211,9 @@
         justify-content: center;
         opacity: 0;
         transform: scale(.7);
-        transition: opacity .15s, transform .15s;
-        font-size: 13px;
-        box-shadow: 0 2px 6px rgba(0,0,0,.2);
+        transition: opacity .12s, transform .12s;
+        font-size: 11px;
+        box-shadow: 0 1px 4px rgba(0,0,0,.18);
     }
     .option-card.selected .option-card-checkmark,
     .option-card:has(.option-card-input:checked) .option-card-checkmark {
@@ -1064,25 +1221,27 @@
         transform: scale(1);
     }
     .option-card-body {
-        padding: 12px;
+        padding: 6px 8px 8px;
         text-align: center;
     }
     .option-card-title {
         font-weight: 600;
         color: #212529;
-        margin-bottom: 4px;
-        line-height: 1.3;
+        margin-bottom: 2px;
+        line-height: 1.2;
+        font-size: 0.85rem;
+        word-break: break-word;
     }
     .option-card-price {
         color: #198754;
         font-weight: 700;
-        font-size: 0.9em;
+        font-size: 0.78rem;
     }
     .option-card-hint {
         display: block;
         color: #6c757d;
-        font-size: 0.8em;
-        margin-top: 4px;
+        font-size: 0.7rem;
+        margin-top: 2px;
     }
     .option-card-multi.selected,
     .option-card-multi:has(.option-card-input:checked) {
@@ -1093,16 +1252,13 @@
     .option-card-multi:has(.option-card-input:checked) .option-card-checkmark {
         background: #198754;
     }
+    .wizard-step .child-parameters-container { margin-top: 16px; }
 
-    /* Customization section spacing inside wizard step */
-    .wizard-step .customization-section h4 {
-        font-size: 1.5rem;
-        margin-bottom: 18px;
-        padding-bottom: 12px;
-        border-bottom: 2px solid #0d6efd;
-        color: #0d6efd;
+    /* Mobile: hide step labels, only show numbers */
+    @media (max-width: 768px) {
+        .wizard-step-indicator .wsi-label { display: none; }
+        .wizard-step-indicator { padding: 4px 8px; }
     }
-    .wizard-step .child-parameters-container { margin-top: 20px; }
 </style>
    
   </main>
@@ -1113,6 +1269,21 @@
   <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
  
   <script>
+    // ============ GALLERY THUMB CLICK ============
+    document.addEventListener('DOMContentLoaded', function() {
+        const mainImg = document.getElementById('gallery-main-image');
+        const thumbs = document.querySelectorAll('.gallery-thumb');
+        thumbs.forEach(t => {
+            t.addEventListener('click', () => {
+                const src = t.getAttribute('data-img');
+                if (!src || !mainImg) return;
+                mainImg.src = src;
+                thumbs.forEach(x => x.classList.remove('active'));
+                t.classList.add('active');
+            });
+        });
+    });
+
     // ============ WIZARD STATE MACHINE ============
     document.addEventListener('DOMContentLoaded', function() {
         const wizardSteps = Array.from(document.querySelectorAll('.wizard-step[data-step-index]'));
@@ -1747,9 +1918,11 @@
                     }
                 }
                 
-                // Fiyatı güncelle
-                $('#base-price').text(totalPrice.toFixed(2));
-                
+                // Fiyatı güncelle (header + alt nav)
+                var priceText = totalPrice.toLocaleString('tr-TR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+                $('#base-price').text(priceText + ' ₺');
+                $('#wizard-bottom-price').text(priceText + ' ₺');
+
                 // Hidden input'ı da güncelle
                 $('#total-price-input').val(totalPrice.toFixed(2));
                 
