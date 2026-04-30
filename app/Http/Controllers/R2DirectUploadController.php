@@ -48,11 +48,21 @@ class R2DirectUploadController extends Controller
             Log::error('R2 initiate failed', [
                 'cart_id' => $cart->id,
                 'file_index' => $data['file_index'],
+                'key' => $key,
                 'error' => $e->getMessage(),
+                'class' => get_class($e),
+                'trace_first' => $e->getTraceAsString() ? substr($e->getTraceAsString(), 0, 500) : '',
+                'r2_endpoint_set' => !empty(env('R2_ENDPOINT')),
+                'r2_bucket_set' => !empty(env('R2_BUCKET')),
+                'r2_key_set' => !empty(env('R2_ACCESS_KEY_ID')),
             ]);
             return response()->json([
                 'success' => false,
                 'message' => 'R2 initiate hatası.',
+                'debug' => config('app.debug') ? [
+                    'error' => $e->getMessage(),
+                    'class' => get_class($e),
+                ] : null,
             ], 500);
         }
 
