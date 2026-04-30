@@ -78,7 +78,7 @@
             @endphp
 
             @if($showHiddenCategory)
-            <div class="col-6 col-md-4 col-lg-3">
+            <div class="col-6 col-md-4 col-lg-3 option-card-wrapper" data-parent-pivot-id="{{ (int)$pivot->customization_params_ust_id }}">
                 <label class="option-card" for="param_{{ $param->id }}">
                     <input class="option-card-input customization-radio"
                            type="radio"
@@ -89,8 +89,9 @@
                            data-title="{{ $param->key }}"
                            data-pivot-id="{{ $pivot->id }}"
                            data-has-children="{{ $hasChildren ? 'true' : 'false' }}"
-                           data-is-child="false"
-                           data-parent-id="0"
+                           data-is-child="{{ $pivot->customization_params_ust_id > 0 ? 'true' : 'false' }}"
+                           data-parent-pivot-id="{{ (int)$pivot->customization_params_ust_id }}"
+                           data-parent-id="{{ (int)$pivot->customization_params_ust_id }}"
                            data-category-id="{{ $category->id }}"
                            data-category-title="{{ $category->title }}">
                     <div class="option-card-image-wrap">
@@ -112,9 +113,6 @@
                             @if(Auth::check() and Auth::user()->roles->contains('id', 3) or Auth::user()->roles->contains('id', 1))
                             <div class="option-card-price">+{{ number_format($pivot->price ?: 0, 2) }} ₺</div>
                             @endif
-                        @endif
-                        @if($hasChildren)
-                            <small class="option-card-hint">Alt seçenekler var</small>
                         @endif
                     </div>
                 </label>
@@ -349,9 +347,6 @@
                             @if(Auth::check() and Auth::user()->roles->contains('id', 3) or Auth::user()->roles->contains('id', 1))
                             <div class="option-card-price">+{{ number_format($pivot->price ?: 0, 2) }} ₺</div>
                             @endif
-                        @endif
-                        @if($hasChildren)
-                            <small class="option-card-hint">Alt seçenekler var</small>
                         @endif
                     </div>
                 </label>

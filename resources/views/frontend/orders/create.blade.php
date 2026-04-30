@@ -306,21 +306,8 @@
                 $mainGalleryImage = $galleryImages[0] ?? null;
             @endphp
 
-            <!-- Compact Product Header -->
-            <div class="product-header-compact">
-                <h2>{{ $product->title }}</h2>
-                <p class="ph-meta">
-                    @if($product->mainCategory)
-                        <i class="fas fa-tag"></i> {{ $product->mainCategory->title }}
-                    @endif
-                    @if(Auth::check() and Auth::user()->roles->contains('id', 3) or Auth::user()->roles->contains('id', 1))
-                        · <strong class="text-success" id="base-price">{{ number_format($product->price, 2, ',', '.') }} ₺</strong>
-                    @endif
-                </p>
-                @if(!empty($product->description))
-                    <p class="ph-desc">{{ $product->description }}</p>
-                @endif
-            </div>
+            {{-- Hidden price element for JS updates (artık header'da değil, alt nav'da görünüyor) --}}
+            <span id="base-price" class="d-none">{{ number_format($product->price, 2, ',', '.') }} ₺</span>
 
             <div class="row">
                 <div class="col-md-12">
@@ -465,6 +452,14 @@
                                         @endforeach
                                     </div>
                                     @endif
+
+                                    {{-- Product title + description (galeri altında) --}}
+                                    <div class="product-header-compact">
+                                        <h2>{{ $product->title }}</h2>
+                                        @if(!empty($product->description))
+                                            <p class="ph-desc">{{ $product->description }}</p>
+                                        @endif
+                                    </div>
                                 </div>
                             </div>
 
@@ -516,25 +511,18 @@
                                     @if(!empty($step['category']->description))
                                         <p class="wizard-step-desc">{{ $step['category']->description }}</p>
                                     @endif
+                                    {{-- Cascade step de aynı render — tüm pivot'lar pre-render edilir,
+                                         JS parent_pivot_id'ye göre görünür/gizli yapar --}}
+                                    @include('frontend.products.customization-section', [
+                                        'category' => $step['category'],
+                                        'categoryParams' => $step['params'],
+                                        'product' => $product,
+                                    ])
                                     @if($step['is_cascade'])
-                                        {{-- Cascade child step: parent seçilince AJAX ile içerik dolacak --}}
-                                        <div class="customization-section mb-4 cascade-target-section"
-                                             data-category="{{ $step['category_id'] }}"
-                                             data-type="{{ $step['category']->type }}"
-                                             data-required="{{ $step['category']->required }}">
-                                            <h4>{{ $step['category']->title }}</h4>
-                                            <div class="cascade-placeholder text-center py-4 text-muted">
-                                                <i class="fas fa-arrow-circle-up fa-2x mb-2"></i>
-                                                <p class="mb-0">Önceki adımda seçim yaptıktan sonra burada görünecek.</p>
-                                            </div>
-                                            <div class="cascade-content"></div>
+                                        <div class="cascade-empty-state text-center py-4 text-muted" style="display:none;">
+                                            <i class="fas fa-arrow-up fa-2x mb-2"></i>
+                                            <p class="mb-0">Önceki adımda seçim yaptıktan sonra seçenekler burada görünecek.</p>
                                         </div>
-                                    @else
-                                        @include('frontend.products.customization-section', [
-                                            'category' => $step['category'],
-                                            'categoryParams' => $step['params'],
-                                            'product' => $product,
-                                        ])
                                     @endif
                                 </div>
                             @endforeach
@@ -1252,7 +1240,8 @@
     .option-card-multi:has(.option-card-input:checked) .option-card-checkmark {
         background: #198754;
     }
-    .wizard-step .child-parameters-container { margin-top: 16px; }
+    /* Eski cascade child loading container'ı yeni chain-filter ile gereksiz — gizle */
+    .wizard-step .child-parameters-container { display: none !important; }
 
     /* Mobile: hide step labels, only show numbers */
     @media (max-width: 768px) {
@@ -1487,6 +1476,7 @@
         // ============ AUTO-ADVANCE + MIRROR-SELECT LOGIC ============
 
         // Mirror-select cards: tıklanınca arkadaki <select>'i günceller (+ child loading tetikler)
+        // NOT: Auto-advance YOK — kullanıcı "İleri" butonuna basınca geçer.
         document.querySelectorAll('.option-card-mirror-select').forEach(card => {
             card.addEventListener('click', function (e) {
                 if (e.target.tagName === 'INPUT') return;
@@ -1505,121 +1495,94 @@
                 }
                 this.classList.add('selected');
 
-                // Trigger change events: hem native select change hem de jQuery change (mevcut kod jQuery dinliyor)
+                // Trigger change events (jQuery cascade child loading dinliyor)
                 select.dispatchEvent(new Event('change', { bubbles: true }));
                 if (window.jQuery) {
                     window.jQuery(select).trigger('change');
                 }
+            });
+        });
 
-                // Sadece child seçenek YOKSA auto-advance et (cascade'de kullanıcının child'ları seçmesi gerek)
-                const hasChildren = (select.options[select.selectedIndex]?.dataset?.hasChildren === 'true');
-                const isPageCount = select.id === 'page-count-select';
-                if (isPageCount || !hasChildren) {
-                    setTimeout(() => tryAutoAdvance(), 350);
+        // Radio cards: native input — visual highlight için, auto-advance YOK
+
+        // ============ CASCADE STEP CHAIN FILTER ============
+        // Cascade step'lerin tüm seçenekleri ön-render edilmiş (server-side).
+        // Parent step'te seçim değişince child step'in seçeneklerini parent_pivot_id'ye göre filtrele.
+
+        function refreshCascadeChain(changedStepEl) {
+            const changedCatId = changedStepEl?.getAttribute('data-step-category-id');
+            if (!changedCatId) return;
+            const changedInput = changedStepEl.querySelector('input[type="radio"]:checked, select:not(.d-none) ~ * input:checked');
+            const changedSelect = changedStepEl.querySelector('select.customization-select');
+            const selectedPivotId = changedInput?.value || changedSelect?.value || '';
+
+            // Bu kategoriyi parent olarak alan cascade step'i bul
+            const childStep = document.querySelector(
+                '.wizard-step[data-step-cascade="true"][data-step-parent-cat="' + changedCatId + '"]'
+            );
+            if (!childStep) return;
+
+            // Child step'in seçeneklerini filtrele
+            let visibleCount = 0;
+            childStep.querySelectorAll('.option-card-wrapper').forEach(wrapper => {
+                const parentId = wrapper.getAttribute('data-parent-pivot-id') || '0';
+                const visible = String(parentId) === String(selectedPivotId);
+                wrapper.style.display = visible ? '' : 'none';
+                if (visible) visibleCount++;
+
+                // Önceki seçimi temizle (artık görünmüyorsa)
+                if (!visible) {
+                    const inp = wrapper.querySelector('input');
+                    if (inp && inp.checked) inp.checked = false;
+                    wrapper.querySelector('.option-card')?.classList.remove('selected');
                 }
             });
-        });
 
-        // Radio cards: native input olduğu için change tetikleniyor
-        // (NOT: cascade child step kullanılıyorsa hasChildren olsa bile auto-advance ETMELİ
-        //  çünkü child'lar bir sonraki step'te yüklenecek)
-        document.querySelectorAll('.option-card-input[type="radio"]').forEach(input => {
-            input.addEventListener('change', () => {
-                if (!input.checked) return;
-                setTimeout(() => tryAutoAdvance(), 350);
-            });
-        });
+            // Empty state göster/gizle
+            const emptyState = childStep.querySelector('.cascade-empty-state');
+            const sectionGrid = childStep.querySelector('.option-card-grid');
+            if (emptyState && sectionGrid) {
+                if (visibleCount === 0) {
+                    emptyState.style.display = '';
+                    sectionGrid.style.display = 'none';
+                } else {
+                    emptyState.style.display = 'none';
+                    sectionGrid.style.display = '';
+                }
+            }
 
-        // ============ CASCADE CHILD → AYRI STEP'E TAŞI ============
-        // Mevcut loadChildParameters jQuery AJAX'ı `.child-parameters-container`'ı dolduruyor.
-        // O dolduğunda içeriği cascade step'in içine taşıyıp, oradaki .cascade-target-section'a
-        // yerleştiriyoruz. Tetikleyici: MutationObserver (.child-parameters-container'a dom append).
-
-        function relocateCascadeContent() {
-            // .child-parameters-container içine yüklenen .customization-section'ları
-            // cascade step'lere TAŞI (clone değil — event listeners korunur).
-            document.querySelectorAll('.child-parameters-container .customization-section').forEach(section => {
-                const catId = section.getAttribute('data-category');
-                if (!catId) return;
-                if (section.dataset.relocated === 'true') return;
-
-                const cascadeStep = document.querySelector(
-                    '.wizard-step[data-step-cascade="true"][data-step-category-id="' + catId + '"]'
-                );
-                if (!cascadeStep) return;
-
-                const cascadeSection = cascadeStep.querySelector('.cascade-target-section');
-                const placeholder = cascadeSection?.querySelector('.cascade-placeholder');
-                const content = cascadeSection?.querySelector('.cascade-content');
-                if (!cascadeSection || !content) return;
-
-                section.dataset.relocated = 'true';
-
-                // Placeholder gizle, content'i temizle, section'ın iç child'larını TAŞI
-                if (placeholder) placeholder.style.display = 'none';
-                content.innerHTML = '';
-
-                // Section'ın çocuklarını sırayla taşı (h4 hariç — zaten cascade step'te var)
-                Array.from(section.children).forEach(child => {
-                    if (child.tagName === 'H4') return;
-                    content.appendChild(child); // appendChild aynı node'u taşır (event'lar korunur)
-                });
-
-                cascadeSection.setAttribute('data-required', section.getAttribute('data-required') || '0');
-                cascadeSection.setAttribute('data-type', section.getAttribute('data-type') || '');
-
-                // Boşalan eski section'ı gizle
-                section.style.display = 'none';
-
-                // Card-style auto-advance handler'ları yeni gelen radio/select'lere bağla
-                bindCascadeStepHandlers(content);
-            });
+            // Recursive: child step de bir cascade chain'in parent'ı olabilir
+            // (Ebat → Kumaş → Renk → Paket gibi). Child'daki seçim sıfırlandığı için
+            // onun child'ı da temizlenmeli.
+            refreshCascadeChain(childStep);
         }
 
-        function bindCascadeStepHandlers(container) {
-            container.querySelectorAll('input[type="radio"]').forEach(input => {
-                if (input.dataset.cascadeBound === 'true') return;
-                input.dataset.cascadeBound = 'true';
-                input.addEventListener('change', () => {
-                    if (input.checked) setTimeout(() => tryAutoAdvance(), 350);
-                });
-            });
-            container.querySelectorAll('select').forEach(sel => {
-                if (sel.dataset.cascadeBound === 'true') return;
-                sel.dataset.cascadeBound = 'true';
-                sel.addEventListener('change', () => {
-                    if (sel.value) setTimeout(() => tryAutoAdvance(), 350);
-                });
-            });
-        }
-
-        // Mutation observer: .child-parameters-container içeriği değişince relocate
-        const cascadeObserver = new MutationObserver(() => relocateCascadeContent());
-        document.querySelectorAll('.child-parameters-container').forEach(c => {
-            cascadeObserver.observe(c, { childList: true, subtree: true });
+        // Tüm cascade-relevant input change'lerini izle
+        document.addEventListener('change', (e) => {
+            const tgt = e.target;
+            if (!tgt) return;
+            // Radio veya hidden select
+            if (tgt.matches('.customization-radio, input[type="radio"][data-pivot-id], select.customization-select')) {
+                const stepEl = tgt.closest('.wizard-step');
+                if (stepEl) refreshCascadeChain(stepEl);
+            }
         });
-        // Tüm DOM için de izle — yeni eklenen container'lar olabilir
-        cascadeObserver.observe(document.body, { childList: true, subtree: true });
 
-        // İlk yüklenmede de check et
-        setTimeout(() => relocateCascadeContent(), 500);
-        // ============ /CASCADE STEP TAŞIMA ============
+        // İlk yüklenmede tüm cascade step'leri başlangıç olarak gizle (parent henüz seçilmemiş)
+        document.querySelectorAll('.wizard-step[data-step-cascade="true"]').forEach(cs => {
+            cs.querySelectorAll('.option-card-wrapper').forEach(w => w.style.display = 'none');
+            const empty = cs.querySelector('.cascade-empty-state');
+            const grid = cs.querySelector('.option-card-grid');
+            if (empty) empty.style.display = '';
+            if (grid) grid.style.display = 'none';
+        });
+        // ============ /CASCADE CHAIN FILTER ============
 
         // Card UI'da tıklanan label area'dan dışa input change'i tetikleniyor zaten — visual state CSS :has ile
         // Eski kod (initializeCustomizationSystem vb.) jQuery kullanıyor; mevcut logic dokunulmadan korunuyor.
 
-        function tryAutoAdvance() {
-            // Sadece customization veya page_count step'lerinde otomatik ilerle
-            const step = wizardSteps[currentStep];
-            if (!step) return;
-            const kind = step.getAttribute('data-step-kind');
-            if (kind !== 'customization' && kind !== 'page_count') return;
-
-            // Validation geçerse next step'e
-            if (validateCurrentStep()) {
-                showStep(currentStep + 1);
-            }
-        }
+        // Auto-advance kaldırıldı — kullanıcı "İleri" butonuna basarak ilerliyor.
+        function tryAutoAdvance() { /* no-op */ }
 
         // ============ /AUTO-ADVANCE ============
 

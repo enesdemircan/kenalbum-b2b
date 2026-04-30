@@ -117,10 +117,16 @@ class OrderController extends Controller
                 if (in_array($childCategory->type, ['file', 'files'])) break;
                 if (!$shouldShowHidden($childCategory, collect([$childPivot]))) break;
 
+                // Cascade step için TÜM child pivot'ları ön-render et (parent_pivot_id ile)
+                // JS parent seçimine göre filtreleyecek (görünür/gizli toggle)
+                $allChildPivots = $product->customizationPivotParams->filter(function ($p) use ($childCatId) {
+                    return (int)$p->param->customization_category_id === $childCatId;
+                })->values();
+
                 $customizationSteps->push([
                     'category' => $childCategory,
                     'category_id' => $childCatId,
-                    'params' => collect(), // boş — AJAX ile dinamik dolacak
+                    'params' => $allChildPivots,
                     'is_cascade' => true,
                     'parent_category_id' => $parentCatId,
                     'step_label' => $childCategory->step_label ?? 'Sipariş Detayı',
