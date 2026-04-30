@@ -59,3 +59,4 @@ desktop.ini
 # Backup files
 *.bak
 *.backup
+tasks/debug_*.php
