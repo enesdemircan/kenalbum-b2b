@@ -1262,6 +1262,8 @@
   <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
  
   <script>
+    console.log('%c🧙 WIZARD JS V3.2 LOADED', 'background:#0d6efd;color:#fff;padding:4px 8px;border-radius:4px;font-weight:bold');
+
     // ============ GALLERY THUMB CLICK ============
     document.addEventListener('DOMContentLoaded', function() {
         const mainImg = document.getElementById('gallery-main-image');
@@ -1525,6 +1527,7 @@
                 }
                 this.classList.add('selected');
 
+                console.log('[mirror-select] set value', select.id || select.className, '→', pivotId);
                 // Trigger change events (jQuery cascade child loading dinliyor)
                 select.dispatchEvent(new Event('change', { bubbles: true }));
                 if (window.jQuery) {
@@ -1541,26 +1544,45 @@
 
         function refreshCascadeChain(changedStepEl) {
             const changedCatId = changedStepEl?.getAttribute('data-step-category-id');
-            if (!changedCatId) return;
-            const changedInput = changedStepEl.querySelector('input[type="radio"]:checked, select:not(.d-none) ~ * input:checked');
+            if (!changedCatId) {
+                console.log('[cascade] no changedCatId — return', changedStepEl);
+                return;
+            }
             const changedSelect = changedStepEl.querySelector('select.customization-select');
-            const selectedPivotId = changedInput?.value || changedSelect?.value || '';
+            const checkedRadio = changedStepEl.querySelector('input[type="radio"]:checked');
+            const selectedPivotId = (checkedRadio && checkedRadio.value)
+                || (changedSelect && changedSelect.value)
+                || '';
+
+            console.log('[cascade] refreshCascadeChain', {
+                changedCatId,
+                selectedPivotId,
+                checkedRadio: checkedRadio?.value,
+                changedSelectValue: changedSelect?.value
+            });
 
             // Bu kategoriyi parent olarak alan cascade step'i bul
             const childStep = document.querySelector(
                 '.wizard-step[data-step-cascade="true"][data-step-parent-cat="' + changedCatId + '"]'
             );
-            if (!childStep) return;
+            if (!childStep) {
+                console.log('[cascade] no child step for parent_cat=' + changedCatId);
+                return;
+            }
+            console.log('[cascade] child step:', childStep.getAttribute('data-step-category-id'));
 
-            // Child step'in seçeneklerini filtrele
+            const allWrappers = childStep.querySelectorAll('.option-card-wrapper');
+            console.log('[cascade] child step total wrappers:', allWrappers.length);
+
             let visibleCount = 0;
-            childStep.querySelectorAll('.option-card-wrapper').forEach(wrapper => {
+            const sampleParentIds = [];
+            allWrappers.forEach((wrapper, idx) => {
                 const parentId = wrapper.getAttribute('data-parent-pivot-id') || '0';
+                if (idx < 5) sampleParentIds.push(parentId);
                 const visible = String(parentId) === String(selectedPivotId);
                 wrapper.style.display = visible ? '' : 'none';
                 if (visible) visibleCount++;
 
-                // Önceki seçimi temizle (artık görünmüyorsa)
                 if (!visible) {
                     const inp = wrapper.querySelector('input');
                     if (inp && inp.checked) inp.checked = false;
@@ -1568,7 +1590,8 @@
                 }
             });
 
-            // Empty state göster/gizle
+            console.log('[cascade] visible count:', visibleCount, 'sample parent ids:', sampleParentIds, 'looking for:', selectedPivotId);
+
             const emptyState = childStep.querySelector('.cascade-empty-state');
             const sectionGrid = childStep.querySelector('.option-card-grid');
             if (emptyState && sectionGrid) {
@@ -1581,9 +1604,7 @@
                 }
             }
 
-            // Recursive: child step de bir cascade chain'in parent'ı olabilir
-            // (Ebat → Kumaş → Renk → Paket gibi). Child'daki seçim sıfırlandığı için
-            // onun child'ı da temizlenmeli.
+            // Recursive
             refreshCascadeChain(childStep);
         }
 
@@ -1591,10 +1612,13 @@
         document.addEventListener('change', (e) => {
             const tgt = e.target;
             if (!tgt) return;
-            // Radio veya hidden select
+            console.log('[cascade] change event:', tgt.tagName, tgt.className, 'value:', tgt.value);
             if (tgt.matches('.customization-radio, input[type="radio"][data-pivot-id], select.customization-select')) {
                 const stepEl = tgt.closest('.wizard-step');
+                console.log('[cascade] match → step:', stepEl?.getAttribute('data-step-category-id'));
                 if (stepEl) refreshCascadeChain(stepEl);
+            } else {
+                console.log('[cascade] no match for selector');
             }
         });
 
