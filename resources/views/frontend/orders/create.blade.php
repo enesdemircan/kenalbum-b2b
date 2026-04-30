@@ -392,93 +392,171 @@
                         </div>
                         @endif
                         
-                        @if($product->price_difference_per_page > 0 && $product->min_pages > 0 && $product->max_pages > 0)
-                        <div class="mb-4">
-                            <h4>Yaprak Adeti</h4>
-                            <div class="form-group col-md-6">
-                                <select name="page_count" id="page-count-select" class="form-control" required>
-                                    <option value="">Yaprak adeti seçiniz</option>
-                                    @for($i = $product->min_pages; $i <= $product->max_pages; $i++)
-                                        <option value="{{ $i }}" {{ $i == 10 ? 'selected' : '' }}>
-                                            {{ $i }} yaprak ({{ $i * 2 }} sayfa)
-                                        </option>
-                                    @endfor
-                                </select>
-                            </div>
-                        </div>
-                        @else
-                        <!-- Tek sayfa ürün - sayfa seçimi gerekmez -->
-                        <input type="hidden" name="page_count" value="1">
-                        @endif
-                        @if($mainCustomizationParams->count() > 0)
-                        <div class="mb-4 customize-div" id="customize-div">
-                            @foreach($mainCustomizationParams as $categoryId => $categoryParams)
-                                @php
-                                    // Kategorinin bilgilerini al (ilk parametreden)
-                                    $category = $categoryParams->first()->param->category;
-                                @endphp
-                          
-                            @include('frontend.products.customization-section', [
-                                'category' => $category,
-                                'categoryParams' => $categoryParams,
-                                'product' => $product
-                            ])
-                            @endforeach
-                        </div>
+                        @php
+                            // Wizard step'leri: dinamik customization step'leri + sabit Ekstralar + Sipariş Özeti
+                            $hasPageCount = $product->price_difference_per_page > 0 && $product->min_pages > 0 && $product->max_pages > 0;
+                            $hasExtras = isset($extraSales) && $extraSales->count() > 0;
+                            $totalSteps = $stepGroups->count() + ($hasExtras ? 1 : 0) + 1; // +Özeti
+                        @endphp
+
+                        @if(!$hasPageCount)
+                            <input type="hidden" name="page_count" value="1">
                         @endif
 
-                 
-        
-                        <!-- Acil Üretim Seçeneği -->
-                        @if($product->urgent_price)
-                        <div class="mb-4">
-                            <div class="card">
-                                <div class="card-body"> 
-                                    <div class="form-check">
-                                        <input class="form-check-input" type="checkbox" name="urgent_production" id="urgent_production" value="1">
-                                        <label class="form-check-label" for="urgent_production">
-                                            <strong >Acil Üretim</strong> 
-                                            <span class="text-success-2 fw-bold">+ {{ number_format($product->urgent_price, 2) }} ₺</span>
-                                            <small class="text-muted d-block">Ek ücret karşılığında ürününüz acil olarak üretilecektir.</small>
-                                        </label>
+                        <!-- Wizard Step Indicator -->
+                        <div class="wizard-progress mb-4" id="wizard-progress">
+                            @foreach($stepGroups as $i => $step)
+                                <div class="wizard-step-indicator{{ $i === 0 ? ' active' : '' }}" data-step-index="{{ $i }}">
+                                    <span class="wsi-num">{{ $i + 1 }}</span>
+                                    <span class="wsi-label">{{ $step['label'] }}</span>
+                                </div>
+                            @endforeach
+                            @if($hasExtras)
+                                <div class="wizard-step-indicator" data-step-index="{{ $stepGroups->count() }}">
+                                    <span class="wsi-num">{{ $stepGroups->count() + 1 }}</span>
+                                    <span class="wsi-label">Ekstralar</span>
+                                </div>
+                            @endif
+                            <div class="wizard-step-indicator" data-step-index="{{ $totalSteps - 1 }}">
+                                <span class="wsi-num">{{ $totalSteps }}</span>
+                                <span class="wsi-label">Sipariş Özeti</span>
+                            </div>
+                        </div>
+
+                        <!-- Wizard Steps Container -->
+                        <div class="wizard-steps-container">
+
+                            {{-- Customization step'leri (dinamik) --}}
+                            @foreach($stepGroups as $i => $step)
+                                <div class="wizard-step{{ $i === 0 ? ' active' : '' }}" data-step-index="{{ $i }}">
+                                    <h3 class="wizard-step-title">{{ $step['label'] }}</h3>
+
+                                    {{-- İlk step'in içine page_count dropdown'ı (varsa) --}}
+                                    @if($i === 0 && $hasPageCount)
+                                        <div class="mb-4">
+                                            <h4>Yaprak Adeti</h4>
+                                            <div class="form-group col-md-6">
+                                                <select name="page_count" id="page-count-select" class="form-control" required>
+                                                    <option value="">Yaprak adeti seçiniz</option>
+                                                    @for($j = $product->min_pages; $j <= $product->max_pages; $j++)
+                                                        <option value="{{ $j }}" {{ $j == 10 ? 'selected' : '' }}>
+                                                            {{ $j }} yaprak ({{ $j * 2 }} sayfa)
+                                                        </option>
+                                                    @endfor
+                                                </select>
+                                            </div>
+                                        </div>
+                                    @endif
+
+                                    @foreach($step['categories'] as $categoryId => $categoryParams)
+                                        @php $category = $categoryParams->first()->param->category; @endphp
+                                        @include('frontend.products.customization-section', [
+                                            'category' => $category,
+                                            'categoryParams' => $categoryParams,
+                                            'product' => $product,
+                                        ])
+                                    @endforeach
+                                </div>
+                            @endforeach
+
+                            {{-- Ekstralar step (varsa) --}}
+                            @if($hasExtras)
+                                <div class="wizard-step" data-step-index="{{ $stepGroups->count() }}">
+                                    <h3 class="wizard-step-title">Ekstralar</h3>
+                                    <p class="text-muted">Siparişinize ek ürünler ekleyebilirsiniz. Hiçbirini istemiyorsanız "İleri" diyerek atlayabilirsiniz.</p>
+                                    <div class="row g-3 extras-grid">
+                                        @foreach($extraSales as $extra)
+                                            <div class="col-md-4 col-sm-6">
+                                                <div class="card h-100 extra-card" data-extra-product-id="{{ $extra['id'] }}">
+                                                    @if(!empty($extra['images']))
+                                                        @php
+                                                            $extraImg = is_array($extra['images']) ? ($extra['images'][0] ?? null) : explode(',', $extra['images'])[0];
+                                                        @endphp
+                                                        @if($extraImg)
+                                                            <img src="{{ $extraImg }}" class="card-img-top" style="height:160px;object-fit:cover;" alt="{{ $extra['title'] }}">
+                                                        @endif
+                                                    @endif
+                                                    <div class="card-body">
+                                                        <h6 class="card-title">{{ $extra['title'] }}</h6>
+                                                        <p class="text-success fw-bold mb-2">{{ number_format($extra['price'], 2) }} ₺</p>
+                                                        <div class="input-group input-group-sm">
+                                                            <button type="button" class="btn btn-outline-secondary extra-qty-minus">−</button>
+                                                            <input type="number" class="form-control text-center extra-qty" value="0" min="0" max="99">
+                                                            <button type="button" class="btn btn-outline-secondary extra-qty-plus">+</button>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        @endforeach
                                     </div>
                                 </div>
+                            @endif
+
+                            {{-- Sipariş Özeti step (her zaman) --}}
+                            <div class="wizard-step" data-step-index="{{ $totalSteps - 1 }}">
+                                <h3 class="wizard-step-title">Sipariş Özeti</h3>
+                                <div id="wizard-summary" class="wizard-summary mb-3">
+                                    {{-- JS ile dolduruluyor --}}
+                                </div>
+
+                                @if($product->urgent_price)
+                                <div class="mb-4">
+                                    <div class="card">
+                                        <div class="card-body">
+                                            <div class="form-check">
+                                                <input class="form-check-input" type="checkbox" name="urgent_production" id="urgent_production" value="1">
+                                                <label class="form-check-label" for="urgent_production">
+                                                    <strong>Acil Üretim</strong>
+                                                    <span class="text-success-2 fw-bold">+ {{ number_format($product->urgent_price, 2) }} ₺</span>
+                                                    <small class="text-muted d-block">Ek ücret karşılığında ürününüz acil olarak üretilecektir.</small>
+                                                </label>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                @endif
+
+                                <div class="mb-4">
+                                    <label for="order_note" class="form-label">
+                                        <i class="fas fa-sticky-note"></i> Sipariş Notu (Opsiyonel)
+                                    </label>
+                                    <textarea class="form-control"
+                                              id="order_note"
+                                              name="order_note"
+                                              rows="3"
+                                              placeholder="Siparişiniz ile ilgili özel notlarınızı buraya yazabilirsiniz..."
+                                              style="resize: vertical;"></textarea>
+                                </div>
+
+                                <div class="d-grid">
+                                    <button type="submit" class="btn btn-primary btn-lg" id="wizardSubmitBtn">
+                                        <i class="fas fa-shopping-cart"></i> SEPETE EKLE
+                                    </button>
+                                </div>
+
+                                <div class="d-grid mt-2">
+                                    <button type="button" id="completeOrderBtn" class="btn btn-success btn-lg">
+                                        <i class="fas fa-bolt"></i> SİPARİŞİ TAMAMLA
+                                    </button>
+                                    <small class="text-muted text-center mt-1">
+                                        Sepetteki diğer ürünler silinir ve doğrudan teslimat adımına ilerler
+                                    </small>
+                                </div>
+
+                                <input type="hidden" name="complete_order" id="completeOrderInput" value="0">
                             </div>
-                        </div>
-                        @endif
-        
-                        <!-- Sipariş Notu -->
-                        <div class="mb-4">
-                            <label for="order_note" class="form-label">
-                                <i class="fas fa-sticky-note"></i> Sipariş Notu (Opsiyonel)
-                            </label>
-                            <textarea class="form-control" 
-                                      id="order_note" 
-                                      name="order_note" 
-                                      rows="3" 
-                                      placeholder="Siparişiniz ile ilgili özel notlarınızı buraya yazabilirsiniz..."
-                                      style="resize: vertical;"></textarea>
-                            <small class="text-muted">
-                                Bu not siparişinizle birlikte kaydedilecektir.
-                            </small>
-                        </div>
-                 
-                        <div class="d-grid col-2">
-                            <button type="submit" class="btn btn-primary btn-lg">
-                                <i class="fas fa-shopping-cart"></i> SEPETE EKLE
+
+                        </div>{{-- /wizard-steps-container --}}
+
+                        <!-- Wizard Navigation -->
+                        <div class="wizard-nav d-flex justify-content-between mt-4">
+                            <button type="button" class="btn btn-outline-secondary" id="wizardPrevBtn" style="visibility:hidden;">
+                                <i class="fas fa-arrow-left"></i> Geri
+                            </button>
+                            <button type="button" class="btn btn-primary" id="wizardNextBtn">
+                                İleri <i class="fas fa-arrow-right"></i>
                             </button>
                         </div>
-
-                        <div class="d-grid col-2 mt-2">
-                            <button type="button" id="completeOrderBtn" class="btn btn-success btn-lg">
-                                <i class="fas fa-bolt"></i> SİPARİŞİ TAMAMLA
-                            </button>
-                            <small class="text-muted text-center mt-1">
-                                Sepetteki diğer ürünler silinir ve doğrudan teslimat/ödeme adımına ilerler
-                            </small>
-                        </div>
-
-                        <input type="hidden" name="complete_order" id="completeOrderInput" value="0">
 
                     </form>
                 </div>
@@ -757,6 +835,112 @@
         font-size: 0.8em;
         color: #6c757d;
     }
+
+    /* ============ WIZARD STYLES ============ */
+    .wizard-progress {
+        display: flex;
+        gap: 8px;
+        flex-wrap: wrap;
+        padding: 16px 0;
+        border-bottom: 1px solid #e9ecef;
+        margin-bottom: 24px;
+    }
+    .wizard-step-indicator {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding: 8px 14px;
+        border-radius: 20px;
+        background: #f8f9fa;
+        color: #6c757d;
+        font-size: 14px;
+        cursor: default;
+        transition: background .2s, color .2s;
+        flex: 1 1 auto;
+        min-width: 130px;
+        justify-content: center;
+    }
+    .wizard-step-indicator .wsi-num {
+        display: inline-flex;
+        width: 24px; height: 24px;
+        align-items: center; justify-content: center;
+        background: #dee2e6;
+        color: #495057;
+        border-radius: 50%;
+        font-weight: 700;
+        font-size: 13px;
+    }
+    .wizard-step-indicator.active {
+        background: #0d6efd;
+        color: #fff;
+    }
+    .wizard-step-indicator.active .wsi-num {
+        background: #fff;
+        color: #0d6efd;
+    }
+    .wizard-step-indicator.completed {
+        background: #d1e7dd;
+        color: #0a3622;
+    }
+    .wizard-step-indicator.completed .wsi-num {
+        background: #198754;
+        color: #fff;
+    }
+    .wizard-step {
+        display: none;
+    }
+    .wizard-step.active {
+        display: block;
+        animation: wizardFadeIn .2s ease;
+    }
+    @keyframes wizardFadeIn {
+        from { opacity: 0; transform: translateY(6px); }
+        to   { opacity: 1; transform: translateY(0); }
+    }
+    .wizard-step-title {
+        margin-bottom: 18px;
+        padding-bottom: 12px;
+        border-bottom: 2px solid #0d6efd;
+        color: #0d6efd;
+    }
+    .extras-grid .extra-card {
+        transition: transform .15s, box-shadow .15s;
+    }
+    .extras-grid .extra-card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(0,0,0,.08);
+    }
+    .extras-grid .extra-card.has-quantity {
+        border: 2px solid #198754;
+    }
+    .wizard-summary {
+        background: #f8f9fa;
+        border-radius: 8px;
+        padding: 16px 20px;
+    }
+    .wizard-summary .ws-row {
+        display: flex;
+        justify-content: space-between;
+        padding: 6px 0;
+        border-bottom: 1px dashed #dee2e6;
+    }
+    .wizard-summary .ws-row:last-child {
+        border-bottom: none;
+        font-weight: 700;
+        padding-top: 12px;
+        font-size: 1.1em;
+    }
+    .wizard-summary .ws-section {
+        margin-top: 14px;
+    }
+    .wizard-summary .ws-section h6 {
+        color: #0d6efd;
+        margin-bottom: 6px;
+    }
+    @media (max-width: 768px) {
+        .wizard-step-indicator .wsi-label { display: none; }
+        .wizard-step-indicator { min-width: auto; padding: 8px; }
+    }
 </style>
    
   </main>
@@ -767,8 +951,224 @@
   <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
  
   <script>
+    // ============ WIZARD STATE MACHINE ============
     document.addEventListener('DOMContentLoaded', function() {
-        
+        const wizardSteps = Array.from(document.querySelectorAll('.wizard-step[data-step-index]'));
+        const wizardIndicators = Array.from(document.querySelectorAll('.wizard-step-indicator[data-step-index]'));
+        const prevBtn = document.getElementById('wizardPrevBtn');
+        const nextBtn = document.getElementById('wizardNextBtn');
+        const submitBtn = document.getElementById('wizardSubmitBtn');
+        if (!wizardSteps.length || !nextBtn) return;
+
+        let currentStep = 0;
+        const totalSteps = wizardSteps.length;
+
+        function showStep(n) {
+            currentStep = Math.max(0, Math.min(n, totalSteps - 1));
+            wizardSteps.forEach((s, i) => s.classList.toggle('active', i === currentStep));
+            wizardIndicators.forEach((ind, i) => {
+                ind.classList.toggle('active', i === currentStep);
+                ind.classList.toggle('completed', i < currentStep);
+            });
+            prevBtn.style.visibility = currentStep > 0 ? 'visible' : 'hidden';
+            const isLast = currentStep === totalSteps - 1;
+            nextBtn.style.display = isLast ? 'none' : '';
+            if (submitBtn) submitBtn.style.display = '';
+
+            if (isLast) renderWizardSummary();
+
+            // Scroll to top of wizard area
+            const progress = document.getElementById('wizard-progress');
+            if (progress) progress.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+
+        function validateCurrentStep() {
+            const step = wizardSteps[currentStep];
+            if (!step) return true;
+
+            // Validate native required fields
+            const requiredFields = step.querySelectorAll('[required]');
+            for (const f of requiredFields) {
+                if (!f.value || (f.type === 'checkbox' && !f.checked)) {
+                    f.focus();
+                    Swal.fire({ icon: 'warning', title: 'Eksik Alan', text: 'Lütfen tüm zorunlu alanları doldurun.' });
+                    return false;
+                }
+            }
+
+            // Customization sections marked with data-required="1" — require selection
+            const sections = step.querySelectorAll('.customization-section[data-required="1"]');
+            for (const section of sections) {
+                const radios = section.querySelectorAll('input[type="radio"]');
+                const checks = section.querySelectorAll('input[type="checkbox"]');
+                const inputs = section.querySelectorAll('input[type="text"], textarea, select');
+
+                if (radios.length > 0) {
+                    let ok = false;
+                    radios.forEach(r => { if (r.checked) ok = true; });
+                    if (!ok) {
+                        Swal.fire({ icon: 'warning', title: 'Eksik Seçim', html: 'Lütfen <strong>' + (section.querySelector('h4')?.textContent || 'seçim') + '</strong> yapın.' });
+                        section.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                        return false;
+                    }
+                } else if (checks.length > 0) {
+                    let ok = false;
+                    checks.forEach(c => { if (c.checked) ok = true; });
+                    if (!ok) {
+                        Swal.fire({ icon: 'warning', title: 'Eksik Seçim', html: 'Lütfen <strong>' + (section.querySelector('h4')?.textContent || 'seçim') + '</strong> yapın.' });
+                        section.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                        return false;
+                    }
+                } else if (inputs.length > 0) {
+                    let ok = false;
+                    inputs.forEach(inp => { if (inp.value && inp.value.trim()) ok = true; });
+                    if (!ok) {
+                        Swal.fire({ icon: 'warning', title: 'Eksik Alan', html: 'Lütfen <strong>' + (section.querySelector('h4')?.textContent || 'alanı') + '</strong> doldurun.' });
+                        section.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                        return false;
+                    }
+                }
+            }
+            return true;
+        }
+
+        prevBtn.addEventListener('click', () => showStep(currentStep - 1));
+        nextBtn.addEventListener('click', () => {
+            if (validateCurrentStep()) showStep(currentStep + 1);
+        });
+
+        // Indicators clickable: only allow jumping back to completed steps
+        wizardIndicators.forEach((ind, idx) => {
+            ind.addEventListener('click', () => {
+                if (idx < currentStep) showStep(idx);
+            });
+            ind.style.cursor = 'pointer';
+        });
+
+        // Extras step quantity controls
+        document.querySelectorAll('.extra-card').forEach(card => {
+            const minus = card.querySelector('.extra-qty-minus');
+            const plus = card.querySelector('.extra-qty-plus');
+            const input = card.querySelector('.extra-qty');
+            if (!input) return;
+            const updateClass = () => {
+                card.classList.toggle('has-quantity', parseInt(input.value || '0', 10) > 0);
+            };
+            if (minus) minus.addEventListener('click', () => {
+                input.value = Math.max(0, (parseInt(input.value || '0', 10) || 0) - 1);
+                updateClass();
+            });
+            if (plus) plus.addEventListener('click', () => {
+                input.value = Math.min(99, (parseInt(input.value || '0', 10) || 0) + 1);
+                updateClass();
+            });
+            input.addEventListener('input', updateClass);
+        });
+
+        // Build summary on last step
+        function renderWizardSummary() {
+            const summary = document.getElementById('wizard-summary');
+            if (!summary) return;
+
+            const productTitle = @json($product->title);
+            const productPrice = @json((float) ($product->price ?? 0));
+            const lines = [];
+
+            // Page count
+            const pageCountSel = document.getElementById('page-count-select');
+            if (pageCountSel && pageCountSel.value) {
+                const opt = pageCountSel.options[pageCountSel.selectedIndex];
+                lines.push({ label: 'Yaprak Adeti', value: opt.text });
+            }
+
+            // Customization selections
+            wizardSteps.forEach(step => {
+                if (step.querySelector('.extras-grid')) return; // skip extras
+                if (step.id === 'wizard-summary') return;
+                step.querySelectorAll('.customization-section').forEach(section => {
+                    const title = section.querySelector('h4')?.textContent?.trim();
+                    if (!title) return;
+
+                    const checkedRadio = section.querySelector('input[type="radio"]:checked');
+                    if (checkedRadio) {
+                        const lab = section.querySelector('label[for="' + checkedRadio.id + '"]');
+                        const val = (lab?.innerText || lab?.textContent || checkedRadio.value).trim();
+                        lines.push({ label: title, value: val.split('\n')[0].slice(0, 80) });
+                        return;
+                    }
+                    const checkedBoxes = section.querySelectorAll('input[type="checkbox"]:checked');
+                    if (checkedBoxes.length) {
+                        const vals = Array.from(checkedBoxes).map(cb => {
+                            const lab = section.querySelector('label[for="' + cb.id + '"]');
+                            return (lab?.innerText || lab?.textContent || cb.value).trim().split('\n')[0];
+                        });
+                        lines.push({ label: title, value: vals.join(', ').slice(0, 120) });
+                        return;
+                    }
+                    const txt = section.querySelector('input[type="text"], textarea, select');
+                    if (txt && txt.value && txt.value.trim()) {
+                        lines.push({ label: title, value: txt.value.trim().slice(0, 120) });
+                    }
+                });
+            });
+
+            // Extras
+            const selectedExtras = [];
+            document.querySelectorAll('.extra-card.has-quantity').forEach(card => {
+                const qty = parseInt(card.querySelector('.extra-qty')?.value || '0', 10);
+                if (qty <= 0) return;
+                const title = card.querySelector('.card-title')?.textContent?.trim() || 'Ekstra';
+                const priceText = card.querySelector('.text-success')?.textContent?.trim() || '';
+                selectedExtras.push({ title, qty, priceText });
+            });
+
+            let html = '<div class="ws-section"><h6>Ürün</h6>';
+            html += '<div class="ws-row"><span>' + productTitle + '</span><span>' + productPrice.toLocaleString('tr-TR', { minimumFractionDigits: 2 }) + ' ₺</span></div>';
+            html += '</div>';
+
+            if (lines.length) {
+                html += '<div class="ws-section"><h6>Seçimler</h6>';
+                lines.forEach(l => {
+                    html += '<div class="ws-row"><span>' + escapeHtml(l.label) + '</span><span>' + escapeHtml(l.value) + '</span></div>';
+                });
+                html += '</div>';
+            }
+
+            if (selectedExtras.length) {
+                html += '<div class="ws-section"><h6>Ekstralar</h6>';
+                selectedExtras.forEach(e => {
+                    html += '<div class="ws-row"><span>' + escapeHtml(e.title) + ' × ' + e.qty + '</span><span>' + escapeHtml(e.priceText) + '</span></div>';
+                });
+                html += '</div>';
+            }
+
+            summary.innerHTML = html;
+        }
+
+        function escapeHtml(s) {
+            return String(s).replace(/[&<>"']/g, m => ({
+                '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'
+            })[m]);
+        }
+
+        // Init
+        showStep(0);
+
+        // Expose extras collection helper for form submission
+        window.collectWizardExtras = function() {
+            const extras = [];
+            document.querySelectorAll('.extra-card.has-quantity').forEach(card => {
+                const productId = card.getAttribute('data-extra-product-id');
+                const qty = parseInt(card.querySelector('.extra-qty')?.value || '0', 10);
+                if (productId && qty > 0) extras.push({ product_id: parseInt(productId, 10), quantity: qty });
+            });
+            return extras;
+        };
+    });
+    // ============ /WIZARD STATE MACHINE ============
+
+    document.addEventListener('DOMContentLoaded', function() {
+
         const form = document.getElementById('product-form');
         if (!form) {
             return;
@@ -886,17 +1286,10 @@
                     console.log('Hidden input value:', $('input[name="page_count"]').val());
                 });
                 
-                // Dosya yükleme için event listener
-                $('.customization-file').off('change.fileUpload').on('change.fileUpload', function() {
-                    handleFileUpload(this);
-                });
-                
-                // ZIP dosyası yükleme için event listener (files tipi)
-                $('.customization-zip-file').off('change.zipUpload').on('change.zipUpload', function() {
-                    handleZipFileUpload(this);
-                });
-                
-            } 
+                // Dosya yükleme listener'ları kaldırıldı: file/files type customization
+                // wizard'da render edilmiyor; dosyalar artık checkout'ta tek ZIP olarak yükleniyor.
+
+            }
              
             // Child parametreleri yükle 
             function loadChildParameters($element, paramId) {
@@ -1289,8 +1682,20 @@
                 }
             }
             
+            // Wizard "Ekstralar" step'inden seçilen ekstra ürünler
+            try {
+                const extras = (typeof window.collectWizardExtras === 'function') ? window.collectWizardExtras() : [];
+                extras.forEach((e, idx) => {
+                    formData.append(`extras[${idx}][product_id]`, e.product_id);
+                    formData.append(`extras[${idx}][quantity]`, e.quantity);
+                });
+                if (extras.length) console.log('Wizard extras attached:', extras);
+            } catch (e) {
+                console.warn('extras collection failed:', e);
+            }
+
             console.log('Form data collected, sending to cart');
-            
+
             // AJAX ile sepete ekle
             fetch('{{ route("cart.add") }}', {
                 method: 'POST',
@@ -1302,60 +1707,49 @@
             .then(response => response.json())
             .then(data => {
                 console.log('Cart add response:', data);
-                
+
+                Swal.close();
+
                 if (data.success && data.cart_id) {
-                    console.log('Cart created successfully, starting file upload...');
-                    // Chunk sistemi ile dosyaları yükle
-                    uploadFilesToR2(data.cart_id, data.extra_sales);
-                } else {
-                    // Loading'i kapat
-                    Swal.close();
-                    
-                    if (data.success) {
-                        // "Siparişi Tamamla" modunda dogrudan checkout'a git
-                        if (window._completeOrderMode) {
-                            window.location.href = '{{ route("cart.checkout") }}';
-                            return;
-                        }
-                        // Extra sales ürünleri varsa modal göster
-                        if (data.extra_sales && data.extra_sales.length > 0) {
-                            showExtraSalesModal(data.extra_sales);
-                        } else {
-                            // Başarılı mesajı göster
-                            Swal.fire({
-                                icon: 'success',
-                                title: 'Başarılı!',
-                                text: 'Ürün sepete eklendi.',
-                                confirmButtonText: 'Sepete Git',
-                                cancelButtonText: 'Alışverişe Devam Et',
-                                showCancelButton: true
-                            }).then((result) => {
-                                if (result.isConfirmed) {
-                                    window.location.href = '{{ route("cart.index") }}';
-                                }
-                            });
-                        }
-                    } else {
-                        // Hata mesajı göster
-                        let errorMessage = 'Bir hata oluştu!';
-                        if (data.errors && Array.isArray(data.errors)) {
-                            errorMessage = '<ul style="text-align: left; margin: 0; padding-left: 20px;">';
-                            data.errors.forEach(error => {
-                                errorMessage += '<li>' + error + '</li>';
-                            });
-                            errorMessage += '</ul>';
-                        } else if (data.message) {
-                            errorMessage = data.message;
-                        }
-                        
-                        Swal.fire({
-                            icon: 'error',
-                            title: 'Lütfen aşağıdaki alanları doldurun:',
-                            html: errorMessage,
-                            confirmButtonText: 'Tamam',
-                            width: '500px'
-                        });
+                    // Yeni akış: dosya yükleme cart-add seviyesinde değil, checkout'ta tek ZIP olarak yapılır.
+                    // "Siparişi Tamamla" modunda direkt checkout'a yönlendir.
+                    if (window._completeOrderMode) {
+                        window.location.href = '{{ route("cart.checkout") }}';
+                        return;
                     }
+
+                    Swal.fire({
+                        icon: 'success',
+                        title: 'Başarılı!',
+                        text: 'Ürün sepete eklendi.',
+                        confirmButtonText: 'Sepete Git',
+                        cancelButtonText: 'Alışverişe Devam Et',
+                        showCancelButton: true
+                    }).then((result) => {
+                        if (result.isConfirmed) {
+                            window.location.href = '{{ route("cart.index") }}';
+                        }
+                    });
+                } else {
+                    // Hata mesajı göster
+                    let errorMessage = 'Bir hata oluştu!';
+                    if (data.errors && Array.isArray(data.errors)) {
+                        errorMessage = '<ul style="text-align: left; margin: 0; padding-left: 20px;">';
+                        data.errors.forEach(error => {
+                            errorMessage += '<li>' + error + '</li>';
+                        });
+                        errorMessage += '</ul>';
+                    } else if (data.message) {
+                        errorMessage = data.message;
+                    }
+
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Lütfen aşağıdaki alanları doldurun:',
+                        html: errorMessage,
+                        confirmButtonText: 'Tamam',
+                        width: '500px'
+                    });
                 }
             })
             .catch(error => {
@@ -1374,977 +1768,6 @@
         
 
         
-        // Dosya ikonu belirleme
-        function getFileIcon(mimeType) {
-            if (mimeType.startsWith('image/')) return 'fas fa-image';
-            if (mimeType.startsWith('video/')) return 'fas fa-video';
-            if (mimeType.startsWith('audio/')) return 'fas fa-music';
-            if (mimeType.includes('pdf')) return 'fas fa-file-pdf';
-            if (mimeType.includes('word') || mimeType.includes('document')) return 'fas fa-file-word';
-            if (mimeType.includes('excel') || mimeType.includes('spreadsheet')) return 'fas fa-file-excel';
-            if (mimeType.includes('powerpoint') || mimeType.includes('presentation')) return 'fas fa-file-powerpoint';
-            return 'fas fa-file';
-        }
-
-        // ZIP dosyası yükleme işlemi (files tipi için basit)
-        function handleZipFileUpload(input) {
-            console.log('ZIP file upload:', input);
-            
-            const file = input.files[0];
-            const paramId = $(input).data('param-id');
-            const previewContainer = $(`#file_preview_${paramId}`);
-            
-            if (!file) return;
-            
-            // Preview container'ı temizle
-            previewContainer.empty();
-            
-            // Dosya türü kontrolü
-            const allowedExtensions = ['.zip', '.rar', '.7z'];
-            const fileName = file.name.toLowerCase();
-            const isAllowed = allowedExtensions.some(ext => fileName.endsWith(ext));
-            
-            if (!isAllowed) {
-                previewContainer.html(`
-                    <div class="alert alert-danger alert-sm">
-                        <i class="fas fa-exclamation-triangle"></i>
-                        Sadece .zip, .rar veya .7z dosyaları yükleyebilirsiniz!
-                    </div>
-                `);
-                $(input).val(''); // Input'u temizle
-                return;
-            }
-            
-            // Dosya boyutu kontrolü (hard limit 500 MB)
-            const maxFileSize = 500 * 1024 * 1024; // 500 MB
-            if (file.size > maxFileSize) {
-                const sizeInMB = Math.round(file.size / 1024 / 1024);
-                Swal.fire({
-                    icon: 'error',
-                    title: 'Dosya Boyutu Çok Büyük',
-                    html: `
-                        <p>Seçtiğiniz dosya <strong>${sizeInMB} MB</strong> boyutunda.</p>
-                        <p>Maksimum dosya boyutu <strong>500 MB</strong> olmalıdır.</p>
-                        <p class="text-muted">Lütfen daha küçük bir dosya seçin veya arşivi bölerek tekrar deneyin.</p>
-                    `,
-                    confirmButtonText: 'Tamam'
-                });
-                $(input).val(''); // Input'u temizle
-                previewContainer.empty();
-                return;
-            }
-            
-            // Basit dosya bilgisi göster
-            const fileInfo = $(`
-                <div class="alert alert-success alert-sm">
-                    <div class="d-flex align-items-center">
-                        <i class="fas fa-file-archive fa-2x me-3 text-primary"></i>
-                        <div class="flex-grow-1">
-                            <strong>${file.name}</strong>
-                            <br>
-                            <small class="text-muted">Boyut: ${formatFileSize(file.size)}</small>
-                        </div>
-                        <button type="button" class="btn btn-sm btn-danger" onclick="$(this).closest('.alert').parent().empty(); $('#param_file_${paramId}').val('');">
-                            <i class="fas fa-times"></i>
-                        </button>
-                    </div>
-                </div>
-            `);
-            
-            previewContainer.append(fileInfo);
-            
-            console.log('ZIP file ready for upload:', file.name);
-        }
-        
-        // Dosya yükleme işlemi (file tipi için - resim vs)
-        function handleFileUpload(input) {
-            console.log(input);
-
-            const files = input.files;
-            const paramId = $(input).data('param-id');
-            const categoryId = $(input).data('category-id');
-            const previewContainer = $(`#file_preview_${paramId}`);
-
-            if (files.length === 0) return;
-
-            // Toplam dosya boyutu kontrolü (hard limit 500 MB)
-            const maxTotalSize = 500 * 1024 * 1024; // 500 MB
-            let totalSize = 0;
-            for (let i = 0; i < files.length; i++) {
-                totalSize += files[i].size;
-            }
-            if (totalSize > maxTotalSize) {
-                const totalMB = Math.round(totalSize / 1024 / 1024);
-                Swal.fire({
-                    icon: 'error',
-                    title: 'Dosya Boyutu Çok Büyük',
-                    html: `
-                        <p>Seçtiğiniz ${files.length} dosyanın toplam boyutu <strong>${totalMB} MB</strong>.</p>
-                        <p>Toplam dosya boyutu en fazla <strong>500 MB</strong> olabilir.</p>
-                        <p class="text-muted">Lütfen daha az veya daha küçük dosyalar seçin.</p>
-                    `,
-                    confirmButtonText: 'Tamam'
-                });
-                $(input).val('');
-                previewContainer.empty();
-                return;
-            }
-
-            // Preview container'ı temizle
-            previewContainer.empty();
-            
-            // Dosya önizleme alanı oluştur
-            const previewArea = $('<div class="file-preview-area"></div>');
-            const sortableContainer = $('<div class="sortable-files" data-param-id="' + paramId + '"></div>');
-            
-            // Sıkıştırma ayarları (server limit için optimize edildi)
-            const compressionSettings = {
-                maxWidth: 1920,  // Maksimum genişlik (daha gerçekçi)
-                maxHeight: 1920, // Maksimum yükseklik
-                quality: 0.85,   // JPEG kalitesi (0.1 - 1.0) - biraz düşürüldü
-                format: 'jpeg'  // Format
-            };
-            
-            // Sıkıştırma bilgisi göster
-            const compressionInfo = $(`
-                <div class="compression-info alert alert-info alert-sm mb-2">
-                    <i class="fas fa-info-circle"></i>
-                    <strong>Sıkıştırma Ayarları:</strong> 
-                    Maksimum boyut: ${compressionSettings.maxWidth}×${compressionSettings.maxHeight}px, 
-                    Kalite: ${Math.round(compressionSettings.quality * 100)}%
-                </div>
-            `);
-            previewArea.append(compressionInfo);
-            
-            // Sıralama input'u ekle
-            const orderInput = $(`
-                <div class="order-input-container mt-3" style="display: none;"> 
-                
-                    <div class="input-group">
-                        <input type="text" 
-                               class="form-control order-input" 
-                               id="order_input_${paramId}"
-                               placeholder="Dosya sırası burada görünecek..."
-                               readonly>
-                    </div>
-                   
-                </div>
-            `);
-            previewArea.append(orderInput);
-            
-            // Edit butonuna event listener ekle
-            orderInput.find('.edit-order-btn').on('click', function() {
-                enableOrderEditing(paramId);
-            });
-            
-            // Apply butonuna event listener ekle
-            orderInput.find('.apply-order-btn').on('click', function() {
-                applyManualOrder(paramId);
-            });
-            
-            // Cancel butonuna event listener ekle
-            orderInput.find('.cancel-order-btn').on('click', function() {
-                cancelOrderEditing(paramId);
-            });
-            
-            // Her dosya için önizleme oluştur
-            Array.from(files).forEach((file, index) => {
-                if (file.type.startsWith('image/')) {
-                    createImagePreview(file, index, paramId, sortableContainer, compressionSettings);
-                } else {
-                    createFilePreview(file, index, paramId, sortableContainer);
-                }
-            });
-            
-            previewArea.append(sortableContainer);
-            previewContainer.append(previewArea);
-            
-            // Sortable özelliğini etkinleştir
-            initializeSortable(sortableContainer[0], paramId);
-            
-            // İlk sıralamayı göster
-            setTimeout(() => {
-                updateOrderInput(sortableContainer[0], paramId);
-            }, 100);
-        }
-        
-        // Resim önizleme oluştur (sıkıştırılmış)
-        function createImagePreview(file, index, paramId, container, settings) {
-            const reader = new FileReader();
-            reader.onload = function(e) {
-                // Canvas ile resmi sıkıştır
-                compressImage(e.target.result, settings.maxWidth, settings.maxHeight, settings.quality, function(compressedDataUrl, compressionRatio, newDimensions) {
-                    // Preview için sabit boyut (85x85)
-                    const previewSize = 85;
-                    
-                    const imageItem = $(`
-                        <div class="image-item draggable" data-file-index="${index}" data-param-id="${paramId}">
-                            <div class="image-preview-container">
-                                <img src="${compressedDataUrl}" class="img-thumbnail" alt="Önizleme" style="width: ${previewSize}px; height: ${previewSize}px; object-fit: cover;">
-                                <div class="image-overlay">
-                                    <button type="button" class="btn btn-sm btn-danger remove-file" data-file-index="${index}" data-param-id="${paramId}">
-                                        <i class="fas fa-times"></i>
-                                    </button>
-                                </div>
-                            </div>
-                            <div class="file-info">
-                                <small class="text-muted">${file.name}</small>
-                                <small class="text-muted d-block">${formatFileSize(file.size)}</small>
-                                <small class="text-success d-block">Sıkıştırıldı: ${newDimensions.width}×${newDimensions.height}</small>
-                            </div>
-                        </div>
-                    `);
-                    
-                    container.append(imageItem);
-                    
-                    // Dosya kaldırma event'i
-                    imageItem.find('.remove-file').on('click', function() {
-                        removeFile(index, paramId);
-                    });
-                });
-            };
-            reader.readAsDataURL(file);
-        }
-        
-        // Resim sıkıştırma fonksiyonu (gelişmiş)
-        function compressImage(src, maxWidth, maxHeight, quality, callback) {
-            const canvas = document.createElement('canvas');
-            const ctx = canvas.getContext('2d');
-            const img = new Image();
-            
-            img.onload = function() {
-                // Orijinal boyutları al
-                let { width, height } = img;
-                const originalSize = width * height;
-                
-                // En-boy oranını koru ve boyutları hesapla
-                let newWidth, newHeight;
-                
-                if (width > height) {
-                    if (width > maxWidth) {
-                        newWidth = maxWidth;
-                        newHeight = Math.round((height * maxWidth) / width);
-                    } else {
-                        newWidth = width;
-                        newHeight = height;
-                    }
-                } else {
-                    if (height > maxHeight) {
-                        newHeight = maxHeight;
-                        newWidth = Math.round((width * maxHeight) / height);
-                    } else {
-                        newWidth = width;
-                        newHeight = height;
-                    }
-                }
-                
-                // Canvas boyutunu ayarla
-                canvas.width = newWidth;
-                canvas.height = newHeight;
-                
-                // Resmi çiz
-                ctx.drawImage(img, 0, 0, newWidth, newHeight);
-                
-                // Format seçimi (JPEG daha iyi sıkıştırma sağlar)
-                let format = 'image/jpeg';
-                let finalQuality = quality;
-                
-                // PNG dosyaları için daha yüksek kalite
-                if (src.includes('image/png')) {
-                    format = 'image/png';
-                    finalQuality = Math.min(quality + 0.1, 1.0); // PNG için biraz daha yüksek kalite
-                }
-                
-                // Sıkıştırılmış resmi al
-                const compressedDataUrl = canvas.toDataURL(format, finalQuality);
-                
-                // Sıkıştırma oranını hesapla
-                const compressionRatio = Math.round((1 - (compressedDataUrl.length / (originalSize * 4))) * 100);
-                
-                // Yeni boyutları hazırla
-                const newDimensions = {
-                    width: newWidth,
-                    height: newHeight
-                };
-                
-                // Canvas'ı temizle
-                canvas.width = 0;
-                canvas.height = 0;
-                
-                callback(compressedDataUrl, compressionRatio, newDimensions);
-            };
-            
-            img.src = src;
-        }
-        
-        // Dosya önizleme oluştur (resim olmayan dosyalar için)
-        function createFilePreview(file, index, paramId, container) {
-            const fileItem = $(`
-                <div class="file-item draggable" data-file-index="${index}" data-param-id="${paramId}">
-                    <div class="file-preview-container">
-                        <i class="${getFileIcon(file.type)} fa-2x text-primary"></i>
-                        <div class="file-overlay">
-                            <button type="button" class="btn btn-sm btn-danger remove-file" data-file-index="${index}" data-param-id="${paramId}">
-                                <i class="fas fa-times"></i>
-                            </button>
-                        </div>
-                    </div>
-                    <div class="file-info">
-                        <small class="text-muted">${file.name}</small>
-                        <small class="text-muted d-block">${formatFileSize(file.size)}</small>
-                    </div>
-                </div>
-            `);
-            
-            container.append(fileItem);
-            
-            // Dosya kaldırma event'i
-            fileItem.find('.remove-file').on('click', function() {
-                removeFile(index, paramId);
-            });
-        }
-        
-        // Dosya kaldırma
-        function removeFile(fileIndex, paramId) {
-            const input = $(`#param_file_${paramId}`);
-            const container = $(`.sortable-files[data-param-id="${paramId}"]`);
-            const fileItem = container.find(`[data-file-index="${fileIndex}"]`);
-            
-            // Dosya item'ını kaldır
-            fileItem.remove();
-            
-            // Input'tan dosyayı kaldır (FileList'i güncelle)
-            const dt = new DataTransfer();
-            const files = input[0].files;
-            
-            for (let i = 0; i < files.length; i++) {
-                if (i !== parseInt(fileIndex)) {
-                    dt.items.add(files[i]);
-                }
-            }
-            
-            input[0].files = dt.files;
-            
-            // Eğer hiç dosya kalmadıysa preview'ı temizle
-            if (dt.files.length === 0) {
-                $(`#file_preview_${paramId}`).empty();
-            } else {
-                // Sıralama input'unu güncelle
-                updateOrderInput(container, paramId);
-            }
-        }
-        
-        // Sortable özelliğini etkinleştir
-        function initializeSortable(container, paramId) {
-            if (container) {
-                new Sortable(container, {
-                    animation: 150,
-                    ghostClass: 'dragging',
-                    onEnd: function(evt) {
-                        // Sıralama değiştiğinde input'taki dosya sırasını güncelle
-                        updateFileOrder(container, paramId);
-                    }
-                });
-            }
-        }
-        
-        // Dosya sırasını güncelle
-        function updateFileOrder(container, paramId) {
-            const input = $(`#param_file_${paramId}`);
-            const dt = new DataTransfer();
-            const originalFiles = input[0].files;
-            
-            // Yeni sıraya göre dosyaları yeniden düzenle
-            const newOrder = [];
-            container.querySelectorAll('.image-item, .file-item').forEach(item => {
-                const fileIndex = parseInt(item.dataset.fileIndex);
-                newOrder.push(fileIndex);
-            });
-            
-            // Dosyaları yeni sıraya göre ekle
-            newOrder.forEach(index => {
-                dt.items.add(originalFiles[index]);
-            });
-            
-            input[0].files = dt.files;
-            
-            // Sıralama input'unu güncelle
-            updateOrderInput(container, paramId);
-        }
-        
-        // Sıralama input'unu güncelle
-        function updateOrderInput(container, paramId) {
-            const orderInput = $(`#order_input_${paramId}`);
-            const fileNames = [];
-            
-            // Sıraya göre dosya adlarını topla
-            container.querySelectorAll('.image-item, .file-item').forEach((item, index) => {
-                const fileName = item.querySelector('.file-info small').textContent;
-                const newFileName = $(item).attr('data-new-filename');
-                
-                // Yeni dosya adı varsa onu kullan
-                const displayName = newFileName || fileName;
-                fileNames.push(`${index + 1}. ${displayName}`);
-            });
-            
-            // Input'a sırayı yaz
-            orderInput.val(fileNames.join(' → '));
-        }
-        
-        // Sıralama düzenlemeyi etkinleştir
-        function enableOrderEditing(paramId) {
-            const orderInput = $(`#order_input_${paramId}`);
-            const editBtn = $(`.edit-order-btn[data-param-id="${paramId}"]`);
-            const applyBtn = $(`.apply-order-btn[data-param-id="${paramId}"]`);
-            const cancelBtn = $(`.cancel-order-btn[data-param-id="${paramId}"]`);
-            
-            // Input'u düzenlenebilir yap
-            orderInput.prop('readonly', false).focus();
-            
-            // Butonları göster/gizle
-            editBtn.hide();
-            applyBtn.show();
-            cancelBtn.show();
-            
-            // Input stilini değiştir
-            orderInput.addClass('editing');
-        }
-        
-        // Manuel sıralamayı uygula
-        function applyManualOrder(paramId) {
-            const orderInput = $(`#order_input_${paramId}`);
-            const editBtn = $(`.edit-order-btn[data-param-id="${paramId}"]`);
-            const applyBtn = $(`.apply-order-btn[data-param-id="${paramId}"]`);
-            const cancelBtn = $(`.cancel-order-btn[data-param-id="${paramId}"]`);
-            
-            // Input'u readonly yap
-            orderInput.prop('readonly', true);
-            
-            // Butonları göster/gizle
-            editBtn.show();
-            applyBtn.hide();
-            cancelBtn.hide();
-            
-            // Input stilini değiştir
-            orderInput.removeClass('editing');
-            
-            // Manuel sıralamayı uygula
-            const newOrder = orderInput.val();
-            if (newOrder) {
-                applyFileRenaming(paramId, newOrder);
-            }
-        }
-        
-        // Sıralama düzenlemeyi iptal et
-        function cancelOrderEditing(paramId) {
-            const orderInput = $(`#order_input_${paramId}`);
-            const editBtn = $(`.edit-order-btn[data-param-id="${paramId}"]`);
-            const applyBtn = $(`.apply-order-btn[data-param-id="${paramId}"]`);
-            const cancelBtn = $(`.cancel-order-btn[data-param-id="${paramId}"]`);
-            
-            // Input'u readonly yap
-            orderInput.prop('readonly', true);
-            
-            // Butonları göster/gizle
-            editBtn.show();
-            applyBtn.hide();
-            cancelBtn.hide();
-            
-            // Input stilini değiştir
-            orderInput.removeClass('editing');
-            
-            // Orijinal sıralamayı geri yükle
-            const container = $(`.sortable-files[data-param-id="${paramId}"]`);
-            updateOrderInput(container[0], paramId);
-        }
-        
-        // Dosya yeniden adlandırma işlemi
-        function applyFileRenaming(paramId, orderString) {
-            const container = $(`.sortable-files[data-param-id="${paramId}"]`);
-            const fileItems = container.find('.image-item, .file-item');
-            
-            // Sıralama string'ini parse et
-            const orderParts = orderString.split(' → ');
-            const fileOrder = [];
-            
-            orderParts.forEach(part => {
-                const match = part.match(/^(\d+)\.\s*(.+)$/);
-                if (match) {
-                    const index = parseInt(match[1]) - 1;
-                    const fileName = match[2];
-                    fileOrder.push({ index, fileName });
-                }
-            });
-            
-            // Dosyaları yeniden adlandır (sıralı: 0.jpg, 1.jpg, 2.jpg...)
-            fileOrder.forEach((item, newIndex) => {
-                const fileItem = fileItems.eq(item.index);
-                if (fileItem.length > 0) {
-                    // Yeni dosya adı oluştur (sıralı: 0, 1, 2...)
-                    const extension = getFileExtension(item.fileName);
-                    const newFileName = generateSequentialFileName(newIndex, extension); // 0'dan başla
-                    
-                    // Dosya item'ını güncelle
-                    fileItem.find('.file-info small').first().text(newFileName);
-                    
-                    // Data attribute'ları güncelle
-                    fileItem.attr('data-new-filename', newFileName);
-                    fileItem.attr('data-new-order', newIndex);
-                    
-                    console.log(`File renamed: ${item.fileName} → ${newFileName} (Order: ${newIndex})`);
-                }
-            });
-            
-            // Sıralama input'unu güncelle
-            updateOrderInput(container[0], paramId);
-        }
-        
-        // Dosya uzantısını al
-        function getFileExtension(fileName) {
-            const lastDotIndex = fileName.lastIndexOf('.');
-            return lastDotIndex !== -1 ? fileName.substring(lastDotIndex) : '';
-        }
-        
-        // Sıralı dosya adı oluştur (1.jpg, 2.jpg, 3.jpg...)
-        function generateSequentialFileName(order, extension) {
-            return `${order}${extension}`;
-        }
-        
-        // Rastgele dosya adı oluştur (6 karakterli sayı) - eski sistem için
-        function generateRandomFileName(extension) {
-            const randomNumber = Math.floor(Math.random() * 900000) + 100000; // 100000-999999
-            return `${randomNumber}${extension}`;
-        }
-        
-        // ============================================
-        // CLOUDFLARE R2 DIRECT MULTIPART UPLOAD
-        // Browser → R2 (Cloudflare proxy bypass, no server hop)
-        // ============================================
-
-        const R2_PART_SIZE = 10 * 1024 * 1024;   // 10 MB
-        const R2_PARALLEL_PARTS = 3;              // her dosyada eşzamanlı 3 part
-        const R2_MAX_PART_RETRIES = 5;            // her part için exponential backoff
-
-        function r2CsrfToken() {
-            return document.querySelector('meta[name="csrf-token"]')?.content
-                || document.querySelector('input[name="_token"]')?.value
-                || '';
-        }
-
-        function r2FormatBytes(bytes) {
-            if (bytes === 0 || !bytes) return '0 B';
-            const k = 1024;
-            const sizes = ['B', 'KB', 'MB', 'GB'];
-            const i = Math.floor(Math.log(bytes) / Math.log(k));
-            return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + ' ' + sizes[i];
-        }
-
-        async function uploadFilesToR2(cartId, extraSales = null) {
-            const startTime = Date.now();
-            const files = getAllFilesFromForm();
-
-            if (files.length === 0) {
-                console.log('No files to upload');
-                completeOrderProcess(cartId, null, extraSales);
-                return;
-            }
-
-            const totalBytes = files.reduce((s, f) => s + f.size, 0);
-            let uploadedBytes = 0;
-
-            Swal.fire({
-                title: 'Dosyalar Yükleniyor...',
-                html: `
-                    <div class="text-center">
-                        <div class="mb-3">
-                            <strong>İlerleme:</strong> <span id="r2-progress-text">0/${files.length} (0%)</span>
-                            <div class="progress mt-2">
-                                <div id="r2-progress-bar" class="progress-bar progress-bar-striped progress-bar-animated" style="width: 0%"></div>
-                            </div>
-                            <small class="text-muted mt-2 d-block" id="r2-progress-detail"></small>
-                        </div>
-                    </div>
-                `,
-                allowOutsideClick: false,
-                showConfirmButton: false,
-                showCloseButton: false
-            });
-
-            const updateR2Progress = (fileIndex, file) => {
-                const pct = totalBytes > 0 ? Math.round((uploadedBytes / totalBytes) * 100) : 0;
-                const text = document.getElementById('r2-progress-text');
-                const bar = document.getElementById('r2-progress-bar');
-                const detail = document.getElementById('r2-progress-detail');
-                if (text) text.textContent = `${fileIndex + 1}/${files.length} (${pct}%)`;
-                if (bar) bar.style.width = `${pct}%`;
-                if (detail) detail.textContent = `${file.name} • ${r2FormatBytes(uploadedBytes)} / ${r2FormatBytes(totalBytes)}`;
-            };
-
-            const failedFiles = [];
-
-            for (let fileIndex = 0; fileIndex < files.length; fileIndex++) {
-                const file = files[fileIndex];
-                console.log(`📤 R2 upload ${fileIndex + 1}/${files.length}: ${file.name} (${r2FormatBytes(file.size)})`);
-
-                const onPartProgress = (delta) => {
-                    uploadedBytes += delta;
-                    updateR2Progress(fileIndex, file);
-                };
-
-                const ok = await uploadFileToR2(file, fileIndex, cartId, onPartProgress);
-
-                if (!ok) {
-                    failedFiles.push({ index: fileIndex, name: file.name });
-                    console.error(`❌ R2 upload failed: ${file.name}`);
-                    break;
-                }
-                console.log(`✅ R2 upload completed: ${file.name}`);
-            }
-
-            const duration = Date.now() - startTime;
-            console.log(`📊 R2 finished in ${Math.round(duration / 1000)}s — ${files.length - failedFiles.length}/${files.length}`);
-
-            if (failedFiles.length > 0) {
-                Swal.close();
-                Swal.fire({
-                    icon: 'error',
-                    title: 'Yükleme Hatası!',
-                    html: `
-                        <div class="text-start">
-                            <p><strong>Şu dosyalar yüklenemedi:</strong></p>
-                            <ul>${failedFiles.map(f => `<li>${f.name}</li>`).join('')}</ul>
-                            <hr>
-                            <p class="text-muted small">Lütfen tekrar deneyin. Sorun devam ederse destek ekibi: 05398636262</p>
-                        </div>
-                    `,
-                    width: '600px',
-                    confirmButtonText: 'Tamam'
-                });
-
-                try {
-                    await fetch(`/cart/remove/${cartId}`, {
-                        method: 'DELETE',
-                        headers: { 'X-CSRF-TOKEN': r2CsrfToken() }
-                    });
-                } catch (e) {
-                    console.warn('Cart cleanup failed:', e);
-                }
-                return;
-            }
-
-            completeOrderProcess(cartId, null, extraSales);
-        }
-
-        async function uploadFileToR2(file, fileIndex, cartId, onPartProgress) {
-            // 1) initiate
-            let initiate;
-            try {
-                const resp = await fetch('/upload/r2/initiate', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'X-CSRF-TOKEN': r2CsrfToken(),
-                        'Accept': 'application/json'
-                    },
-                    credentials: 'same-origin',
-                    body: JSON.stringify({
-                        cart_id: cartId,
-                        file_index: fileIndex,
-                        file_size: file.size,
-                        file_name: file.name,
-                        content_type: file.type || 'application/octet-stream'
-                    })
-                });
-                initiate = await resp.json();
-                if (!resp.ok || !initiate.success) {
-                    console.error('R2 initiate failed', initiate);
-                    return false;
-                }
-            } catch (e) {
-                console.error('R2 initiate exception', e);
-                return false;
-            }
-
-            const { upload_id, key, part_size, part_count, part_urls } = initiate;
-            const partResults = new Array(part_count);
-
-            const uploadPart = async (partInfo) => {
-                const start = (partInfo.partNumber - 1) * part_size;
-                const end = Math.min(start + part_size, file.size);
-                const blob = file.slice(start, end);
-
-                for (let attempt = 1; attempt <= R2_MAX_PART_RETRIES; attempt++) {
-                    try {
-                        const resp = await fetch(partInfo.url, {
-                            method: 'PUT',
-                            body: blob
-                        });
-                        if (!resp.ok) {
-                            throw new Error(`R2 PUT ${resp.status}`);
-                        }
-                        let etag = resp.headers.get('ETag') || resp.headers.get('etag');
-                        if (!etag) {
-                            throw new Error('R2 ETag alınamadı (CORS expose-headers eksik)');
-                        }
-                        etag = etag.replace(/^"|"$/g, '');
-                        partResults[partInfo.partNumber - 1] = { PartNumber: partInfo.partNumber, ETag: etag };
-                        onPartProgress(blob.size);
-                        if (attempt > 1) {
-                            console.log(`✅ Part ${partInfo.partNumber} succeeded on attempt ${attempt}`);
-                        }
-                        return true;
-                    } catch (err) {
-                        console.warn(`⚠️ Part ${partInfo.partNumber} attempt ${attempt}/${R2_MAX_PART_RETRIES}:`, err.message);
-                        if (attempt < R2_MAX_PART_RETRIES) {
-                            const delay = Math.min(1000 * Math.pow(2, attempt - 1), 30000);
-                            await new Promise(r => setTimeout(r, delay));
-                        }
-                    }
-                }
-                console.error(`❌ Part ${partInfo.partNumber} permanently failed`);
-                return false;
-            };
-
-            // 2) parallel parts
-            const queue = [...part_urls];
-            let aborted = false;
-            const workers = [];
-            for (let w = 0; w < Math.min(R2_PARALLEL_PARTS, queue.length); w++) {
-                workers.push((async () => {
-                    while (!aborted && queue.length > 0) {
-                        const partInfo = queue.shift();
-                        if (!partInfo) break;
-                        const ok = await uploadPart(partInfo);
-                        if (!ok) {
-                            aborted = true;
-                            break;
-                        }
-                    }
-                })());
-            }
-            await Promise.all(workers);
-
-            if (aborted) {
-                try {
-                    await fetch('/upload/r2/abort', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': r2CsrfToken() },
-                        credentials: 'same-origin',
-                        body: JSON.stringify({ cart_id: cartId, key, upload_id })
-                    });
-                } catch (e) { /* best-effort */ }
-                return false;
-            }
-
-            // 3) complete
-            try {
-                const resp = await fetch('/upload/r2/complete', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'X-CSRF-TOKEN': r2CsrfToken(),
-                        'Accept': 'application/json'
-                    },
-                    credentials: 'same-origin',
-                    body: JSON.stringify({ cart_id: cartId, key, upload_id, parts: partResults })
-                });
-                const data = await resp.json();
-                if (!resp.ok || !data.success) {
-                    console.error('R2 complete failed', data);
-                    return false;
-                }
-                return true;
-            } catch (e) {
-                console.error('R2 complete exception', e);
-                return false;
-            }
-        }
-
-        // Sipariş işlemini tamamla
-        function completeOrderProcess(cartId, zipPath = null, extraSales = null) {
-            console.log('Order process completed');
-
-            // Loading'i kapat
-            Swal.close();
-
-            // "Siparişi Tamamla" modunda dogrudan checkout'a git
-            if (window._completeOrderMode) {
-                window.location.href = '{{ route("cart.checkout") }}';
-                return;
-            }
-
-            // Extra sales kontrolü
-            if (extraSales && extraSales.length > 0) {
-                console.log('Extra sales available, showing modal');
-                showExtraSalesModal(extraSales);
-            } else {
-                // Başarı mesajı göster
-                Swal.fire({
-                    icon: 'success',
-                    title: 'Başarılı!',
-                    text: 'Ürün sepete eklendi ve dosyalar yüklendi.',
-                    confirmButtonText: 'Sepete Git',
-                    cancelButtonText: 'Alışverişe Devam Et',
-                    showCancelButton: true
-                }).then((result) => {
-                    if (result.isConfirmed) {
-                        window.location.href = '{{ route("cart.index") }}';
-                    }
-                });
-            }
-        }
-        
-        // Upload hatası göster
-        function showUploadError(message) {
-            Swal.close();
-            
-            Swal.fire({
-                icon: 'error',
-                title: 'Yükleme Hatası!',
-                text: message,
-                confirmButtonText: 'Tamam'
-            });
-        }
-        
-        // Form'dan tüm dosyaları al
-        function getAllFilesFromForm() {
-            const files = [];
-            
-            // Tüm file input'ları tara
-            document.querySelectorAll('input[type="file"]').forEach(input => {
-                if (input.files && input.files.length > 0) {
-                    const inputType = $(input).data('input-type');
-                    
-                    Array.from(input.files).forEach(file => {
-                        // ZIP dosyası mı kontrol et (files tipi)
-                        if (inputType === 'zip' || $(input).hasClass('customization-zip-file')) {
-                            // ZIP dosyası - direkt ekle, yeniden adlandırma yok
-                            files.push(file);
-                            console.log(`ZIP file added: ${file.name}`);
-                        } else {
-                            // Normal dosya (file tipi) - yeniden adlandırma kontrol et
-                            const paramId = $(input).data('param-id');
-                            const container = $(`.sortable-files[data-param-id="${paramId}"]`);
-                            
-                            if (container.length > 0) {
-                                // Dosya item'ını bul
-                                const fileItems = container.find('.image-item, .file-item');
-                                const fileIndex = Array.from(fileItems).findIndex(item => 
-                                    item.querySelector('.file-info small').textContent === file.name
-                                );
-                                
-                                if (fileIndex !== -1) {
-                                    const fileItem = fileItems.eq(fileIndex);
-                                    const newFileName = fileItem.attr('data-new-filename');
-                                    
-                                    if (newFileName) {
-                                        // Yeni dosya adı ile File objesi oluştur
-                                        const renamedFile = new File([file], newFileName, {
-                                            type: file.type,
-                                            lastModified: file.lastModified
-                                        });
-                                        files.push(renamedFile);
-                                        console.log(`File renamed for upload: ${file.name} → ${newFileName}`);
-                                    } else {
-                                        files.push(file);
-                                    }
-                                } else {
-                                    files.push(file);
-                                }
-                            } else {
-                                files.push(file);
-                            }
-                        }
-                    });
-                }
-            });
-            
-            console.log(`Total files collected: ${files.length}`);
-            return files;
-        }
-
-
-      
-        // Dosya boyutunu formatla
-        function formatFileSize(bytes) {
-            if (bytes === 0) return '0 Bytes';
-            const k = 1024;
-            const sizes = ['Bytes', 'KB', 'MB', 'GB'];
-            const i = Math.floor(Math.log(bytes) / Math.log(k));
-            return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
-        }
-        
-        // Extra Sales Modal
-        function showExtraSalesModal(extraSales) {
-            // "Siparişi Tamamla" modunda extra sales modal'ini atla, dogrudan checkout'a git
-            if (window._completeOrderMode) {
-                window.location.href = '{{ route("cart.checkout") }}';
-                return;
-            }
-            if (extraSales && extraSales.length > 0) {
-                // AJAX ile modal HTML'ini yükle
-                fetch('/modal/extra-sales', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'X-CSRF-TOKEN': document.querySelector('input[name="_token"]').value
-                    },
-                    body: JSON.stringify({
-                        extra_sales: extraSales
-                    })
-                })
-                .then(response => response.text())
-                .then(html => {
-                    // Eski modal'ı kaldır
-                    $('#extraSalesModal').remove();
-                    
-                    // Yeni modal'ı ekle
-                    $('body').append(html);
-                    
-                    // Modal'ı göster
-                    $('#extraSalesModal').modal('show');
-                })
-                .catch(error => {
-                    console.error('Modal yükleme hatası:', error);
-                    // Hata durumunda basit bir modal göster
-                    Swal.fire({
-                        icon: 'success',
-                        title: 'Başarılı!',
-                        text: 'Ürün sepete eklendi.',
-                        confirmButtonText: 'Sepete Git',
-                        cancelButtonText: 'Alışverişe Devam Et',
-                        showCancelButton: true
-                    }).then((result) => {
-                        if (result.isConfirmed) {
-                            window.location.href = '{{ route("cart.index") }}';
-                        }
-                    });
-                });
-            }
-        }
-        
-
-        // Başarı mesajını göster
-        function showSuccessMessage() {
-            // "Siparişi Tamamla" modunda dogrudan checkout'a git
-            if (window._completeOrderMode) {
-                window.location.href = '{{ route("cart.checkout") }}';
-                return;
-            }
-
-            Swal.fire({
-                icon: 'success',
-                title: 'Başarılı!',
-                text: 'Ürün sepete eklendi ve dosyalar yüklendi.',
-                confirmButtonText: 'Sepete Git',
-                cancelButtonText: 'Alışverişe Devam Et',
-                showCancelButton: true
-            }).then((result) => {
-                if (result.isConfirmed) {
-                    window.location.href = '{{ route("cart.index") }}';
-                }
-            });
-        }
 
         // Şablon indirme linki güncelleme - Ebat seçildiğinde
         $(document).on('change', '.customization-select[data-category="1"], .customization-radio[data-category-id="1"]', function() {

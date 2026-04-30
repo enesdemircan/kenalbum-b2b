@@ -49,25 +49,78 @@ class OrderController extends Controller
 
     public function ordercreateById($id)
     {
-        
-    
         // GET request ise sipariş form sayfasını göster
         $product = Product::with(['customizationPivotParams.param.category', 'childProducts'])->findOrFail($id);
-        
-        // Ana parametreleri al (customization_params_ust_id = 0 olanlar) ve kategorilere göre gruplandır
+
+        // Ana parametreleri al ve kategorilere göre gruplandır.
+        // file/files type kategoriler wizard'da render edilmiyor (dosya artık order seviyesinde, checkout'ta).
         $mainCustomizationParams = $product->customizationPivotParams
             ->where('customization_params_ust_id', 0)
+            ->filter(function ($pivot) {
+                $type = $pivot->param->category->type ?? '';
+                return !in_array($type, ['file', 'files'], true);
+            })
             ->groupBy('param.customization_category_id');
-        
-            $suggestedProducts = $product->getSuggestedProducts();
-        
-            // Alt ürünleri al (eğer bu ürün ana ürünse)
-            $childProducts = collect();
-            if ($product->isMainProduct()) {
-                $childProducts = $product->childProducts()->where('status', 1)->get();
+
+        // Step gruplaması: customization_categories.step_label'a göre
+        // Her step bir wizard sayfası. Step'in sıralaması, içindeki kategorilerin minimum order'ı ile.
+        $stepGroups = collect();
+        foreach ($mainCustomizationParams as $categoryId => $catParams) {
+            $category = $catParams->first()->param->category;
+            $stepLabel = $category->step_label ?? 'Sipariş Detayı';
+            $catOrder = (int) ($category->order ?? 0);
+
+            if (!$stepGroups->has($stepLabel)) {
+                $stepGroups->put($stepLabel, [
+                    'label' => $stepLabel,
+                    'min_order' => $catOrder,
+                    'categories' => collect(),
+                ]);
             }
-            
-            return view('frontend.orders.create', compact('product', 'mainCustomizationParams', 'suggestedProducts', 'childProducts'));
+
+            $existing = $stepGroups->get($stepLabel);
+            $existing['categories']->put($categoryId, $catParams);
+            if ($catOrder < $existing['min_order']) {
+                $existing['min_order'] = $catOrder;
+            }
+            $stepGroups->put($stepLabel, $existing);
+        }
+
+        $stepGroups = $stepGroups->sortBy('min_order')->values();
+
+        // Ekstra ürünler (wizard'ın "Ekstralar" step'i için — eski popup'ın yerine)
+        $extraSales = \App\Models\ExtraSale::with('childProduct')
+            ->where('main_product_id', $product->id)
+            ->where('is_active', true)
+            ->orderBy('sort_order')
+            ->get()
+            ->filter(fn($e) => $e->childProduct !== null)
+            ->map(function ($extraSale) {
+                return [
+                    'id' => $extraSale->childProduct->id,
+                    'title' => $extraSale->childProduct->title,
+                    'price' => (float) $extraSale->childProduct->price,
+                    'images' => $extraSale->childProduct->images,
+                    'slug' => $extraSale->childProduct->slug ?? null,
+                ];
+            })
+            ->values();
+
+        $suggestedProducts = $product->getSuggestedProducts();
+
+        $childProducts = collect();
+        if ($product->isMainProduct()) {
+            $childProducts = $product->childProducts()->where('status', 1)->get();
+        }
+
+        return view('frontend.orders.create', compact(
+            'product',
+            'mainCustomizationParams',
+            'stepGroups',
+            'extraSales',
+            'suggestedProducts',
+            'childProducts'
+        ));
     }
 
  

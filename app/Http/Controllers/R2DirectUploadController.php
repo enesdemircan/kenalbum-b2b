@@ -153,6 +153,141 @@ class R2DirectUploadController extends Controller
         return response()->json(['success' => true]);
     }
 
+    /**
+     * ORDER-LEVEL: checkout sırasında tek ZIP yüklemesi için multipart başlat.
+     * Henüz Order yok — temp key kullanılır, complete'te session'a yazılır,
+     * cart.complete sırasında final key'e taşınır.
+     */
+    public function initiateOrder(Request $request): JsonResponse
+    {
+        $data = $request->validate([
+            'file_size' => 'required|integer|min:1|max:' . self::MAX_FILE_BYTES,
+            'file_name' => 'required|string|max:255',
+            'content_type' => 'nullable|string|max:255',
+        ]);
+
+        $user = auth()->user();
+        if (!$user) {
+            abort(403, 'Yetki yok.');
+        }
+
+        $extension = pathinfo($data['file_name'], PATHINFO_EXTENSION) ?: 'zip';
+        $key = $this->r2->buildOrderTempKey((int) $user->id, $extension);
+
+        $partCount = (int) ceil($data['file_size'] / self::PART_SIZE_BYTES);
+        if ($partCount < 1) {
+            $partCount = 1;
+        }
+
+        try {
+            $uploadId = $this->r2->initiateMultipart($key, $data['content_type'] ?? null);
+            $partUrls = $this->r2->presignPartUrls($key, $uploadId, $partCount, self::PRESIGN_TTL_SECONDS);
+        } catch (\Throwable $e) {
+            Log::error('R2 order initiate failed', [
+                'user_id' => $user->id,
+                'error' => $e->getMessage(),
+            ]);
+            return response()->json([
+                'success' => false,
+                'message' => 'R2 initiate hatası.',
+                'debug' => config('app.debug') ? ['error' => $e->getMessage(), 'class' => get_class($e)] : null,
+            ], 500);
+        }
+
+        return response()->json([
+            'success' => true,
+            'upload_id' => $uploadId,
+            'key' => $key,
+            'part_size' => self::PART_SIZE_BYTES,
+            'part_count' => $partCount,
+            'part_urls' => $partUrls,
+            'max_file_size' => self::MAX_FILE_BYTES,
+        ]);
+    }
+
+    public function completeOrder(Request $request): JsonResponse
+    {
+        $data = $request->validate([
+            'key' => 'required|string|max:512',
+            'upload_id' => 'required|string|max:512',
+            'parts' => 'required|array|min:1|max:60',
+            'parts.*.PartNumber' => 'required|integer|min:1|max:60',
+            'parts.*.ETag' => 'required|string|max:128',
+        ]);
+
+        $user = auth()->user();
+        if (!$user) {
+            abort(403, 'Yetki yok.');
+        }
+
+        $expectedPrefix = "orders/temp/{$user->id}/";
+        if (!str_starts_with($data['key'], $expectedPrefix) || str_contains($data['key'], '..')) {
+            abort(403, 'Geçersiz dosya anahtarı.');
+        }
+
+        try {
+            $this->r2->completeMultipart($data['key'], $data['upload_id'], $data['parts']);
+        } catch (\Throwable $e) {
+            Log::error('R2 order complete failed', [
+                'user_id' => $user->id,
+                'key' => $data['key'],
+                'error' => $e->getMessage(),
+            ]);
+            return response()->json([
+                'success' => false,
+                'message' => 'R2 complete hatası.',
+            ], 500);
+        }
+
+        $headInfo = $this->r2->headObject($data['key']);
+        if ($headInfo === null) {
+            return response()->json(['success' => false, 'message' => 'Dosya doğrulanamadı.'], 500);
+        }
+        if ($headInfo['size'] > self::MAX_FILE_BYTES_TOLERANCE) {
+            $this->r2->deleteObject($data['key']);
+            return response()->json([
+                'success' => false,
+                'message' => 'Dosya boyutu 500 MB üst sınırını aşıyor.',
+            ], 422);
+        }
+
+        // Session'a temp key + filename kaydet — cart.complete bunu okur
+        $request->session()->put('order_upload', [
+            'key' => $data['key'],
+            'size' => $headInfo['size'],
+            'uploaded_at' => time(),
+        ]);
+
+        return response()->json([
+            'success' => true,
+            'key' => $data['key'],
+            'size' => $headInfo['size'],
+        ]);
+    }
+
+    public function abortOrder(Request $request): JsonResponse
+    {
+        $data = $request->validate([
+            'key' => 'required|string|max:512',
+            'upload_id' => 'required|string|max:512',
+        ]);
+
+        $user = auth()->user();
+        if (!$user) {
+            abort(403, 'Yetki yok.');
+        }
+
+        $expectedPrefix = "orders/temp/{$user->id}/";
+        if (!str_starts_with($data['key'], $expectedPrefix) || str_contains($data['key'], '..')) {
+            abort(403, 'Geçersiz dosya anahtarı.');
+        }
+
+        $this->r2->abortMultipart($data['key'], $data['upload_id']);
+        $request->session()->forget('order_upload');
+
+        return response()->json(['success' => true]);
+    }
+
     private function authorizedCart(int $cartId): Cart
     {
         $cart = Cart::find($cartId);

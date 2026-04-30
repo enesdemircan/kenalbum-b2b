@@ -70,11 +70,11 @@ Route::middleware(['auth', 'approval'])->group(function () {
     Route::delete('/profile/addresses/{id}', [CustomerPanelController::class, 'deleteAddress'])->name('profile.addresses.delete');
     Route::get('/profile/detail', [CustomerPanelController::class, 'detail'])->name('profile.detail');
     Route::put('/profile/detail', [CustomerPanelController::class, 'updateDetail'])->name('profile.detail.update');
-    Route::post('/modal/extra-sales', [FrontendController::class, 'extraSalesModal'])->name('modal.extra-sales');
 });
 
 // R2 direct multipart upload (auth + firma yetkisi + throttle)
 Route::middleware(['auth', 'approval', 'ensure.customer'])->group(function () {
+    // Cart-item seviyesi (legacy, eski sipariş akışı için — yeni akış order-level kullanıyor)
     Route::post('/upload/r2/initiate', [App\Http\Controllers\R2DirectUploadController::class, 'initiate'])
         ->middleware('throttle:30,1')
         ->name('upload.r2.initiate');
@@ -83,6 +83,16 @@ Route::middleware(['auth', 'approval', 'ensure.customer'])->group(function () {
         ->name('upload.r2.complete');
     Route::post('/upload/r2/abort', [App\Http\Controllers\R2DirectUploadController::class, 'abort'])
         ->name('upload.r2.abort');
+
+    // Order-level (checkout'ta tek ZIP — yeni akış)
+    Route::post('/upload/r2/order/initiate', [App\Http\Controllers\R2DirectUploadController::class, 'initiateOrder'])
+        ->middleware('throttle:30,1')
+        ->name('upload.r2.order.initiate');
+    Route::post('/upload/r2/order/complete', [App\Http\Controllers\R2DirectUploadController::class, 'completeOrder'])
+        ->middleware('throttle:60,1')
+        ->name('upload.r2.order.complete');
+    Route::post('/upload/r2/order/abort', [App\Http\Controllers\R2DirectUploadController::class, 'abortOrder'])
+        ->name('upload.r2.order.abort');
 });
 
 

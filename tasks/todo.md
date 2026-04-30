@@ -1,274 +1,223 @@
-# R2 Direct Upload Migration — V2 (yeni base üstüne)
+# Sipariş Akışı V3 — Step Wizard + Order-Level File Upload
 
-**Hedef:** Browser → R2 doğrudan multipart upload kur, mevcut iş kurallarını **bozmadan**.
-**Sebep:** 300 MB+ dosyalarda Cloudflare timeout + chunk drop. Eski stale base ile çalışılan ilk implementasyon (`r2-attempt-1-backup` branch'inde duruyor) drop edildi, remote'taki 45+ commit ile uyumsuzdu.
-
----
-
-## Mevcut Sistemde Korunacak Kritik İş Kuralları
-
-| Kural | Yer | R2'de korunma stratejisi |
-|---|---|---|
-| **500 MB hard limit** | `create.blade.php::handleZipFileUpload` (1390), `handleFileUpload` (1460) | Frontend kontrol kalır + R2 initiate endpoint'inde server-side validation eklenir |
-| **Upload tamamlanmadan sipariş engelle** | `CartController` checkout/complete guard'ları (s3_zip NULL kontrolü) | s3_zip alanı yine R2 URL ile dolacak — guard otomatik çalışır |
-| **Orphan cart cleanup** | `CartController::cleanupInvalidCartItems` (762) | s3_zip NULL kontrolü aynı şekilde çalışır — değişiklik gerekmez |
-| **`is_required` zorunlu kategori guard** | `CartController` checkout (commit 6801f2d) | DB validation aynı, R2 ile alakasız |
-| **Order numarası `ken-XXXXXXXXX`** | `Order::generateOrderNumber()` | Değişmiyor |
-| **Cart_id rename at checkout** | `Cart::renameS3Zip($old, $new)` (313) — **ZIP'i indirip içindeki klasör adını değiştirip yeniden upload ediyor** | ⚠️ **KARAR GEREKİYOR** — aşağıdaki Açık Soru #1'e bak |
-| **Admin download** | `Admin\OrderController::downloadCartFiles` — `redirect()->away($cart->s3_zip)` | R2 public URL ile aynı şekilde çalışır — değişiklik gerekmez ✅ |
-| **PDF order detail in ZIP** | `CreateZipAndUploadToS3::generateOrderDetailPdf` | Server-side ZIP processing kalkacağı için bu da gider — ilgili PDF artık üretilmez (kullanıcı kararı 2026-04-30: "zip yapmayalım") |
+**Hedef:** Sipariş sayfasını step-by-step wizard'a dönüştür, dosya yüklemeyi cart-item seviyesinden order seviyesine taşı, extras popup'ını wizard step'i yap.
 
 ---
 
-## Mimari Karar Özeti
+## Kullanıcı Net İstekleri
+
+1. ✅ **Wizard step yapısı:** Ebat & Paket → Model → Kumaş → Sipariş Detayı → Ekstralar → Sipariş Özeti
+2. ✅ **Extras popup KALDIRILACAK** — wizard'ın "Ekstralar" step'i olacak
+3. ✅ **Cart-add seviyesinde dosya yükleme YOK** — sepete birden fazla ürün eklenebilsin, dosya istemiyoruz
+4. ✅ **Tek ZIP for entire cart** — checkout anında müşteri tüm sepetin görsellerini tek ZIP'le yükler
+5. ✅ **`orders.s3_zip` kolonu** — dosya order seviyesinde saklanır
+6. ✅ **Carts tablosundaki `s3_zip` kolonu KALSIN** — eski veriler için, sadece yeni order'larda yazmıyoruz
+7. ✅ **Çöp kodları temizle**
+
+## Mevcut Durum (Inceleme Özeti)
+
+- `create.blade.php` 2445 satır, tek-form
+- `customization-section.blade.php` file/files type render var (silinecek)
+- `customization_categories` tablosu type alanı: radio, hidden, checkbox, file, files, input, select
+- `Order` tablosunda **s3_zip kolonu YOK** → migration gerek
+- `extra-sales.blade.php` modal mevcut (kaldırılacak)
+- `cleanupInvalidCartItems` — cart-seviyesi s3_zip guard (refactor edilecek)
+
+---
+
+## Açık Sorular — Onayını Bekliyor
+
+### 1. Wizard Step Mapping — Nasıl Belirlenecek?
+
+Sen 6 step verdin (Ebat & Paket, Model, Kumaş, Sipariş Detayı, Ekstralar, Sipariş Özeti). Bunlar customization_categories'le nasıl eşleşecek?
+
+| Seçenek | Nasıl | Artısı | Eksisi |
+|---|---|---|---|
+| **A. Yeni `step_label` kolonu** | Migration ile `customization_categories.step_label` ekle, her kategori bir step'e ait. Adminden değiştirilebilir. | Esnek, ürün-bazlı farklılaştırılabilir | Migration + admin UI gerekiyor |
+| **B. Hardcoded mapping (kategori adıyla)** | Code'da `'Ebat' → 'Ebat & Paket'`, `'Model' → 'Model'`, vb. | Hızlı, migration yok | Yeni kategori eklenince kod düzenleme gerekir |
+| **C. Order-based grouping** | Category `order` 1-3 → step 1, 4-6 → step 2... | Migration yok, mekanik | Step adları ürün-bazlı netleşmez |
+
+**Tavsiyem: A** — temiz çözüm, multi-product için sürdürülebilir.
+
+→ **A / B / C ?**
+
+### 2. Dosya Yükleme Zorunluluğu
+
+Checkout'ta dosya zorunlu mu?
+
+| Seçenek | Davranış |
+|---|---|
+| **A. Her zaman zorunlu** | Sepette ürün varsa ZIP yüklemeden checkout tamamlanmaz |
+| **B. Sadece "dosya gerektiren" ürünler için zorunlu** | Sepette en az bir "fotoğraf gerektiren" ürün varsa zorunlu (örn. albüm). Sade ürünler (kalem, kutu) için isteğe bağlı. |
+| **C. Hiç zorunlu değil** | Müşteri yüklemese de sipariş geçer |
+
+**Tavsiyem: B** — esnek + iş kuralına uygun. Hangi ürünler "dosya gerektirir" tanımı için: ürün ana kategori ID'sine göre veya yeni bir `requires_files` kolonu.
+
+→ **A / B / C ?**
+
+### 3. R2 Object Key Stratejisi
+
+Sipariş oluşturulmadan ÖNCE upload edilen dosya için:
+
+| Seçenek | Akış |
+|---|---|
+| **A. Geçici key + rename** | Upload anında: `orders/temp/{user.id}/{timestamp}.zip`. Order create olunca CopyObject + Delete ile `orders/{order.id}/{order.order_number}.zip`'e taşı. |
+| **B. Order önce oluştur, sonra upload** | Pending order oluştur, ID al, sonra `orders/{order.id}/...` key'e upload. Başarısız olursa order silinir. |
+| **C. Final key direkt + reservation** | Frontend bir UUID üretir, `orders/uploads/{uuid}.zip` olarak yazılır, complete'te DB'ye kaydedilir. |
+
+**Tavsiyem: A** — basit, mevcut R2DirectUploadController hafif değişikle çalışır.
+
+→ **A / B / C ?**
+
+### 4. Extras (Ekstralar) Step UX
+
+Ekstralar adımında ürünler nasıl gösterilsin?
+
+| Seçenek | UX |
+|---|---|
+| **A. Grid + miktar inputu** | Her ekstra ürün kart şeklinde, "Sepete Ekle (3)" gibi miktar seçimi |
+| **B. Liste + checkbox** | Liste, her satır checkbox + miktar (isteğe bağlı) |
+| **C. Atla butonu zorunlu** | "Devam et" demeden adlı ekstra seçimi yapamaz, mecbur "Hayır, geç" |
+
+**Tavsiyem: A** — modern e-ticaret pattern. "İstemiyorum" butonu ile direkt sonraki step.
+
+→ **A / B / C ?**
+
+### 5. Customization File/Files Type — Tamamen Kaldırılsın mı?
+
+`customization_categories.type` değerleri arasında `file` ve `files` var. Bunları kullanan kategorilerden ne yapalım?
+
+| Seçenek | Davranış |
+|---|---|
+| **A. DB'den tamamen sil** | `type=file` veya `type=files` olan tüm kategoriler kaldırılır. Eski cart_items'taki notes JSON'u etkilenmez. |
+| **B. Render etme, DB'de kalsın** | Type alanı kalsın ama wizard'da skip edilsin. Eski sistem ile uyumlu kalır. |
+| **C. Type alanını dönüştür** | `file/files` type olanları `hidden` yapıp pasif et |
+
+**Tavsiyem: B** — minimal impact, geri dönüş kolay.
+
+→ **A / B / C ?**
+
+---
+
+## Mimari Karar Özeti (default)
 
 | Konu | Karar |
 |---|---|
-| Storage | Cloudflare R2 (`kenb2b` bucket) — yeni `r2` disk, eski `s3` disk legacy için kalır |
-| Upload yöntemi | S3 Multipart Upload + Presigned URLs |
-| Object key | `orders/{cart.id}/{file_index}_{cart.id}.{ext}` (cart'ın primary id'si, slug değil) |
-| Server-side ZIP | KALDIRILIYOR — `CreateZipAndUploadToS3` job ve `ChunkUploadController` siliniyor |
-| Server-side merge | KALDIRILIYOR — multipart R2'de assemble |
-| Cart_id rename at checkout | **Açık Soru #1'e bağlı** — varsayılan: R2 object KEY rename yap (S3 CopyObject + Delete), ZIP içeriği dokunulmaz |
-| Public URL kullanımı | Devam — `R2_PUBLIC_LINK` (kullanıcı 2026-04-30 onayı) |
+| Wizard | Vanilla JS state machine, step show/hide, localStorage backup |
+| Step mapping | (Onay 1'e göre) |
+| File upload location | `cart.checkout` sayfasında, R2 direct multipart |
+| File required | (Onay 2'ye göre) |
+| R2 key | (Onay 3'e göre) |
+| `orders.s3_zip` | Yeni migration ile string nullable |
+| Old `carts.s3_zip` | Korunuyor, sadece yazma kapalı |
+| Extras | Wizard step (Onay 4'e göre) |
+| File/files customization | (Onay 5'e göre) |
+| Cart cleanup | Order-seviyesinde guard (orders.s3_zip kontrolü) — cart-level cleanup kaldırılır |
+
+---
+
+## Phase 1 — Database Migrations
+
+- [ ] `add_s3_zip_to_orders_table` — orders'a nullable string s3_zip kolonu ekle
+- [ ] (Onay 1=A ise) `add_step_label_to_customization_categories_table` — step_label nullable string
+- [ ] (Onay 1=A ise) Seed: mevcut kategorilerin step_label'larını set et
+
+## Phase 2 — Backend: R2 Upload Refactor
+
+- [ ] R2DirectUploadController:
+  - `initiateOrder` endpoint — order için (cart_id yerine)
+  - `completeOrder` endpoint — orders.s3_zip set
+  - `abortOrder` endpoint — temp key cleanup
+- [ ] R2UploadService:
+  - `buildOrderTempKey($userId, $timestamp)` — `orders/temp/{userId}/{timestamp}.{ext}`
+  - `buildOrderFinalKey($orderId, $orderNumber)` — `orders/{orderId}/{orderNumber}.{ext}`
+  - `moveToFinal($tempKey, $finalKey)` — CopyObject + DeleteObject
+
+## Phase 3 — Backend: CartController & Order Flow
+
+- [ ] `CartController::add` — extras parametresini de işle (atomik olarak ekstra ürünleri de cart'a ekle)
+- [ ] `CartController::complete` — önce R2 temp key kontrolü, sonra Order create, sonra R2 move-to-final + orders.s3_zip set
+- [ ] `cleanupInvalidCartItems` — KALDIR (artık order-level guard var)
+- [ ] `Cart::renameS3Zip` — KULLANILMIYOR artık (orders.s3_zip standalone)
+
+## Phase 4 — Frontend: Wizard UI
+
+- [ ] `create.blade.php` rewrite (modular):
+  - Step indicator (üst bar)
+  - Step container divs (her step bir div, JS show/hide)
+  - Wizard state JS (vanilla)
+  - Validation per step
+  - Final "Sepete Ekle" butonu
+- [ ] `customization-section.blade.php`:
+  - file/files type render bloklarını kaldır
+- [ ] `extras-step.blade.php` — yeni partial (wizard step için)
+- [ ] `summary-step.blade.php` — yeni partial (özet step için)
+
+## Phase 5 — Frontend: Checkout Page File Upload
+
+- [ ] `checkout.blade.php`:
+  - Dosya yükleme bölümü ekle (drag-drop opsiyonel)
+  - R2 direct upload progress UI
+  - "Siparişi Onayla" butonu sadece dosya yüklendiyse aktif (Onay 2=B ise koşullu)
+
+## Phase 6 — Cleanup
+
+- [ ] `create.blade.php`: handleZipFileUpload, handleFileUpload, uploadFilesToR2, uploadFileToR2, getAllFilesFromForm, r2CsrfToken, r2FormatBytes — kaldır (checkout'a gitti)
+- [ ] `extra-sales.blade.php` modal — sil
+- [ ] `FrontendController::extraSalesModal` method + route — sil
+- [ ] CartController::add içinde `extra_sales` response key — kaldır
+
+## Phase 7 — Test & Verify
+
+- [ ] Tek ürünlü sipariş wizard akışı
+- [ ] Çoklu ürünlü sepet → tek ZIP upload akışı
+- [ ] Dosya yüklemeden checkout deneme (Onay 2=B ise sade ürün için ge çer mi?)
+- [ ] R2 temp → final move
+- [ ] Eski siparişler (carts.s3_zip dolu) hâlâ admin panelinde görünüyor mu
+
+## Phase 8 — Commit & Push
+
+- [ ] Mantıksal commit'lere böl (migrations, backend, frontend, cleanup)
+- [ ] Anlamlı Türkçe commit mesajları
+- [ ] Push origin main
 
 ---
 
 ## ✅ Açık Sorular — Cevaplandı (2026-04-30)
 
-- **1. Cart_id rename:** **A** — R2 object KEY'i CopyObject + Delete ile yeniden adlandır. ZIP içeriği dokunulmaz.
-- **2. R2 disk:** Yeni `r2` disk, eski `s3` disk legacy için kalır.
-- **3. PDF order detail:** Kaldır. Admin panelden manuel alıyor.
-- **+ Anti-manipülasyon:** JS'e güvenmeden server-side defenses (500 MB hard, throttle, cart ownership, key prefix, HeadObject size check, file_index range).
-
-### Object Key Formatı
-```
-orders/{cart.id}/{cart.cart_id}.{ext}              (file_index = 0)
-orders/{cart.id}/{cart.cart_id}-{idx}.{ext}        (file_index > 0)
-```
-- **Path:** `cart.id` (numeric, collision-free)
-- **Filename:** `cart.cart_id` (slug — admin indirince kim/ne olduğunu görüyor)
-- Checkout'ta cart_id slug değişince R2 CopyObject + DeleteObject
-
-## Açık Sorular — onayını bekliyor
-
-### 1. Cart_id rename at checkout — ne yapalım?
-
-**Mevcut davranış:** Müşteri `/products/order/7` sayfasında ZIP yükler → cart oluşur → S3'e `zips/{cart_id}/{cart_slug}.zip` olarak yazılır. Müşteri checkout yaptığında `Order::generateOrderNumber()` ile `ken-000000123` üretilir → cart_id slug yeniden hesaplanır → **`Cart::renameS3Zip` çağrılır**, ZIP S3'ten indirilir, içindeki klasör adı `eski-cart_id` → `yeni-cart_id` olarak değiştirilir, yeni isimle yeniden upload edilir.
-
-**R2 direct upload ile bu davranışı sürdürmenin 3 yolu var:**
-
-| Seçenek | Nasıl | Artısı | Eksisi |
-|---|---|---|---|
-| **A. ZIP içeriğine dokunma, sadece R2 object key'i rename et** | Checkout'ta S3 `CopyObject` + `DeleteObject` ile R2'de obje yeni isme kopyalanır | ⚡ Hızlı (sunucu transferi yok), mantıklı | ZIP içindeki kök klasör adı **eski cart_id** kalır — admin extract ederken eski klasör adını görür |
-| **B. ZIP'i R2'den indir, içeriği güncelle, yeniden upload et** | Mevcut davranışın tam kopyası | ✅ Eski sistemle birebir | 🐌 300 MB ZIP için checkout timeout riski + sunucu memory yükü (R2 download + repack + upload) |
-| **C. Hiç rename yapma — cart_id slug DB'de değişir ama R2 dosyası primary id ile kalır** | `Cart::renameS3Zip` artık no-op | 🧹 En basit | Admin R2 console'da dosyayı `cart.id`-sayısıyla görür, slug ile değil |
-
-**Önerim:** **A (Object key rename, ZIP içeriği dokunulmaz).**
-- Hızlı (S3 CopyObject milisaniye)
-- ZIP içindeki klasör adı admin için pratikte önemli değil — admin extract ederken `7-Zip → "Extract to folder named after archive"` ile zaten yeni isim altına açar (önceki konuşmada üzerinde anlaşmıştık)
-- DB'deki s3_zip URL'i otomatik güncellenir (yeni key → yeni public URL)
-
-**Cevabın:** A / B / C ?
-
-### 2. R2 disk konfigürasyonu — yeni mi, mevcut mi?
-
-Mevcut `s3` disk `Storage::disk('s3')` Spaces'e bağlı. R2 için yeni `r2` disk eklemek vs `s3` disk'ini R2'ye taşımak.
-
-**Önerim:** **Yeni `r2` disk ekle**, eski `s3` disk Spaces'e bağlı kalsın.
-- Geçmiş upload'larla işlem yapan kodlar (`Cart::deleteAssociatedFiles`, vb.) bozulmaz
-- Yeni upload'lar `disk('r2')` kullanır
-- İleride Spaces içeriği boşalınca `s3` disk silinebilir
-
-Onaylıyor musun?
-
-### 3. PDF order detail — gerçekten kaldırılıyor mu?
-
-Mevcut sistem ZIP içine `siparis-detay-{cart_id}.pdf` ekliyor (admin için faydalı bilgi: müşteri bilgileri, ürün, customization, fiyat).
-
-**Üç seçenek:**
-- **A. Tamamen kaldır** — admin DB'den / admin paneli üstünden bilgileri görür (önceki kararın bu yöndeydi)
-- **B. R2'ye ayrı obje olarak yaz** — checkout'ta PDF üret, `orders/{cart.id}/order-detail.pdf` olarak R2'ye yükle
-- **C. On-demand stream** — admin "PDF indir" tıkladığında runtime'da generate edilir, hiç saklamaz
-
-**Önerim:** **A (kaldır).** Sade. Eğer admin gerçekten ihtiyaç duyarsa C ileride eklenir.
-
-Onaylıyor musun?
-
----
-
-## Phase 0 — Hazırlık & Setup
-
-- [ ] `.env`'e R2 credential'ları ekle (R2_ACCESS_KEY_ID, R2_SECRET_ACCESS_KEY, R2_BUCKET, R2_ENDPOINT, R2_PUBLIC_LINK)
-- [ ] `.env.example`'e R2_* placeholder'ları ekle
-- [ ] **Kullanıcı action:** R2 bucket'ında CORS policy yapılandır (`ExposeHeaders: ["ETag"]` zorunlu)
-- [ ] **Kullanıcı action:** İş bitince mevcut R2 secret key'i revoke + yenisini oluştur (konuşma logu güvenliği)
-
-## Phase 1 — Backend: R2 Disk Config & Service
-
-- [ ] `config/filesystems.php`'e `r2` disk ekle (eski `s3` disk dokunulmaz)
-- [ ] `app/Services/R2UploadService.php` oluştur
-  - `initiateMultipart`, `presignPartUrls`, `completeMultipart`, `abortMultipart`
-  - `copyObject($oldKey, $newKey)` — Cart_id rename için (Açık Soru #1 = A ise)
-  - `deleteObject($key)`
-  - (Backup branch `r2-attempt-1-backup`'tan bu kodun büyük kısmı kullanılabilir)
-
-## Phase 2 — Backend: R2DirectUploadController + Validation
-
-- [ ] `app/Http/Controllers/R2DirectUploadController.php` oluştur
-  - 3 endpoint: `initiate`, `complete`, `abort`
-  - **500 MB hard limit** validation: `file_size <= 524288000`
-  - Cart ownership + `ensure.customer` middleware
-  - Initiate → presigned PUT URL'ler (10 MB part, 1h TTL)
-  - Complete → `cart->s3_zip` güncelle (virgülle ayrılmış URL listesi, multi-file desteği için)
-  - Abort → R2 multipart cleanup
-- [ ] `routes/web.php`: 3 yeni route, **eski 5 chunk route'u sil**
-  - `POST /upload/r2/initiate`
-  - `POST /upload/r2/complete`  
-  - `POST /upload/r2/abort`
-
-## Phase 3 — Cart::renameS3Zip — R2 uyumlu hale getir (Açık Soru #1'e göre)
-
-- [ ] **Eğer A:** Method'u R2 CopyObject + Delete kullanacak şekilde yeniden yaz
-  - Eski URL'den key çıkar → yeni cart_id ile yeni key oluştur → R2'de copy+delete → cart->s3_zip yeni URL ile güncelle
-- [ ] **Eğer B:** Mevcut ZIP-içerik-rewrite mantığını R2 disk üzerinde çalışacak şekilde uyarla (download + ZipArchive + upload)
-- [ ] **Eğer C:** Method'u no-op yap (sadece DB'de cart_id slug güncelle)
-
-## Phase 4 — Frontend: Direct Upload Implementation
-
-- [ ] `resources/views/frontend/orders/create.blade.php`
-  - `uploadFilesWithChunks` → `uploadFilesToR2` ile değiştir
-  - `uploadFileInChunks` / `uploadChunkWithRetry` / `uploadChunk` / `mergeAllFiles` / `createZipFile` / `startZipStatusPollingSilent` — sil
-  - Yeni: `uploadFileToR2` — initiate → 3 paralel part PUT → complete (backup branch'ten kod alınabilir)
-  - **500 MB frontend limit** mantığı (`handleZipFileUpload`, `handleFileUpload`) **dokunulmaz** — zaten doğru çalışıyor
-  - **Polling akışı kaldırılır** — R2 complete sonrası direkt success / extra-sales modal
-  - Çağıran satır (line ~1273) → `uploadFilesToR2`'a güncelle
-
-## Phase 5 — Cleanup
-
-- [ ] `app/Http/Controllers/ChunkUploadController.php` — sil
-- [ ] `app/Jobs/CreateZipAndUploadToS3.php` — sil (çağıran tek yer ChunkUploadController'dı)
-- [ ] `storage/app/public/chunks/`, `merged/`, `zips/` — varsa temizle
-- [ ] Diğer dosyalardaki ölü referanslar grep ile kontrol → temizle
-
-## Phase 6 — Verification
-
-- [ ] `php -l` syntax check tüm değişen PHP dosyalarına
-- [ ] `composer dump-autoload`
-- [ ] `php artisan optimize:clear`
-- [ ] `php artisan route:list` → 3 yeni R2 route + eski chunk route yok
-- [ ] R2UploadService smoke test (tinker ile buildKey + publicUrl)
-- [ ] Frontend JS `node --check` (bladе extract)
-- [ ] **Manuel test (kullanıcıda):** 50 MB / 300 MB / 1 GB upload, abort, yetki kontrolü
-
-## Phase 7 — Commit & Push
-
-- [ ] Stage edilecek dosyaları sırala (Bash `git status` ile)
-- [ ] Tek anlamlı commit (Türkçe başlık + body, neden + risk + kullanıcı action)
-- [ ] `git push origin main` — push permission'ı `enesdemircan` hesabına geçildikten sonra
-
-## Phase 8 — Post-deploy (kullanıcıda)
-
-- [ ] cPanel'de `.env` güncellenir (R2 credentials)
-- [ ] `composer dump-autoload && php artisan optimize:clear` production'da
-- [ ] R2 bucket CORS policy
-- [ ] Backup branch `r2-attempt-1-backup` test sonrası silinir
-
----
-
-## Review Bölümü (2026-04-30 itibariyle V2 tamamlandı)
-
-### Yapılan Değişiklikler
-
-**Yeni Dosyalar:**
-- `app/Services/R2UploadService.php` — multipart helpers + `headObject` (size validation) + `copyObject` + `renameSlugInKey` (cart_id rename) + `extractKeyFromUrl`
-- `app/Http/Controllers/R2DirectUploadController.php` — 3 endpoint (initiate/complete/abort) + 500 MB hard validation + cart ownership + key prefix check + `MAX_FILE_INDEX` (max 10 dosya/cart) + HeadObject post-upload size enforcement
-
-**Değiştirilen Dosyalar:**
-- `.env` — R2 credentials (gitignored, local'de zaten vardı)
-- `.env.example` — R2_* placeholder'lar
-- `config/filesystems.php` — yeni `r2` disk (eski `s3` Spaces disk dokunulmadı)
-- `routes/web.php` — eski 5 chunk route silindi, 3 yeni R2 route + `throttle:30,1` initiate'te + `throttle:60,1` complete'te
-- `resources/views/frontend/orders/create.blade.php` — chunk sistemi (~600 satır) silindi, R2 direct multipart (~245 satır) + `csrfToken`/`r2FormatBytes` helpers ile değiştirildi
-- `app/Models/Cart.php` — `renameS3Zip` artık R2 CopyObject + DeleteObject ile object KEY'i yeniden adlandırıyor (sunucu transferi yok), `ZipArchive` import kaldırıldı
-
-**Silinen Dosyalar:**
-- `app/Http/Controllers/ChunkUploadController.php`
-- `app/Jobs/CreateZipAndUploadToS3.php`
-
-### Object Key Formatı
-
-```
-orders/{cart.id}/{cart.cart_id}.{ext}              (file_index = 0)
-orders/{cart.id}/{cart.cart_id}-{idx}.{ext}        (file_index > 0)
-```
-
-- **Path:** `cart.id` (numeric, primary key — collision-free, stable)
-- **Filename:** `cart.cart_id` (slug — admin indirince anlamlı: kim/ne olduğu belli)
-- Slug sanitize ediliyor (`sanitizeKeySegment`) — ASCII + `._-` dışındakiler `-`'ye dönüşür
-- Checkout'ta cart_id slug değişince R2 CopyObject + DeleteObject
-
-### Korunan İş Kuralları (mevcut sistemle uyumlu)
-
-- ✅ **500 MB hard limit** — frontend (`handleZipFileUpload`/`handleFileUpload`) + backend (`MAX_FILE_BYTES` validation + post-upload `HeadObject` size check w/ 5% tolerance)
-- ✅ **Upload tamamlanmadan sipariş engelleme** — `cart->s3_zip` NULL kontrolü `CartController` checkout/complete'te zaten var, R2 complete s3_zip'i dolduruyor
-- ✅ **Orphan cart cleanup** — `cleanupInvalidCartItems` aynı şekilde çalışır (s3_zip NULL kontrolü)
-- ✅ **`is_required` zorunlu kategori guard** — `CartController` checkout DB validation'ı R2 ile alakasız
-- ✅ **Order numarası `ken-XXXXXXXXX`** — `Order::generateOrderNumber` dokunulmadı
-- ✅ **Cart_id rename at checkout** — `Cart::renameS3Zip` R2 CopyObject ile yeniden adlandırıyor (ZIP içeriği dokunulmaz, kullanıcı kararı 2026-04-30: extract sırasında 7-Zip "Extract to folder" ile çözülür)
-- ✅ **Admin download** — `Admin\OrderController::downloadCartFiles` zaten `redirect()->away($cart->s3_zip)` yapıyor, R2 public URL ile çalışır
-
-### Anti-Manipülasyon Korumaları (kullanıcı isteği)
-
-| Kontrol | Yer | Etki |
+| # | Konu | Karar |
 |---|---|---|
-| **500 MB server-validation** | `initiate` validation `max:524288000` | Client manipule edemez |
-| **500 MB post-upload check** | `complete` HeadObject size check (×1.05 tolerance, üzerinde DeleteObject) | Presigned URL ile büyük dosya yüklemeyi engeller |
-| **File_index range** | `min:0|max:9` | Max 10 dosya/cart |
-| **Rate limit** | `throttle:30,1` initiate, `throttle:60,1` complete | Brute force / abuse engelleme |
-| **Cart ownership** | Her endpoint'te `cart.user_id == auth()->id()` | Başkasının cart'ına yükleme imkansız |
-| **Key prefix** | Complete/abort'ta `orders/{cart.id}/` zorunlu + `..` reddi | Path traversal engelleme |
-| **CSRF + auth + ensure.customer** | Route middleware | Standard Laravel guards + firma yetki kuralı |
+| 1 | Step mapping | **A** — `step_label` kolonu, ürün-bazlı dinamik |
+| 2 | File required | **A** — her zaman zorunlu (sepette ürün varsa ZIP yüklemeden checkout geçmez) |
+| 3 | R2 key | **A** — geçici `orders/temp/{user_id}/{ts}.zip` → CopyObject + Delete ile final `orders/{order.id}/{order_number}.zip` |
+| 4 | Extras UX | **A** — grid + miktar inputu |
+| 5 | File/files type | **B** — render skip, DB'de kalır (eski cart_items.notes etkilenmez) |
 
-### Verification Sonuçları
+## Bonus: Step Mapping Stratejisi
 
-- ✅ Tüm değişen PHP dosyaları `php -l` syntax check geçti (5 dosya)
-- ✅ `composer dump-autoload` temiz çalıştı (8880 sınıf)
-- ✅ `php artisan optimize:clear` cache temizlendi
-- ✅ `php artisan route:list --path=upload` 3 yeni R2 route'u gösteriyor; eski chunk route yok
-- ✅ Tinker smoke test: `buildKey(7, '7-260430-test-firma-15x20-album', 0, 'zip')` → `orders/7/7-260430-test-firma-15x20-album.zip` ✓
-- ✅ Tinker smoke test: file_index=2 ile `orders/7/7-260430-test-firma-15x20-album-2.zip` ✓
-- ✅ Tinker smoke test: `extractKeyFromUrl(public_url)` doğru key dönüyor ✓
-- ✅ Frontend JS `node --check` geçti (syntax hatası yok)
-- ⚠️ **Manuel test gereken:** gerçek R2 bucket'a 50/300/1024 MB upload + checkout cart_id rename + abort akışı + yetki kontrolü
+Sen onayladın: **"customization'a bağlı dinamik"**. `step_label` kolonu her kategoride. Wizard step'leri ürün-bazlı dinamik üretilir. Albüm ürünü (mevcut DB):
 
-### Senin Yapman Gerekenler (Post-deploy)
+| Kategori (DB) | Type | Yeni step_label seed |
+|---|---|---|
+| Ebat (id=1) | select | Ebat & Paket |
+| Paket (id=5) | radio | Ebat & Paket |
+| Kumaş (id=3) | radio | Kumaş |
+| Renk (id=4) | radio | Kumaş |
+| Albüm Üzerine Yazılacak Yazı (id=8) | input | Sipariş Detayı |
+| Pvc Kalınlığı (id=13) | hidden | Sipariş Detayı |
+| Not (id=14) | input | Sipariş Detayı |
+| Extra Ürün (id=9) | checkbox | Sipariş Detayı |
+| Kapak Fotoğrafı (id=11) | file | NULL (skip) |
+| Albüm Fotoğrafları (id=12) | files | NULL (skip) |
+| Görsel (id=15) | files | NULL (skip) |
+| Adet (id=16) | files | NULL (skip) |
 
-1. **R2 Bucket CORS** — Cloudflare dashboard → R2 → kenb2b → Settings → CORS:
-   ```json
-   [{
-     "AllowedOrigins": ["https://b2b.kenalbum.com.tr"],
-     "AllowedMethods": ["PUT", "POST", "GET", "HEAD"],
-     "AllowedHeaders": ["*"],
-     "ExposeHeaders": ["ETag"],
-     "MaxAgeSeconds": 3600
-   }]
-   ```
-   **`ExposeHeaders: ["ETag"]` zorunlu** — yoksa browser ETag okuyamaz, complete fail.
+**Not:** Sen "Model" step'i listeledin ama DB'de "Model" kategorisi yok. Şimdilik o step gözükmeyecek (ürün customization'ında olmadığı için). Eğer ileride eklersen step otomatik gelir.
 
-2. **R2 Public Access** — bucket settings → public access açık (R2.dev subdomain).
+Step sıralaması: her step_label grubunun **en düşük `order` değerine** göre.
 
-3. **cPanel Production Deploy:**
-   ```
-   composer dump-autoload
-   php artisan optimize:clear
-   ```
-   `.env` production'da R2 credentials ile güncellenmeli.
+Sabit son 2 step:
+- **Ekstralar** (extras_sales tablosundan, varsa)
+- **Sipariş Özeti** (her zaman)
 
-4. **Güvenlik:** Bu konuşmada paylaşılan R2 secret key'i Cloudflare'den revoke et, yenisini oluştur, .env'i güncelle.
-
-5. **Backup branch:** Test sonrası `r2-attempt-1-backup` branch'i silinebilir (`git branch -D r2-attempt-1-backup`).
-
-### Pre-existing Bug Notları (scope dışı)
-
-- `Cart::deleteAssociatedFiles` (line 372): URL ile `Storage::disk('s3')->delete()` çağırıyor — buggy ama legacy, dokunulmadı.
+Implement başlıyorum.

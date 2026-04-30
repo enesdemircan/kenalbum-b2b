@@ -118,6 +118,31 @@
           </div>
           
           <div class="payment-info__wrapper mt-4">
+            <h4>Sipariş Dosyaları</h4>
+            <div class="card mb-3">
+              <div class="card-body">
+                <p class="mb-2">
+                  <i class="fas fa-info-circle text-primary"></i>
+                  <strong>Tüm sepetinizdeki ürünlere ait görselleri</strong> tek bir ZIP dosyasında yükleyin. Dosya boyutu maksimum <strong>500 MB</strong> olabilir.
+                </p>
+                <input type="file" id="orderUploadFile" class="form-control mb-3" accept=".zip,.rar,.7z">
+                <div id="orderUploadStatus" class="d-none">
+                  <div class="d-flex align-items-center mb-2">
+                    <strong id="orderUploadFilename" class="me-2"></strong>
+                    <span id="orderUploadSize" class="text-muted small"></span>
+                    <span id="orderUploadDoneBadge" class="badge bg-success ms-auto d-none">✓ Yüklendi</span>
+                  </div>
+                  <div class="progress" style="height:8px;">
+                    <div id="orderUploadProgressBar" class="progress-bar progress-bar-striped progress-bar-animated" style="width:0%"></div>
+                  </div>
+                  <small id="orderUploadProgressText" class="text-muted d-block mt-1">0%</small>
+                </div>
+                <small class="text-muted d-block mt-2">
+                  <i class="fas fa-folder-open"></i> İpucu: ZIP içine sepetteki her ürün için ayrı klasör koymanız işimizi kolaylaştırır.
+                </small>
+              </div>
+            </div>
+
             <h4>Ödeme Bilgileri</h4>
             <div class="row">
               <div class="col-md-12">
@@ -132,14 +157,17 @@
                 </div>
               </div>
             </div>
-            <button type="submit" class="btn btn-primary" style="
+            <button type="submit" id="completeOrderSubmitBtn" class="btn btn-primary" disabled style="
             width: 100%;
             margin-top: 20px;
         ">
                       <i class="fas fa-check"></i> SİPARİŞİ TAMAMLA
                     </button>
+            <small id="completeOrderHint" class="text-danger d-block text-center mt-2">
+              Önce dosyalarınızı yüklemelisiniz.
+            </small>
 
-           
+
           </div>
           
 
@@ -184,6 +212,184 @@
   <!-- Türkiye Şehirleri -->
   <script src="{{ asset('js/turkey-cities.js') }}"></script>
 <script>
+
+// ============ ORDER-LEVEL R2 DIRECT UPLOAD ============
+// Tüm sepet için tek ZIP — Browser → R2 (Cloudflare bypass)
+const ORDER_R2 = {
+    PART_SIZE: 10 * 1024 * 1024,
+    PARALLEL_PARTS: 3,
+    MAX_RETRIES: 5,
+    MAX_FILE_BYTES: 524_288_000,
+};
+
+function orderCsrf() {
+    return document.querySelector('meta[name="csrf-token"]')?.content
+        || document.querySelector('input[name="_token"]')?.value
+        || '';
+}
+function orderFmt(b) {
+    if (!b) return '0 B';
+    const k = 1024, sizes = ['B','KB','MB','GB'];
+    const i = Math.floor(Math.log(b) / Math.log(k));
+    return parseFloat((b / Math.pow(k, i)).toFixed(1)) + ' ' + sizes[i];
+}
+
+async function uploadOrderZipToR2(file) {
+    const status = document.getElementById('orderUploadStatus');
+    const bar = document.getElementById('orderUploadProgressBar');
+    const txt = document.getElementById('orderUploadProgressText');
+    const doneBadge = document.getElementById('orderUploadDoneBadge');
+    const submitBtn = document.getElementById('completeOrderSubmitBtn');
+    const hint = document.getElementById('completeOrderHint');
+
+    status.classList.remove('d-none');
+    document.getElementById('orderUploadFilename').textContent = file.name;
+    document.getElementById('orderUploadSize').textContent = orderFmt(file.size);
+    bar.style.width = '0%';
+    txt.textContent = '0%';
+    doneBadge.classList.add('d-none');
+
+    if (file.size > ORDER_R2.MAX_FILE_BYTES * 1.05) {
+        Swal.fire({ icon: 'error', title: 'Dosya çok büyük', text: 'Maksimum 500 MB.' });
+        return false;
+    }
+
+    // 1. initiate
+    let initiate;
+    try {
+        const r = await fetch('{{ route("upload.r2.order.initiate") }}', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRF-TOKEN': orderCsrf(),
+                'Accept': 'application/json',
+            },
+            credentials: 'same-origin',
+            body: JSON.stringify({
+                file_size: file.size,
+                file_name: file.name,
+                content_type: file.type || 'application/octet-stream',
+            }),
+        });
+        initiate = await r.json();
+        if (!r.ok || !initiate.success) {
+            console.error('R2 initiate failed', initiate);
+            Swal.fire({ icon: 'error', title: 'Yükleme Başlatılamadı', text: initiate?.message || 'Sunucu hatası' });
+            return false;
+        }
+    } catch (e) {
+        console.error('initiate exception', e);
+        return false;
+    }
+
+    const { upload_id, key, part_size, part_count, part_urls } = initiate;
+    const partResults = new Array(part_count);
+    let uploadedBytes = 0;
+
+    const uploadPart = async (partInfo) => {
+        const start = (partInfo.partNumber - 1) * part_size;
+        const end = Math.min(start + part_size, file.size);
+        const blob = file.slice(start, end);
+        for (let attempt = 1; attempt <= ORDER_R2.MAX_RETRIES; attempt++) {
+            try {
+                const r = await fetch(partInfo.url, { method: 'PUT', body: blob });
+                if (!r.ok) throw new Error('PUT ' + r.status);
+                let etag = r.headers.get('ETag') || r.headers.get('etag');
+                if (!etag) throw new Error('ETag missing (CORS?)');
+                etag = etag.replace(/^"|"$/g, '');
+                partResults[partInfo.partNumber - 1] = { PartNumber: partInfo.partNumber, ETag: etag };
+                uploadedBytes += blob.size;
+                const pct = Math.round((uploadedBytes / file.size) * 100);
+                bar.style.width = pct + '%';
+                txt.textContent = pct + '% (' + orderFmt(uploadedBytes) + ' / ' + orderFmt(file.size) + ')';
+                return true;
+            } catch (err) {
+                console.warn('Part', partInfo.partNumber, 'attempt', attempt, err.message);
+                if (attempt < ORDER_R2.MAX_RETRIES) {
+                    await new Promise(r => setTimeout(r, Math.min(1000 * Math.pow(2, attempt - 1), 30000)));
+                }
+            }
+        }
+        return false;
+    };
+
+    // 2. parallel parts
+    const queue = [...part_urls];
+    let aborted = false;
+    const workers = [];
+    for (let w = 0; w < Math.min(ORDER_R2.PARALLEL_PARTS, queue.length); w++) {
+        workers.push((async () => {
+            while (!aborted && queue.length > 0) {
+                const pi = queue.shift();
+                if (!pi) break;
+                const ok = await uploadPart(pi);
+                if (!ok) { aborted = true; break; }
+            }
+        })());
+    }
+    await Promise.all(workers);
+
+    if (aborted) {
+        try {
+            await fetch('{{ route("upload.r2.order.abort") }}', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': orderCsrf() },
+                credentials: 'same-origin',
+                body: JSON.stringify({ key, upload_id }),
+            });
+        } catch (e) { /* best-effort */ }
+        Swal.fire({ icon: 'error', title: 'Yükleme Hatası', text: 'Lütfen tekrar deneyin.' });
+        return false;
+    }
+
+    // 3. complete
+    try {
+        const r = await fetch('{{ route("upload.r2.order.complete") }}', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': orderCsrf(), 'Accept': 'application/json' },
+            credentials: 'same-origin',
+            body: JSON.stringify({ key, upload_id, parts: partResults }),
+        });
+        const d = await r.json();
+        if (!r.ok || !d.success) {
+            console.error('complete failed', d);
+            Swal.fire({ icon: 'error', title: 'Yükleme Tamamlanamadı', text: d?.message || 'Sunucu hatası' });
+            return false;
+        }
+    } catch (e) {
+        console.error('complete exception', e);
+        return false;
+    }
+
+    bar.style.width = '100%';
+    txt.textContent = '100%';
+    doneBadge.classList.remove('d-none');
+    submitBtn.disabled = false;
+    if (hint) hint.classList.add('d-none');
+    return true;
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+    const fileInput = document.getElementById('orderUploadFile');
+    if (fileInput) {
+        fileInput.addEventListener('change', async (e) => {
+            const file = e.target.files?.[0];
+            if (!file) return;
+
+            // Disable submit during upload
+            const submitBtn = document.getElementById('completeOrderSubmitBtn');
+            if (submitBtn) submitBtn.disabled = true;
+            fileInput.disabled = true;
+
+            const ok = await uploadOrderZipToR2(file);
+            fileInput.disabled = false;
+            if (!ok) {
+                fileInput.value = '';
+            }
+        });
+    }
+});
+// ============ /ORDER-LEVEL R2 DIRECT UPLOAD ============
 
 // Sayfa yüklendiğinde illeri yükle
 document.addEventListener('DOMContentLoaded', function() {

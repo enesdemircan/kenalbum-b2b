@@ -254,23 +254,6 @@ class FrontendController extends Controller
     }
 
 
-    public function extraSalesModal(Request $request)
-    {
-        $extraSalesData = $request->input('extra_sales', []);
-        
-        // JSON verilerini Product objelerine çevir
-        $extraSales = collect($extraSalesData)->map(function($productData) {
-            $product = new \App\Models\Product();
-            $product->id = $productData['id'];
-            $product->title = $productData['title'];
-            $product->price = $productData['price'];
-            $product->images = $productData['images'] ?? null;
-            return $product;
-        });
-        
-        return view('frontend.modal.extra-sales', compact('extraSales'));
-    }
-
     public function getCustomizationParams($productId)
     {
         $product = Product::findOrFail($productId);

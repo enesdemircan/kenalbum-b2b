@@ -26,12 +26,6 @@ class CartController extends Controller
             return redirect()->route('login')->with('error', 'Sepeti görüntülemek için giriş yapmalısınız.');
         }
 
-        // Dosyasi yarim kalmis / hic yuklenememis orphan sepet kayitlarini temizle
-        $removed = $this->cleanupInvalidCartItems(Auth::user());
-        if (!empty($removed)) {
-            session()->flash('warning', 'Dosya yüklemesi tamamlanamadığı için şu ürün(ler) sepetten otomatik kaldırıldı: ' . implode(', ', $removed) . '. Lütfen tekrar sipariş oluşturun.');
-        }
-
         $cartItems = Auth::user()->cart()->where('status', 0)->with(['product', 'discountGroup'])->get();
         
         // Ara toplam ve indirim hesapla
@@ -68,14 +62,6 @@ class CartController extends Controller
         }
 
         $user = Auth::user();
-
-        // Dosyasi yuklenmemis orphan cart'lari temizle. Herhangi biri silindiyse
-        // kullaniciyi sepete dondur ve bilgilendir (yeniden siparis versin).
-        $removed = $this->cleanupInvalidCartItems($user);
-        if (!empty($removed)) {
-            return redirect()->route('cart.index')
-                ->with('warning', 'Dosya yüklemesi tamamlanamadığı için şu ürün(ler) sepetten otomatik kaldırıldı: ' . implode(', ', $removed) . '. Lütfen tekrar sipariş oluşturun.');
-        }
 
         $cartItems = $user->cart()->where('status', 0)->with(['product', 'discountGroup'])->get();
 
@@ -158,17 +144,18 @@ class CartController extends Controller
 
             $user = Auth::user();
 
-            // Defense-in-depth: orphan cart'lari sil (frontend'den atlatilmis/yarida kalmis olabilir)
-            $removed = $this->cleanupInvalidCartItems($user);
-            if (!empty($removed)) {
-                return redirect()->route('cart.index')
-                    ->with('warning', 'Dosya yüklemesi tamamlanamadığı için şu ürün(ler) sepetten otomatik kaldırıldı: ' . implode(', ', $removed) . '. Lütfen tekrar sipariş oluşturun.');
-            }
-
             $cartItems = $user->cart()->where('status', 0)->with(['product', 'discountGroup'])->get();
 
             if ($cartItems->isEmpty()) {
                 return redirect()->route('cart.index')->with('error', 'Sepetiniz boş.');
+            }
+
+            // Order-level dosya zorunluluğu (kullanıcı kararı 2026-04-30: her zaman zorunlu)
+            // Checkout sayfasında müşteri ZIP yükledi → session 'order_upload' var
+            $orderUpload = $request->session()->get('order_upload');
+            if (!is_array($orderUpload) || empty($orderUpload['key'])) {
+                return redirect()->route('cart.checkout')
+                    ->with('error', 'Siparişi tamamlamak için önce dosyalarınızı yüklemelisiniz.');
             }
 
             // Toplam fiyatı hesapla (indirimli fiyatlar)
@@ -223,8 +210,8 @@ class CartController extends Controller
             ]);
 
             // Sepet kalemlerini siparişe bağla, durumlarını güncelle ve cart_id'yi sipariş numarasıyla yenile
+            // Not: Yeni akışta dosya order seviyesinde, cart-level rename yok.
             foreach ($cartItems as $cartItem) {
-                $oldCartId = $cartItem->cart_id;
                 $newCartId = $cartItem->generateCartIdentifier($orderNumber);
 
                 $cartItem->update([
@@ -232,14 +219,39 @@ class CartController extends Controller
                     'status' => 1,
                     'cart_id' => $newCartId,
                 ]);
-
-                // S3'teki ZIP dosyasını yeni isimle güncelle (dosya adı + içindeki klasör)
-                $cartItem->renameS3Zip($oldCartId, $newCartId);
             }
+
+            // R2 temp upload'ı sipariş'in final key'ine taşı + orders.s3_zip set et
+            try {
+                $r2 = app(\App\Services\R2UploadService::class);
+                $tempKey = (string) $orderUpload['key'];
+                $extension = pathinfo($tempKey, PATHINFO_EXTENSION) ?: 'zip';
+                $finalKey = $r2->buildOrderFinalKey($order->id, $orderNumber, $extension);
+
+                if ($r2->moveToFinal($tempKey, $finalKey)) {
+                    $order->update(['s3_zip' => $r2->publicUrl($finalKey)]);
+                } else {
+                    \Log::error('R2 moveToFinal failed', [
+                        'order_id' => $order->id,
+                        'temp_key' => $tempKey,
+                        'final_key' => $finalKey,
+                    ]);
+                }
+            } catch (\Throwable $e) {
+                \Log::error('R2 final move exception', [
+                    'order_id' => $order->id,
+                    'error' => $e->getMessage(),
+                ]);
+            }
+
+            // Session'dan upload bilgisini temizle (sipariş tamamlandı)
+            $request->session()->forget('order_upload');
+
             // Müşterinin firmasının bakiyesinden sipariş tutarını düş
             if ($user->customer && $user->customer->balance !== null) {
                 $user->customer->subtractBalance($totalPrice);
             }
+
             // Sipariş onay e-postası gönder
             $mailService = new MailService();
             $mailService->sendOrderConfirmationEmail($order->load('user'));
@@ -510,39 +522,70 @@ class CartController extends Controller
                 ->delete();
         }
 
-        // Ürünün extra_sales verilerini kontrol et
-        $extraSales = null;
-        $extraSalesProducts = \App\Models\ExtraSale::with('childProduct')
-            ->where('main_product_id', $product->id)
-            ->where('is_active', true)
-            ->orderBy('sort_order')
-            ->get();
-        
-        if ($extraSalesProducts->count() > 0) {
-            $extraSales = $extraSalesProducts->map(function($extraSale) {
-                return [
-                    'id' => $extraSale->childProduct->id,
-                    'title' => $extraSale->childProduct->title,
-                    'price' => $extraSale->childProduct->price,
-                    'images' => $extraSale->childProduct->images
-                ];
-            })->toArray();
-            
-            // Debug: Extra sales verilerini logla
-            \Log::info('Extra sales data:', [
-                'product_id' => $product->id,
-                'product_title' => $product->title,
-                'extra_sales_count' => $extraSalesProducts->count(),
-                'extra_sales' => $extraSales
-            ]);
+        // Ekstralar (wizard'ın "Ekstralar" step'inden gelen ek ürünler)
+        // Format: extras = [{product_id: 5, quantity: 2}, {product_id: 8, quantity: 1}]
+        $extraCartIds = [];
+        $extras = $request->input('extras', []);
+        if (is_array($extras) && !empty($extras)) {
+            foreach ($extras as $extra) {
+                $extraProductId = $extra['product_id'] ?? null;
+                $extraQuantity = max(1, (int) ($extra['quantity'] ?? 1));
+                if (!$extraProductId) {
+                    continue;
+                }
+
+                $extraProduct = Product::find($extraProductId);
+                if (!$extraProduct) {
+                    continue;
+                }
+
+                // Aynı kullanıcının firma indirimini ekstra ürüne de uygula
+                $extraDiscountedPrice = $extraProduct->price;
+                $extraDiscountGroupId = null;
+                if (auth()->user()->customer_id) {
+                    $extraValidDiscounts = \App\Models\DiscountGroup::getValidDiscountsForUser(
+                        auth()->id(),
+                        $extraProduct->main_category_id
+                    );
+                    if ($extraValidDiscounts->isNotEmpty()) {
+                        $extraMaxDiscount = $extraValidDiscounts->max('discount_percentage');
+                        $extraDiscountedPrice = $extraProduct->price * (1 - $extraMaxDiscount / 100);
+                        $extraDiscountGroupId = $extraValidDiscounts->where('discount_percentage', $extraMaxDiscount)->first()->id;
+                    }
+                }
+
+                $extraCart = new Cart();
+                $extraCart->user_id = auth()->id();
+                $extraCart->product_id = $extraProduct->id;
+                $extraCart->quantity = $extraQuantity;
+                $extraCart->page_count = 0;
+                $extraCart->original_price = $extraProduct->price;
+                $extraCart->price = $extraDiscountedPrice;
+                if ($extraDiscountGroupId) {
+                    $extraCart->discount_group_id = $extraDiscountGroupId;
+                }
+                $extraCart->notes = json_encode(['customizations' => []]);
+                $extraCart->save();
+
+                $extraCart->cart_id = $extraCart->generateCartIdentifier();
+                $extraCart->barcode = $extraCart->generateUniqueBarcode();
+                $extraCart->save();
+
+                OrderStatusHistory::create([
+                    'cart_id' => $extraCart->id,
+                    'order_status_id' => 1,
+                    'user_id' => auth()->id(),
+                ]);
+
+                $extraCartIds[] = $extraCart->id;
+            }
         }
-        
-        // JSON response döndür
+
         return response()->json([
             'success' => true,
             'message' => 'Ürün sepete eklendi!',
             'cart_id' => $cart->id,
-            'extra_sales' => $extraSales,
+            'extra_cart_ids' => $extraCartIds,
         ]);
     }
     
@@ -753,60 +796,6 @@ class CartController extends Controller
         return in_array(strtolower($fileType), $imageTypes);
     }
 
-    /**
-     * Kullanicinin status=0 sepet kayitlarini gez.
-     * Urun file/files kategorisi iceriyor ama s3_zip NULL ise:
-     * iliskili dosyalari + OrderStatusHistory + cart'in kendisini sil.
-     * Kullaniciya hangi urunlerin kaldirildigini donmek icin baslik dizisi return eder.
-     */
-    private function cleanupInvalidCartItems($user): array
-    {
-        $removedTitles = [];
-
-        $cartItems = $user->cart()
-            ->where('status', 0)
-            ->with(['product'])
-            ->get();
-
-        foreach ($cartItems as $cartItem) {
-            if (!empty($cartItem->s3_zip)) {
-                continue;
-            }
-
-            $hasFileCategory = \DB::table('customization_pivot_params as cpp')
-                ->join('customization_categories as cc', 'cc.id', '=', 'cpp.customization_category_id')
-                ->where('cpp.product_id', $cartItem->product_id)
-                ->whereIn('cc.type', ['file', 'files'])
-                ->exists();
-
-            if (!$hasFileCategory) {
-                continue;
-            }
-
-            $title = $cartItem->product->title ?? 'Ürün';
-            Log::warning('Orphan cart auto-deleted (missing s3_zip + file category)', [
-                'cart_id' => $cartItem->id,
-                'product_id' => $cartItem->product_id,
-                'user_id' => $user->id,
-            ]);
-
-            try {
-                $cartItem->deleteAssociatedFiles();
-            } catch (\Throwable $e) {
-                Log::warning('deleteAssociatedFiles failed during orphan cleanup', [
-                    'cart_id' => $cartItem->id,
-                    'error' => $e->getMessage(),
-                ]);
-            }
-
-            OrderStatusHistory::where('cart_id', $cartItem->id)->delete();
-            $cartItem->delete();
-
-            $removedTitles[] = $title;
-        }
-
-        return $removedTitles;
-    }
 
     /**
      * Resim dosyasından thumbnail oluştur

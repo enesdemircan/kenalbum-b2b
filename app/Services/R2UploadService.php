@@ -39,6 +39,49 @@ class R2UploadService
         return "orders/{$cartPrimaryId}/{$slug}{$suffix}.{$ext}";
     }
 
+    /**
+     * Sipariş henüz oluşmadan checkout sırasında geçici upload key'i.
+     * Order create olunca buildOrderFinalKey ile final key'e taşınır.
+     */
+    public function buildOrderTempKey(int $userId, string $extension): string
+    {
+        $ext = ltrim(strtolower($extension), '.');
+        if ($ext === '') {
+            $ext = 'bin';
+        }
+        $token = bin2hex(random_bytes(8));
+        $ts = time();
+        return "orders/temp/{$userId}/{$ts}-{$token}.{$ext}";
+    }
+
+    /**
+     * Order yaratılınca temp key buraya taşınır.
+     */
+    public function buildOrderFinalKey(int $orderId, string $orderNumber, string $extension): string
+    {
+        $ext = ltrim(strtolower($extension), '.');
+        if ($ext === '') {
+            $ext = 'bin';
+        }
+        $slug = $this->sanitizeKeySegment($orderNumber ?: (string) $orderId);
+        return "orders/{$orderId}/{$slug}.{$ext}";
+    }
+
+    /**
+     * Temp upload'u final key'e taşı (CopyObject + DeleteObject).
+     */
+    public function moveToFinal(string $tempKey, string $finalKey): bool
+    {
+        if ($tempKey === $finalKey) {
+            return true;
+        }
+        if (!$this->copyObject($tempKey, $finalKey)) {
+            return false;
+        }
+        $this->deleteObject($tempKey);
+        return true;
+    }
+
     public function publicUrl(string $key): string
     {
         return $this->publicBase . '/' . ltrim($key, '/');

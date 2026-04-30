@@ -6,6 +6,12 @@
             ->where('customization_params_ust_id', 0);
     }
 
+    // file/files type kategoriler artık wizard'da render edilmiyor
+    // (dosya yüklemesi sipariş seviyesine taşındı, checkout'ta tek ZIP)
+    if (in_array($category->type, ['file', 'files'])) {
+        return;
+    }
+
     // Hidden kategoriler için görüntülenebilir item kontrolü
     $hasVisibleItems = false;
     if ($category->type == 'hidden') {
