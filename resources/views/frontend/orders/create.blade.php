@@ -1262,8 +1262,6 @@
   <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
  
   <script>
-    console.log('%c🧙 WIZARD JS V3.2 LOADED', 'background:#0d6efd;color:#fff;padding:4px 8px;border-radius:4px;font-weight:bold');
-
     // ============ GALLERY THUMB CLICK ============
     document.addEventListener('DOMContentLoaded', function() {
         const mainImg = document.getElementById('gallery-main-image');
@@ -1527,12 +1525,8 @@
                 }
                 this.classList.add('selected');
 
-                console.log('[mirror-select] set value', select.id || select.className, '→', pivotId);
-                // Trigger change events (jQuery cascade child loading dinliyor)
+                // Native change event yeterli — yeni cascade chain dinliyor
                 select.dispatchEvent(new Event('change', { bubbles: true }));
-                if (window.jQuery) {
-                    window.jQuery(select).trigger('change');
-                }
             });
         });
 
@@ -1544,41 +1538,22 @@
 
         function refreshCascadeChain(changedStepEl) {
             const changedCatId = changedStepEl?.getAttribute('data-step-category-id');
-            if (!changedCatId) {
-                console.log('[cascade] no changedCatId — return', changedStepEl);
-                return;
-            }
+            if (!changedCatId) return;
+
             const changedSelect = changedStepEl.querySelector('select.customization-select');
             const checkedRadio = changedStepEl.querySelector('input[type="radio"]:checked');
             const selectedPivotId = (checkedRadio && checkedRadio.value)
                 || (changedSelect && changedSelect.value)
                 || '';
 
-            console.log('[cascade] refreshCascadeChain', {
-                changedCatId,
-                selectedPivotId,
-                checkedRadio: checkedRadio?.value,
-                changedSelectValue: changedSelect?.value
-            });
-
-            // Bu kategoriyi parent olarak alan cascade step'i bul
             const childStep = document.querySelector(
                 '.wizard-step[data-step-cascade="true"][data-step-parent-cat="' + changedCatId + '"]'
             );
-            if (!childStep) {
-                console.log('[cascade] no child step for parent_cat=' + changedCatId);
-                return;
-            }
-            console.log('[cascade] child step:', childStep.getAttribute('data-step-category-id'));
-
-            const allWrappers = childStep.querySelectorAll('.option-card-wrapper');
-            console.log('[cascade] child step total wrappers:', allWrappers.length);
+            if (!childStep) return;
 
             let visibleCount = 0;
-            const sampleParentIds = [];
-            allWrappers.forEach((wrapper, idx) => {
+            childStep.querySelectorAll('.option-card-wrapper').forEach(wrapper => {
                 const parentId = wrapper.getAttribute('data-parent-pivot-id') || '0';
-                if (idx < 5) sampleParentIds.push(parentId);
                 const visible = String(parentId) === String(selectedPivotId);
                 wrapper.style.display = visible ? '' : 'none';
                 if (visible) visibleCount++;
@@ -1590,21 +1565,14 @@
                 }
             });
 
-            console.log('[cascade] visible count:', visibleCount, 'sample parent ids:', sampleParentIds, 'looking for:', selectedPivotId);
-
             const emptyState = childStep.querySelector('.cascade-empty-state');
             const sectionGrid = childStep.querySelector('.option-card-grid');
             if (emptyState && sectionGrid) {
-                if (visibleCount === 0) {
-                    emptyState.style.display = '';
-                    sectionGrid.style.display = 'none';
-                } else {
-                    emptyState.style.display = 'none';
-                    sectionGrid.style.display = '';
-                }
+                emptyState.style.display = visibleCount === 0 ? '' : 'none';
+                sectionGrid.style.display = visibleCount === 0 ? 'none' : '';
             }
 
-            // Recursive
+            // Recursive (Ebat → Kumaş → Renk → Paket)
             refreshCascadeChain(childStep);
         }
 
@@ -1612,13 +1580,9 @@
         document.addEventListener('change', (e) => {
             const tgt = e.target;
             if (!tgt) return;
-            console.log('[cascade] change event:', tgt.tagName, tgt.className, 'value:', tgt.value);
             if (tgt.matches('.customization-radio, input[type="radio"][data-pivot-id], select.customization-select')) {
                 const stepEl = tgt.closest('.wizard-step');
-                console.log('[cascade] match → step:', stepEl?.getAttribute('data-step-category-id'));
                 if (stepEl) refreshCascadeChain(stepEl);
-            } else {
-                console.log('[cascade] no match for selector');
             }
         });
 
