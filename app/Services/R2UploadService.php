@@ -87,6 +87,24 @@ class R2UploadService
         return $this->publicBase . '/' . ltrim($key, '/');
     }
 
+    /**
+     * Tarayıcının zorunlu olarak verilen filename ile indirmesi için presigned GET URL.
+     * R2 ResponseContentDisposition header'ını destekliyor (S3 uyumlu).
+     */
+    public function presignedDownloadUrl(string $key, string $filename, int $ttlSeconds = 3600): string
+    {
+        $safeName = preg_replace('#[\r\n"\\\\]+#', '', $filename);
+        $disposition = 'attachment; filename="' . $safeName . '"; filename*=UTF-8\'\'' . rawurlencode($filename);
+
+        $cmd = $this->client->getCommand('GetObject', [
+            'Bucket' => $this->bucket,
+            'Key' => $key,
+            'ResponseContentDisposition' => $disposition,
+        ]);
+        $request = $this->client->createPresignedRequest($cmd, "+{$ttlSeconds} seconds");
+        return (string) $request->getUri();
+    }
+
     public function extractKeyFromUrl(?string $url): ?string
     {
         if (!$url) {

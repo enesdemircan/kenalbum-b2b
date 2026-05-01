@@ -646,7 +646,7 @@ class OrderController extends Controller
     }
 
     /**
-     * Download cart files with custom filename
+     * Download cart files with cart_id (künye) as filename.
      */
     public function downloadCartFiles($orderId, $cartId)
     {
@@ -654,14 +654,20 @@ class OrderController extends Controller
             $order = Order::findOrFail($orderId);
             $cart = Cart::findOrFail($cartId);
 
-            // S3/R2 zip dosyası var mı kontrol et
             if (empty($cart->s3_zip)) {
                 abort(404, 'No files found for this cart item');
             }
 
-            // Dosya public olduğu için direkt yönlendir (bellek/timeout sorunu olmaz)
-            return redirect()->away($cart->s3_zip);
+            $r2 = app(\App\Services\R2UploadService::class);
+            $key = $r2->extractKeyFromUrl($cart->s3_zip);
+            if (!$key) {
+                return redirect()->away($cart->s3_zip);
+            }
 
+            $ext = strtolower(pathinfo($key, PATHINFO_EXTENSION) ?: 'zip');
+            $filename = ($cart->cart_id ?: ('cart-' . $cart->id)) . '.' . $ext;
+
+            return redirect()->away($r2->presignedDownloadUrl($key, $filename));
         } catch (\Exception $e) {
             \Log::error('Cart file download failed', [
                 'order_id' => $orderId,
@@ -675,16 +681,38 @@ class OrderController extends Controller
 
     /**
      * Order seviyesinde yüklenmiş ZIP'i indir.
-     * Yeni akışta (Faz V3) checkout'ta tek ZIP order'a kaydediliyor: orders.s3_zip
+     * Dosya adı sipariş kalemlerinin cart_id (künye) değerlerinden oluşturulur:
+     * - 1 kalem → kalemin cart_id'si
+     * - N kalem → tüm cart_id'ler "__" ile birleştirilir (250 char ile capped)
+     * - Hiç kalem yoksa → order_number fallback
      */
     public function downloadOrderZip($orderId)
     {
-        $order = Order::findOrFail($orderId);
+        $order = Order::with('cartItems')->findOrFail($orderId);
 
         if (empty($order->s3_zip)) {
             return back()->with('error', 'Bu sipariş için yüklenmiş dosya bulunamadı.');
         }
 
-        return redirect()->away($order->s3_zip);
+        $r2 = app(\App\Services\R2UploadService::class);
+        $key = $r2->extractKeyFromUrl($order->s3_zip);
+        if (!$key) {
+            return redirect()->away($order->s3_zip);
+        }
+
+        $ext = strtolower(pathinfo($key, PATHINFO_EXTENSION) ?: 'zip');
+
+        $cartIds = $order->cartItems->pluck('cart_id')->filter()->values()->all();
+        if (count($cartIds) > 0) {
+            $combined = implode('__', $cartIds);
+            if (strlen($combined) > 250) {
+                $combined = substr($combined, 0, 240) . '__' . count($cartIds) . 'kalem';
+            }
+            $filename = $combined . '.' . $ext;
+        } else {
+            $filename = ($order->order_number ?: ('order-' . $order->id)) . '.' . $ext;
+        }
+
+        return redirect()->away($r2->presignedDownloadUrl($key, $filename));
     }
 }
