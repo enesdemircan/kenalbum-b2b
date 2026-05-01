@@ -6,28 +6,13 @@
     <div class="mb-4 pb-4"></div>
     <section class="shop-checkout container">
       <h2 class="page-title">Siparişiniz Alındı!</h2>
-      <div class="checkout-steps">
-        <div class="checkout-steps__item active">
-          <span class="checkout-steps__item-number">01</span>
-          <span class="checkout-steps__item-title">
-            <span>Sepet</span>
-            <em>Ürünlerinizi Yönetin</em>
-          </span>
-        </div>
-        <div class="checkout-steps__item active">
-          <span class="checkout-steps__item-number">02</span>
-          <span class="checkout-steps__item-title">
-            <span>Ödeme ve Teslimat</span>
-            <em>Siparişinizi Tamamlayın</em>
-          </span>
-        </div>
-        <div class="checkout-steps__item active">
-          <span class="checkout-steps__item-number">03</span>
-          <span class="checkout-steps__item-title">
-            <span>Onay</span>
-            <em>Siparişiniz Alındı</em>
-          </span>
-        </div>
+      <div class="checkout-multi__steps cart-step-bar">
+        <div class="cm-step is-done"><span class="cm-step__num">1</span><span class="cm-step__label">Sepetim</span></div>
+        <div class="cm-step is-done"><span class="cm-step__num">2</span><span class="cm-step__label">Teslimat</span></div>
+        <div class="cm-step is-done"><span class="cm-step__num">3</span><span class="cm-step__label">Fatura</span></div>
+        <div class="cm-step is-done"><span class="cm-step__num">4</span><span class="cm-step__label">Kargo</span></div>
+        <div class="cm-step is-done"><span class="cm-step__num">5</span><span class="cm-step__label">Dosya</span></div>
+        <div class="cm-step is-active"><span class="cm-step__num">6</span><span class="cm-step__label">Onay</span></div>
       </div>
       <div class="order-complete">
         <div class="order-complete__message">

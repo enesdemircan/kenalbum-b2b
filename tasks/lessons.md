@@ -90,3 +90,19 @@ $dupes = array_filter($counts, fn($c) => $c > 1);
 // $dupes 0 olmalı
 ```
 Regex'te `\bid=` yerine `(?:^|\s)id=` kullan — `data-XYZ-id="..."` attribute'larıyla yanılma.
+
+---
+
+## 2026-05-01 — Görsel akış değişikliklerinde lint yetmez, sayfayı sayfayı gez
+
+**Pattern:** Multi-step / wizard / breadcrumb / nav gibi **paylaşılan UI parçalarını** değiştirdiğinde, sadece syntax/lint/blade-compile/route-list ile "geriye dönük kontrol yaptım" deme. Bunlar kodun *çalıştığını* doğrular, akışın *anlamlı* olduğunu doğrulamaz.
+
+**Why:** Bu projede A2 multi-step checkout (5 step) tamamlandı, ben "tüm regresyon testleri geçti" dedim. Ama `/cart` sayfasında hâlâ eski 3-step bar görünüyordu, `/cart/checkout` ise yeni 5-step. Aralarındaki kopukluk derleyici testleriyle yakalanmaz çünkü her iki dosya kendi başına çalışıyor. Kullanıcı canlıda `/cart`'a girince fark etti ve "bunu nasıl fark etmezsin?" dedi.
+
+**How to apply:** Bir UI akışının bir adımını değiştirdiğinde, kontrol listesi şunu içermeli:
+1. **Akıştaki her sayfayı user-flow sırasıyla gez** (örn. /cart → /cart/checkout → /orders/{id})
+2. Step bar / breadcrumb / nav gibi **paylaşılan UI parçaları her sayfada görsel olarak tutarlı mı?**
+3. Yeni component'in eski varyantına atıfta bulunan dosyaları `grep` ile bul: `grep -rn "checkout-steps\|step__item\|wizard-step"` — her birinin yeni akışla uyumlu olduğunu doğrula.
+4. Yeni alanları kullanmayan eski view'lar (orders/show vs.) yeni alanlar null olduğunda hâlâ render oluyor mu?
+
+**Sonuç:** "Tek dosya değiştirdim" yanılsamasına kapılma. Aynı bileşenin (örn. `checkout-steps`, `cm-step`) referans alındığı tüm yerleri bul ve her birinin yeni akışla uyumlu olduğunu doğrula. Görsel tutarlılık ≠ kod doğruluğu.

@@ -30,28 +30,13 @@
     @endif
     <section class="shop-checkout container">
       <h2 @if(count($cartItems) == 0) style="display: none;" @endif class="page-title">Sepetim</h2>
-      <div class="checkout-steps" @if(count($cartItems) == 0) style="display: none;" @endif>
-        <a href="{{ route('cart.index') }}" class="checkout-steps__item active">
-          <span class="checkout-steps__item-number">01</span>
-          <span class="checkout-steps__item-title">
-            <span>SEPETİM</span>
-            <em>Ürünlerinizi Yönetin</em>
-          </span>
-        </a>
-        <a href="{{ route('cart.checkout') }}" class="checkout-steps__item">
-          <span class="checkout-steps__item-number">02</span>
-          <span class="checkout-steps__item-title">
-            <span>TESLİMAT VE ÖDEME</span>
-            <em>Siparişinizi Tamamlayın</em>
-          </span>
-        </a>
-        <a href="#" class="checkout-steps__item">
-          <span class="checkout-steps__item-number">03</span>
-          <span class="checkout-steps__item-title">
-            <span>ONAY</span>
-            <em>Siparişinizi Gözden Geçirin ve Gönderin</em>
-          </span>
-        </a>
+      <div class="checkout-multi__steps cart-step-bar" @if(count($cartItems) == 0) style="display: none;" @endif>
+        <div class="cm-step is-active"><span class="cm-step__num">1</span><span class="cm-step__label">Sepetim</span></div>
+        <div class="cm-step"><span class="cm-step__num">2</span><span class="cm-step__label">Teslimat</span></div>
+        <div class="cm-step"><span class="cm-step__num">3</span><span class="cm-step__label">Fatura</span></div>
+        <div class="cm-step"><span class="cm-step__num">4</span><span class="cm-step__label">Kargo</span></div>
+        <div class="cm-step"><span class="cm-step__num">5</span><span class="cm-step__label">Dosya</span></div>
+        <div class="cm-step"><span class="cm-step__num">6</span><span class="cm-step__label">Onay</span></div>
       </div>
       <div class="shopping-cart">
         @if(count($cartItems) > 0)

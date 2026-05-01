@@ -2,230 +2,668 @@
 
 @section('content')
 
+@php
+  $totalProducts = 0; // ürünler toplamı (indirimli)
+  $totalUrgent = 0;   // acil üretim toplamı
+  foreach ($cartItems as $item) {
+      $totalProducts += $item->price * $item->quantity;
+      if ($item->notes) {
+          $n = json_decode($item->notes, true);
+          if (isset($n['urgent_price'])) { $totalUrgent += $n['urgent_price']; }
+      }
+  }
+  $userBalance = optional(optional(auth()->user())->customer)->balance ?? 0;
+@endphp
+
 <main>
-    <div class="mb-4 pb-4"></div>
-    <section class="shop-checkout container">
-      <h2 class="page-title">TESLİMAT VE ÖDEME</h2>
-      <div class="checkout-steps">
-        <a href="{{ route('cart.index') }}" class="checkout-steps__item active">
-          <span class="checkout-steps__item-number">01</span>
-          <span class="checkout-steps__item-title">
-            <span>SEPETİM</span>
-            <em>Ürünlerinizi Yönetin</em>
-          </span>
-        </a>
-        <a href="{{ route('cart.checkout') }}" class="checkout-steps__item active">
-          <span class="checkout-steps__item-number">02</span>
-          <span class="checkout-steps__item-title">
-            <span>TESLİMAT VE ÖDEME</span>
-            <em>Siparişinizi Tamamlayın</em>
-          </span>
-        </a>
-        <a href="#" class="checkout-steps__item">
-          <span class="checkout-steps__item-number">03</span>
-          <span class="checkout-steps__item-title">
-            <span>ONAY</span>
-            <em>Siparişinizi Gözden Geçirin ve Gönderin</em>
-          </span>
-        </a>
-      </div>
-      
-      <form name="checkout-form" action="{{ route('cart.complete') }}" method="POST" id="checkoutForm">
-        @csrf
-        <div class="checkout-form">
-          <div class="billing-info__wrapper">
-            <h4>Teslimat Bilgileri</h4>
-            
-            <!-- Adres Seçimi -->
-            <div class="row mb-3">
-              <div class="col-md-12">
-                <label for="address_select" class="form-label">Adres Seçin</label>
-                <select class="form-select" id="address_select" onchange="fillAddressForm()">
-                  <option value="">Yeni Adres Seçin</option>
-                  @foreach($addresses as $address)
-                    <option value="{{ $address->id }}" 
-                            data-ad="{{ $address->ad }}" 
-                            data-soyad="{{ $address->soyad }}" 
-                            data-telefon="{{ $address->telefon }}" 
-                            data-city="{{ $address->city }}" 
-                            data-district="{{ $address->district }}" 
-                            data-adres="{{ $address->adres }}">
-                      {{ $address->title }} - {{ $address->ad }} {{ $address->soyad }} ({{ $address->city ?? 'İl belirtilmemiş' }}/{{ $address->district ?? 'İlçe belirtilmemiş' }})
-                    </option>
-                  @endforeach
-                </select>
-                <small class="text-muted">Kayıtlı adresiniz varsa seçin, yoksa yeni adres bilgilerini aşağıya girin.</small>
-              </div>
+  <div class="mb-4 pb-4"></div>
+  <section class="checkout-multi container">
+    <h2 class="checkout-multi__title">Siparişi Tamamla</h2>
+
+    <div class="checkout-multi__steps" id="checkoutStepsBar">
+      <a href="{{ route('cart.index') }}" class="cm-step is-done" style="text-decoration:none;"><span class="cm-step__num">1</span><span class="cm-step__label">Sepetim</span></a>
+      <div class="cm-step is-active" data-step="1"><span class="cm-step__num">2</span><span class="cm-step__label">Teslimat</span></div>
+      <div class="cm-step" data-step="2"><span class="cm-step__num">3</span><span class="cm-step__label">Fatura</span></div>
+      <div class="cm-step" data-step="3"><span class="cm-step__num">4</span><span class="cm-step__label">Kargo</span></div>
+      <div class="cm-step" data-step="4"><span class="cm-step__num">5</span><span class="cm-step__label">Dosya</span></div>
+      <div class="cm-step" data-step="5"><span class="cm-step__num">6</span><span class="cm-step__label">Onay</span></div>
+    </div>
+
+    <form action="{{ route('cart.complete') }}" method="POST" id="checkoutForm" class="row g-4">
+      @csrf
+
+      <div class="col-lg-8">
+        {{-- ============ STEP 1: TESLİMAT ADRESİ ============ --}}
+        <section class="cm-pane is-active" data-pane="1">
+          <div class="cm-card">
+            <div class="cm-card__head">
+              <h3 class="cm-card__title">Teslimat Adresi</h3>
+              <p class="cm-card__sub">Siparişin nereye gideceğini seçin. Müşterinize göndermek için "Müşteri Adresleri" sekmesini kullanın.</p>
             </div>
-            
-            <div class="row">
-              <div class="col-md-6">
-                <div class="form-floating my-3">
-                  <input type="text" class="form-control" id="customer_name" name="customer_name" placeholder="Ad" required minlength="2" maxlength="255" pattern="[A-Za-zğüşıöçĞÜŞİÖÇ\s]+" title="Sadece harf ve boşluk karakterleri kullanabilirsiniz">
-                  <label for="customer_name">Ad *</label>
-                  <div class="invalid-feedback" id="customer_name_error"></div>
-                </div>
-              </div>
-              <div class="col-md-6">
-                <div class="form-floating my-3">
-                  <input type="text" class="form-control" id="customer_surname" name="customer_surname" placeholder="Soyad" required minlength="2" maxlength="255" pattern="[A-Za-zğüşıöçĞÜŞİÖÇ\s]+" title="Sadece harf ve boşluk karakterleri kullanabilirsiniz">
-                  <label for="customer_surname">Soyad *</label>
-                  <div class="invalid-feedback" id="customer_surname_error"></div>
-                </div>
-              </div>
-              <div class="col-md-12">
-                <div class="form-floating my-3">
-                  <input type="tel" class="form-control" id="customer_phone" name="customer_phone" placeholder="Telefon" required pattern="[0-9\s\-\+\(\)]+" minlength="10" maxlength="20" title="Geçerli bir telefon numarası giriniz">
-                  <label for="customer_phone">Telefon *</label>
-                  <div class="invalid-feedback" id="customer_phone_error"></div>
-                </div>
-              </div>
-              <div class="col-md-6">
-                <div class="form-floating my-3">
-                  <select class="form-select" id="city_select" name="city" required onchange="updateDistricts()">
-                    <option value="">İl Seçiniz *</option>
-                  </select>
-                  <label for="city_select">İl *</label>
-                  <div class="invalid-feedback" id="city_select_error"></div>
-                </div>
-              </div>
-              <div class="col-md-6">
-                <div class="form-floating my-3">
-                  <select class="form-select" id="district_select" name="district" required>
-                    <option value="">İlçe Seçiniz *</option>
-                  </select>
-                  <label for="district_select">İlçe *</label>
-                  <div class="invalid-feedback" id="district_select_error"></div>
-                </div>
-              </div>
-              <div class="col-md-12">
-                <div class="form-floating my-3">
-                  <textarea class="form-control" id="shipping_address" name="shipping_address" placeholder="Teslimat Adresi" style="height: 100px" required minlength="10" maxlength="1000"></textarea>
-                  <label for="shipping_address">Teslimat Adresi *</label>
-                  <div class="invalid-feedback" id="shipping_address_error"></div>
-                </div>
-              </div>
-            </div>
-            
-            <!-- Adresi Kaydet Butonu -->
-            <div class="row mt-3">
-              <div class="col-md-12">
-                <button type="button" class="btn btn-outline-primary" id="saveAddressBtn" onclick="saveAddress()">
-                  <i class="fas fa-save"></i> Adresi Kaydet
+
+            <ul class="nav nav-tabs cm-tabs" role="tablist">
+              <li class="nav-item">
+                <button type="button" class="nav-link active" data-bs-toggle="tab" data-bs-target="#shipCompany" role="tab">
+                  <i class="fas fa-building"></i> Şirket Adresleri (Bana Gelsin)
+                  <span class="cm-tabs__count">{{ $companyAddresses->count() }}</span>
                 </button>
-              </div>
-            </div>
-          </div>
-          
-          <div class="payment-info__wrapper mt-4">
-            <h4>Sipariş Dosyaları</h4>
-            <div class="card mb-3">
-              <div class="card-body">
-                <p class="mb-2">
-                  <i class="fas fa-info-circle text-primary"></i>
-                  <strong>Tüm sepetinizdeki ürünlere ait görselleri</strong> tek bir ZIP dosyasında yükleyin. Dosya boyutu maksimum <strong>500 MB</strong> olabilir.
-                </p>
-                <input type="file" id="orderUploadFile" class="form-control mb-3" accept=".zip,.rar,.7z">
-                <div id="orderUploadStatus" class="d-none">
-                  <div class="d-flex align-items-center mb-2">
-                    <strong id="orderUploadFilename" class="me-2"></strong>
-                    <span id="orderUploadSize" class="text-muted small"></span>
-                    <span id="orderUploadDoneBadge" class="badge bg-success ms-auto d-none">✓ Yüklendi</span>
-                  </div>
-                  <div class="progress" style="height:8px;">
-                    <div id="orderUploadProgressBar" class="progress-bar progress-bar-striped progress-bar-animated" style="width:0%"></div>
-                  </div>
-                  <small id="orderUploadProgressText" class="text-muted d-block mt-1">0%</small>
-                </div>
-                <small class="text-muted d-block mt-2">
-                  <i class="fas fa-folder-open"></i> İpucu: ZIP içine sepetteki her ürün için ayrı klasör koymanız işimizi kolaylaştırır.
-                </small>
-              </div>
-            </div>
+              </li>
+              <li class="nav-item">
+                <button type="button" class="nav-link" data-bs-toggle="tab" data-bs-target="#shipCustomer" role="tab">
+                  <i class="fas fa-users"></i> Müşteri Adresleri (Müşterime Gitsin)
+                  <span class="cm-tabs__count">{{ $customerAddresses->count() }}</span>
+                </button>
+              </li>
+            </ul>
 
-            <h4>Ödeme Bilgileri</h4>
-            <div class="row">
-              <div class="col-md-12">
-                <div class="payment-method">
-                  <div class="form-check">
-                    <input class="form-check-input" type="radio" name="payment_method" id="payment_bakiye" value="bakiye" checked>
-                    <label class="form-check-label" for="payment_bakiye">
-                      <strong>Bakiye Ödemesi</strong>
-                      <p class="text-muted mb-0">Siparişiniz onaylandıktan sonra firma bakiyenizden otomatik olarak ödeme yapılacaktır.</p>
-                    </label>
-                  </div>
-                </div>
-              </div>
-            </div>
-            <button type="submit" id="completeOrderSubmitBtn" class="btn btn-primary" disabled style="
-            width: 100%;
-            margin-top: 20px;
-        ">
-                      <i class="fas fa-check"></i> SİPARİŞİ TAMAMLA
+            <div class="tab-content cm-tabcontent">
+              <div class="tab-pane fade show active" id="shipCompany" role="tabpanel">
+                @if($companyAddresses->isEmpty())
+                  <div class="cm-empty">
+                    <i class="fas fa-building"></i>
+                    <p>Henüz şirket adresi yok.</p>
+                    <button type="button" class="btn btn-orange-outline" data-cm-add-address="company">
+                      <i class="fas fa-plus"></i> Şirket Adresi Ekle
                     </button>
-            <small id="completeOrderHint" class="text-danger d-block text-center mt-2">
-              Önce dosyalarınızı yüklemelisiniz.
-            </small>
+                  </div>
+                @else
+                  <div class="cm-address-grid">
+                    @foreach($companyAddresses as $i => $addr)
+                      <label class="cm-address-card">
+                        <input type="radio" name="ship_addr" value="{{ $addr->id }}" {{ $i === 0 ? 'checked' : '' }}
+                          data-ad="{{ $addr->ad }}" data-soyad="{{ $addr->soyad }}"
+                          data-telefon="{{ $addr->telefon }}" data-city="{{ $addr->city }}"
+                          data-district="{{ $addr->district }}" data-adres="{{ $addr->adres }}"
+                          data-title="{{ $addr->title }}">
+                        <div class="cm-address-card__inner">
+                          <div class="cm-address-card__head">
+                            <strong>{{ $addr->title }}</strong>
+                            <span class="cm-badge cm-badge--company"><i class="fas fa-building"></i> Şirket</span>
+                          </div>
+                          <p class="cm-address-card__name">{{ $addr->ad }} {{ $addr->soyad }}</p>
+                          <p class="cm-address-card__line">{{ $addr->city }} / {{ $addr->district }}</p>
+                          <p class="cm-address-card__line">{{ $addr->adres }}</p>
+                          <p class="cm-address-card__phone"><i class="fas fa-phone"></i> {{ $addr->telefon }}</p>
+                        </div>
+                      </label>
+                    @endforeach
+                  </div>
+                  <button type="button" class="btn btn-orange-outline mt-3" data-cm-add-address="company">
+                    <i class="fas fa-plus"></i> Yeni Şirket Adresi Ekle
+                  </button>
+                @endif
+              </div>
 
+              <div class="tab-pane fade" id="shipCustomer" role="tabpanel">
+                @if($customerAddresses->isEmpty())
+                  <div class="cm-empty">
+                    <i class="fas fa-users"></i>
+                    <p>Henüz müşteri adresi yok. Müşterinize göndermek için bir müşteri adresi ekleyin.</p>
+                    <button type="button" class="btn btn-orange-outline" data-cm-add-address="customer">
+                      <i class="fas fa-plus"></i> Müşteri Adresi Ekle
+                    </button>
+                  </div>
+                @else
+                  <div class="cm-address-grid">
+                    @foreach($customerAddresses as $addr)
+                      <label class="cm-address-card">
+                        <input type="radio" name="ship_addr" value="{{ $addr->id }}"
+                          data-ad="{{ $addr->ad }}" data-soyad="{{ $addr->soyad }}"
+                          data-telefon="{{ $addr->telefon }}" data-city="{{ $addr->city }}"
+                          data-district="{{ $addr->district }}" data-adres="{{ $addr->adres }}"
+                          data-title="{{ $addr->title }}">
+                        <div class="cm-address-card__inner">
+                          <div class="cm-address-card__head">
+                            <strong>{{ $addr->title }}</strong>
+                            <span class="cm-badge cm-badge--customer"><i class="fas fa-users"></i> Müşteri</span>
+                          </div>
+                          <p class="cm-address-card__name">{{ $addr->ad }} {{ $addr->soyad }}</p>
+                          <p class="cm-address-card__line">{{ $addr->city }} / {{ $addr->district }}</p>
+                          <p class="cm-address-card__line">{{ $addr->adres }}</p>
+                          <p class="cm-address-card__phone"><i class="fas fa-phone"></i> {{ $addr->telefon }}</p>
+                        </div>
+                      </label>
+                    @endforeach
+                  </div>
+                  <button type="button" class="btn btn-orange-outline mt-3" data-cm-add-address="customer">
+                    <i class="fas fa-plus"></i> Yeni Müşteri Adresi Ekle
+                  </button>
+                @endif
+              </div>
+            </div>
 
+            {{-- Hidden inputs — radio'dan beslenir, complete() validate eder --}}
+            <input type="hidden" name="customer_name" id="customer_name">
+            <input type="hidden" name="customer_surname" id="customer_surname">
+            <input type="hidden" name="customer_phone" id="customer_phone">
+            <input type="hidden" name="city" id="city">
+            <input type="hidden" name="district" id="district">
+            <input type="hidden" name="shipping_address" id="shipping_address">
           </div>
-          
 
-          
-      
-        </div>
-      </form>
-    </section>
-    <br>
+          <div class="cm-actions">
+            <a href="{{ route('cart.index') }}" class="cm-btn cm-btn--ghost"><i class="fas fa-arrow-left"></i> Sepete Dön</a>
+            <button type="button" class="cm-btn cm-btn--primary" data-cm-next>İleri <i class="fas fa-arrow-right"></i></button>
+          </div>
+        </section>
 
-<!-- Adres Başlığı Modal -->
-<div class="modal fade" id="addressTitleModal" tabindex="-1" aria-labelledby="addressTitleModalLabel" aria-hidden="true">
-  <div class="modal-dialog">
-    <div class="modal-content">
-      <div class="modal-header">
-        <h5 class="modal-title" id="addressTitleModalLabel">Adres Başlığı</h5>
-        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        {{-- ============ STEP 2: FATURA ADRESİ ============ --}}
+        <section class="cm-pane" data-pane="2">
+          <div class="cm-card">
+            <div class="cm-card__head">
+              <h3 class="cm-card__title">Fatura Adresi</h3>
+              <p class="cm-card__sub">Fatura adresi teslimat adresinizden farklıysa düzenleyebilirsiniz.</p>
+            </div>
+
+            <input type="hidden" name="billing_same_as_shipping" value="0">
+            <label class="cm-checkbox cm-checkbox--lg">
+              <input type="checkbox" name="billing_same_as_shipping" value="1" id="billingSameToggle" checked>
+              <span class="cm-checkbox__box"><i class="fas fa-check"></i></span>
+              <span class="cm-checkbox__label">
+                <strong>Fatura adresim teslimat adresimle aynı</strong>
+                <em>Teslimat adresine fatura kesilecektir.</em>
+              </span>
+            </label>
+
+            <div class="cm-billing-fields mt-4" id="billingFields" hidden>
+              <div class="row g-3">
+                <div class="col-md-6">
+                  <label class="form-label">Ad *</label>
+                  <input type="text" class="form-control" name="billing_name" id="billing_name">
+                </div>
+                <div class="col-md-6">
+                  <label class="form-label">Soyad *</label>
+                  <input type="text" class="form-control" name="billing_surname" id="billing_surname">
+                </div>
+                <div class="col-md-6">
+                  <label class="form-label">Telefon *</label>
+                  <input type="tel" class="form-control" name="billing_phone" id="billing_phone">
+                </div>
+                <div class="col-md-6">
+                  <label class="form-label">Firma Adı (opsiyonel)</label>
+                  <input type="text" class="form-control" name="billing_company" id="billing_company">
+                </div>
+                <div class="col-md-6">
+                  <label class="form-label">Vergi No / TC (opsiyonel)</label>
+                  <input type="text" class="form-control" name="billing_tax_no" id="billing_tax_no">
+                </div>
+                <div class="col-md-6">
+                  <label class="form-label">İl *</label>
+                  <select class="form-select" name="billing_city" id="billing_city">
+                    <option value="">İl Seçin</option>
+                  </select>
+                </div>
+                <div class="col-md-6">
+                  <label class="form-label">İlçe *</label>
+                  <select class="form-select" name="billing_district" id="billing_district">
+                    <option value="">İlçe Seçin</option>
+                  </select>
+                </div>
+                <div class="col-md-12">
+                  <label class="form-label">Açık Adres *</label>
+                  <textarea class="form-control" name="billing_address" id="billing_address" rows="3"></textarea>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="cm-actions">
+            <button type="button" class="cm-btn cm-btn--ghost" data-cm-prev><i class="fas fa-arrow-left"></i> Geri</button>
+            <button type="button" class="cm-btn cm-btn--primary" data-cm-next>İleri <i class="fas fa-arrow-right"></i></button>
+          </div>
+        </section>
+
+        {{-- ============ STEP 3: KARGO ============ --}}
+        <section class="cm-pane" data-pane="3">
+          <div class="cm-card">
+            <div class="cm-card__head">
+              <h3 class="cm-card__title">Kargo Yöntemi</h3>
+              <p class="cm-card__sub">Siparişinizin nasıl ulaşmasını istediğinizi seçin.</p>
+            </div>
+
+            @if($shippingMethods->isEmpty())
+              <div class="cm-empty">
+                <i class="fas fa-truck"></i>
+                <p>Şu anda aktif kargo yöntemi tanımlı değil. Lütfen yöneticiyle iletişime geçin.</p>
+              </div>
+            @else
+              <div class="cm-shipping-list">
+                @foreach($shippingMethods as $i => $method)
+                  <label class="cm-shipping-card">
+                    <input type="radio" name="shipping_method_id" value="{{ $method->id }}"
+                      data-price="{{ (float) $method->price }}"
+                      data-title="{{ $method->title }}"
+                      {{ $i === 0 ? 'checked' : '' }}>
+                    <div class="cm-shipping-card__inner">
+                      <div class="cm-shipping-card__icon"><i class="fas fa-truck"></i></div>
+                      <div class="cm-shipping-card__body">
+                        <strong>{{ $method->title }}</strong>
+                        @if($method->description)
+                          <span>{{ $method->description }}</span>
+                        @endif
+                      </div>
+                      <div class="cm-shipping-card__price">
+                        @if($method->price > 0)
+                          ₺{{ number_format($method->price, 2, ',', '.') }}
+                        @else
+                          <span class="cm-shipping-card__free">ÜCRETSİZ</span>
+                        @endif
+                      </div>
+                    </div>
+                  </label>
+                @endforeach
+              </div>
+            @endif
+          </div>
+
+          <div class="cm-actions">
+            <button type="button" class="cm-btn cm-btn--ghost" data-cm-prev><i class="fas fa-arrow-left"></i> Geri</button>
+            <button type="button" class="cm-btn cm-btn--primary" data-cm-next>İleri <i class="fas fa-arrow-right"></i></button>
+          </div>
+        </section>
+
+        {{-- ============ STEP 4: SİPARİŞ DOSYASI ============ --}}
+        <section class="cm-pane" data-pane="4">
+          <div class="cm-card">
+            <div class="cm-card__head">
+              <h3 class="cm-card__title">Sipariş Dosyası</h3>
+              <p class="cm-card__sub">Tüm sepetinizdeki ürünlere ait görselleri tek bir ZIP dosyasında yükleyin. Maksimum 500 MB.</p>
+            </div>
+
+            <input type="file" id="orderUploadFile" class="form-control" accept=".zip,.rar,.7z">
+            <div id="orderUploadStatus" class="d-none mt-3">
+              <div class="d-flex align-items-center mb-2">
+                <strong id="orderUploadFilename" class="me-2"></strong>
+                <span id="orderUploadSize" class="text-muted small"></span>
+                <span id="orderUploadDoneBadge" class="badge bg-success ms-auto d-none">✓ Yüklendi</span>
+              </div>
+              <div class="progress" style="height:8px;">
+                <div id="orderUploadProgressBar" class="progress-bar progress-bar-striped progress-bar-animated" style="width:0%"></div>
+              </div>
+              <small id="orderUploadProgressText" class="text-muted d-block mt-1">0%</small>
+            </div>
+            <small class="text-muted d-block mt-2">
+              <i class="fas fa-folder-open"></i> İpucu: ZIP içine sepetteki her ürün için ayrı klasör koymanız işimizi kolaylaştırır.
+            </small>
+          </div>
+
+          <div class="cm-actions">
+            <button type="button" class="cm-btn cm-btn--ghost" data-cm-prev><i class="fas fa-arrow-left"></i> Geri</button>
+            <button type="button" class="cm-btn cm-btn--primary" data-cm-next id="cmStep4Next" disabled>
+              <span id="cmStep4Hint">Önce dosyanızı yükleyin</span>
+            </button>
+          </div>
+        </section>
+
+        {{-- ============ STEP 5: ONAY ============ --}}
+        <section class="cm-pane" data-pane="5">
+          <div class="cm-card">
+            <div class="cm-card__head">
+              <h3 class="cm-card__title">Sipariş Onayı</h3>
+              <p class="cm-card__sub">Siparişinizi göndermeden önce bilgileri kontrol edin.</p>
+            </div>
+
+            <div class="cm-review-grid">
+              <div class="cm-review">
+                <div class="cm-review__head">
+                  <strong>Teslimat Adresi</strong>
+                  <button type="button" class="cm-review__edit" data-cm-go="1">Düzenle</button>
+                </div>
+                <div class="cm-review__body" id="reviewShipping">—</div>
+              </div>
+
+              <div class="cm-review">
+                <div class="cm-review__head">
+                  <strong>Fatura Adresi</strong>
+                  <button type="button" class="cm-review__edit" data-cm-go="2">Düzenle</button>
+                </div>
+                <div class="cm-review__body" id="reviewBilling">—</div>
+              </div>
+
+              <div class="cm-review">
+                <div class="cm-review__head">
+                  <strong>Kargo Yöntemi</strong>
+                  <button type="button" class="cm-review__edit" data-cm-go="3">Düzenle</button>
+                </div>
+                <div class="cm-review__body" id="reviewShippingMethod">—</div>
+              </div>
+
+              <div class="cm-review">
+                <div class="cm-review__head">
+                  <strong>Sipariş Dosyası</strong>
+                  <button type="button" class="cm-review__edit" data-cm-go="4">Düzenle</button>
+                </div>
+                <div class="cm-review__body" id="reviewFile">—</div>
+              </div>
+            </div>
+
+            <div class="cm-payment mt-4">
+              <strong>Ödeme Yöntemi</strong>
+              <label class="cm-radio mt-2">
+                <input type="radio" name="payment_method" value="bakiye" checked>
+                <span>
+                  <strong>Firma Bakiyesi</strong>
+                  <em>Mevcut bakiye: <b>₺{{ number_format($userBalance, 2, ',', '.') }}</b></em>
+                </span>
+              </label>
+            </div>
+          </div>
+
+          <div class="cm-actions">
+            <button type="button" class="cm-btn cm-btn--ghost" data-cm-prev><i class="fas fa-arrow-left"></i> Geri</button>
+            <button type="submit" class="cm-btn cm-btn--success" id="finalSubmitBtn">
+              <i class="fas fa-check"></i> SİPARİŞİ ONAYLA
+            </button>
+          </div>
+        </section>
       </div>
-      <div class="modal-body">
-        <div class="mb-3">
-          <label for="address_title" class="form-label">Adres Başlığı</label>
-          <input type="text" class="form-control" id="address_title" placeholder="Ev, İş, Ofis vb." maxlength="255" required>
-          <div class="invalid-feedback" id="address_title_error"></div>
+
+      {{-- ============ STICKY SUMMARY ============ --}}
+      <aside class="col-lg-4">
+        <div class="cm-summary">
+          <h4 class="cm-summary__title">Sipariş Özeti</h4>
+
+          <div class="cm-summary__items">
+            @foreach($cartItems as $item)
+              <div class="cm-summary__item">
+                <span class="cm-summary__name">{{ $item->product->title ?? '—' }} <em>×{{ $item->quantity }}</em></span>
+                <span class="cm-summary__price">₺{{ number_format($item->price * $item->quantity, 2, ',', '.') }}</span>
+              </div>
+            @endforeach
+          </div>
+
+          <div class="cm-summary__divider"></div>
+
+          <div class="cm-summary__row">
+            <span>Ürünler</span>
+            <span>₺{{ number_format($totalProducts, 2, ',', '.') }}</span>
+          </div>
+          @if($totalUrgent > 0)
+            <div class="cm-summary__row">
+              <span>Acil Üretim</span>
+              <span>₺{{ number_format($totalUrgent, 2, ',', '.') }}</span>
+            </div>
+          @endif
+          @if($totalDiscount > 0)
+            <div class="cm-summary__row cm-summary__row--success">
+              <span>İndirim</span>
+              <span>-₺{{ number_format($totalDiscount, 2, ',', '.') }}</span>
+            </div>
+          @endif
+          <div class="cm-summary__row" id="summaryShipping">
+            <span>Kargo</span>
+            <span id="summaryShippingPrice">—</span>
+          </div>
+
+          <div class="cm-summary__divider"></div>
+
+          <div class="cm-summary__total">
+            <span>Genel Toplam</span>
+            <span id="summaryTotal">₺{{ number_format($total, 2, ',', '.') }}</span>
+          </div>
+
+          <div class="cm-summary__balance">
+            <i class="fas fa-wallet"></i>
+            <div>
+              <strong>Firma Bakiyesi</strong>
+              <em>₺{{ number_format($userBalance, 2, ',', '.') }}</em>
+            </div>
+          </div>
         </div>
-      </div>
-      <div class="modal-footer">
-        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">İptal</button>
-        <button type="button" class="btn btn-primary" onclick="confirmSaveAddress()">Kaydet</button>
+      </aside>
+    </form>
+  </section>
+  <br>
+
+  {{-- Yeni Adres Ekleme Modal --}}
+  <div class="modal fade" id="cmAddressModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" id="cmAddressModalTitle">Yeni Adres Ekle</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body">
+          <input type="hidden" id="cmModalType" value="company">
+          <div class="row g-3">
+            <div class="col-12">
+              <label class="form-label">Adres Başlığı *</label>
+              <input type="text" class="form-control" id="cmModalTitle" placeholder="Ev / Ofis / Depo / Müşteri X" maxlength="255">
+            </div>
+            <div class="col-md-6">
+              <label class="form-label">Ad *</label>
+              <input type="text" class="form-control" id="cmModalAd">
+            </div>
+            <div class="col-md-6">
+              <label class="form-label">Soyad *</label>
+              <input type="text" class="form-control" id="cmModalSoyad">
+            </div>
+            <div class="col-md-6">
+              <label class="form-label">Telefon *</label>
+              <input type="tel" class="form-control" id="cmModalTelefon">
+            </div>
+            <div class="col-md-6">
+              <label class="form-label">İl *</label>
+              <select class="form-select" id="cmModalCity"><option value="">İl Seçin</option></select>
+            </div>
+            <div class="col-md-6">
+              <label class="form-label">İlçe *</label>
+              <select class="form-select" id="cmModalDistrict"><option value="">İlçe Seçin</option></select>
+            </div>
+            <div class="col-12">
+              <label class="form-label">Açık Adres *</label>
+              <textarea class="form-control" id="cmModalAdres" rows="3"></textarea>
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">İptal</button>
+          <button type="button" class="btn btn-orange-solid" id="cmModalSaveBtn"><i class="fas fa-save"></i> Adresi Kaydet</button>
+        </div>
       </div>
     </div>
   </div>
-</div>
 
+</main>
 
-
-  
-  </main>
-
-  @section('scripts')
-  <!-- SweetAlert2 JS -->
-  <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
-  <!-- Türkiye Şehirleri -->
-  <script src="{{ asset('js/turkey-cities.js') }}"></script>
+@section('scripts')
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+<script src="{{ asset('js/turkey-cities.js') }}"></script>
 <script>
+// ============ STEP NAVIGATION ============
+const cmPanes = document.querySelectorAll('.cm-pane');
+const cmSteps = document.querySelectorAll('.cm-step');
+let cmCurrentStep = 1;
 
-// ============ ORDER-LEVEL R2 DIRECT UPLOAD ============
-// Tüm sepet için tek ZIP — Browser → R2 (Cloudflare bypass)
-const ORDER_R2 = {
-    PART_SIZE: 10 * 1024 * 1024,
-    PARALLEL_PARTS: 3,
-    MAX_RETRIES: 5,
-    MAX_FILE_BYTES: 524_288_000,
-};
+function cmGoTo(step) {
+    if (step < 1 || step > 5) return;
+    cmPanes.forEach(p => p.classList.toggle('is-active', parseInt(p.dataset.pane) === step));
+    cmSteps.forEach(s => {
+        const n = parseInt(s.dataset.step);
+        s.classList.toggle('is-active', n === step);
+        s.classList.toggle('is-done', n < step);
+    });
+    cmCurrentStep = step;
+    if (step === 5) cmRenderReview();
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+}
 
+function cmValidateCurrent() {
+    if (cmCurrentStep === 1) {
+        const sel = document.querySelector('input[name="ship_addr"]:checked');
+        if (!sel) {
+            Swal.fire({ icon: 'warning', title: 'Adres seçin', text: 'Lütfen bir teslimat adresi seçin veya yeni adres ekleyin.' });
+            return false;
+        }
+        // hidden inputs doldur
+        document.getElementById('customer_name').value = sel.dataset.ad || '';
+        document.getElementById('customer_surname').value = sel.dataset.soyad || '';
+        document.getElementById('customer_phone').value = sel.dataset.telefon || '';
+        document.getElementById('city').value = sel.dataset.city || '';
+        document.getElementById('district').value = sel.dataset.district || '';
+        document.getElementById('shipping_address').value = sel.dataset.adres || '';
+        return true;
+    }
+    if (cmCurrentStep === 2) {
+        const same = document.getElementById('billingSameToggle').checked;
+        if (!same) {
+            const fields = ['billing_name','billing_surname','billing_phone','billing_city','billing_district','billing_address'];
+            for (const f of fields) {
+                const v = document.getElementById(f).value.trim();
+                if (!v) {
+                    Swal.fire({ icon: 'warning', title: 'Eksik alan', text: 'Lütfen tüm fatura alanlarını doldurun.' });
+                    return false;
+                }
+            }
+        }
+        return true;
+    }
+    if (cmCurrentStep === 3) {
+        const sel = document.querySelector('input[name="shipping_method_id"]:checked');
+        if (!sel) {
+            Swal.fire({ icon: 'warning', title: 'Kargo seçin', text: 'Lütfen bir kargo yöntemi seçin.' });
+            return false;
+        }
+        return true;
+    }
+    if (cmCurrentStep === 4) {
+        if (document.getElementById('cmStep4Next').disabled) {
+            Swal.fire({ icon: 'warning', title: 'Dosya gerekli', text: 'Lütfen önce sipariş dosyanızı yükleyin.' });
+            return false;
+        }
+        return true;
+    }
+    return true;
+}
+
+document.querySelectorAll('[data-cm-next]').forEach(btn => {
+    btn.addEventListener('click', () => {
+        if (cmValidateCurrent()) cmGoTo(cmCurrentStep + 1);
+    });
+});
+document.querySelectorAll('[data-cm-prev]').forEach(btn => {
+    btn.addEventListener('click', () => cmGoTo(cmCurrentStep - 1));
+});
+document.querySelectorAll('[data-cm-go]').forEach(btn => {
+    btn.addEventListener('click', () => cmGoTo(parseInt(btn.dataset.cmGo)));
+});
+
+// ============ BILLING TOGGLE ============
+const billingToggle = document.getElementById('billingSameToggle');
+const billingFields = document.getElementById('billingFields');
+billingToggle.addEventListener('change', () => {
+    billingFields.hidden = billingToggle.checked;
+});
+
+// ============ ŞEHİR / İLÇE ============
+function cmFillCities(selectEl) {
+    const cities = (typeof getCities === 'function') ? getCities() : [];
+    selectEl.innerHTML = '<option value="">İl Seçin</option>';
+    cities.forEach(c => {
+        const o = document.createElement('option');
+        o.value = c; o.textContent = c;
+        selectEl.appendChild(o);
+    });
+}
+function cmFillDistricts(citySelect, districtSelect) {
+    const districts = (typeof getDistricts === 'function') ? getDistricts(citySelect.value) : [];
+    districtSelect.innerHTML = '<option value="">İlçe Seçin</option>';
+    districts.forEach(d => {
+        const o = document.createElement('option');
+        o.value = d; o.textContent = d;
+        districtSelect.appendChild(o);
+    });
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+    cmFillCities(document.getElementById('billing_city'));
+    cmFillCities(document.getElementById('cmModalCity'));
+
+    document.getElementById('billing_city').addEventListener('change', function() {
+        cmFillDistricts(this, document.getElementById('billing_district'));
+    });
+    document.getElementById('cmModalCity').addEventListener('change', function() {
+        cmFillDistricts(this, document.getElementById('cmModalDistrict'));
+    });
+});
+
+// ============ KARGO FİYAT GÜNCELLEME ============
+const baseTotal = {{ (float) $total }};
+function cmRefreshTotal() {
+    const sel = document.querySelector('input[name="shipping_method_id"]:checked');
+    const shipPrice = sel ? parseFloat(sel.dataset.price || 0) : 0;
+    const shipEl = document.getElementById('summaryShippingPrice');
+    if (sel) {
+        shipEl.textContent = shipPrice > 0
+            ? '₺' + shipPrice.toLocaleString('tr-TR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+            : 'Ücretsiz';
+    } else {
+        shipEl.textContent = '—';
+    }
+    const total = baseTotal + shipPrice;
+    document.getElementById('summaryTotal').textContent = '₺' + total.toLocaleString('tr-TR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+}
+document.querySelectorAll('input[name="shipping_method_id"]').forEach(r => {
+    r.addEventListener('change', cmRefreshTotal);
+});
+document.addEventListener('DOMContentLoaded', cmRefreshTotal);
+
+// ============ REVIEW RENDER ============
+function cmEsc(s) { return String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'})[c]); }
+function cmRenderReview() {
+    const ad = document.getElementById('customer_name').value;
+    const soyad = document.getElementById('customer_surname').value;
+    const tel = document.getElementById('customer_phone').value;
+    const city = document.getElementById('city').value;
+    const dist = document.getElementById('district').value;
+    const adres = document.getElementById('shipping_address').value;
+    document.getElementById('reviewShipping').innerHTML =
+        '<strong>' + cmEsc(ad + ' ' + soyad) + '</strong><br>' +
+        cmEsc(adres) + '<br>' + cmEsc(city + ' / ' + dist) + '<br><i class="fas fa-phone"></i> ' + cmEsc(tel);
+
+    const same = document.getElementById('billingSameToggle').checked;
+    if (same) {
+        document.getElementById('reviewBilling').innerHTML = '<em>Teslimat adresiyle aynı</em>';
+    } else {
+        const bAd = document.getElementById('billing_name').value;
+        const bSoy = document.getElementById('billing_surname').value;
+        const bTel = document.getElementById('billing_phone').value;
+        const bCity = document.getElementById('billing_city').value;
+        const bDist = document.getElementById('billing_district').value;
+        const bAdres = document.getElementById('billing_address').value;
+        const bComp = document.getElementById('billing_company').value;
+        const bTax = document.getElementById('billing_tax_no').value;
+        let html = '<strong>' + cmEsc(bAd + ' ' + bSoy) + '</strong><br>' +
+                   cmEsc(bAdres) + '<br>' + cmEsc(bCity + ' / ' + bDist) + '<br><i class="fas fa-phone"></i> ' + cmEsc(bTel);
+        if (bComp) html += '<br><i class="fas fa-building"></i> ' + cmEsc(bComp);
+        if (bTax) html += '<br><i class="fas fa-id-card"></i> ' + cmEsc(bTax);
+        document.getElementById('reviewBilling').innerHTML = html;
+    }
+
+    const ship = document.querySelector('input[name="shipping_method_id"]:checked');
+    if (ship) {
+        const p = parseFloat(ship.dataset.price || 0);
+        const priceTxt = p > 0
+            ? '₺' + p.toLocaleString('tr-TR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+            : 'Ücretsiz';
+        document.getElementById('reviewShippingMethod').innerHTML =
+            '<strong>' + cmEsc(ship.dataset.title) + '</strong> · ' + priceTxt;
+    }
+
+    const fileBadge = document.getElementById('orderUploadDoneBadge');
+    const filename = document.getElementById('orderUploadFilename').textContent;
+    if (fileBadge && !fileBadge.classList.contains('d-none') && filename) {
+        document.getElementById('reviewFile').innerHTML = '<i class="fas fa-check-circle text-success"></i> ' + cmEsc(filename) + ' yüklendi';
+    } else {
+        document.getElementById('reviewFile').innerHTML = '<em>Henüz yüklenmedi</em>';
+    }
+}
+
+// ============ R2 UPLOAD ============
+const ORDER_R2 = { PART_SIZE: 10*1024*1024, PARALLEL_PARTS: 3, MAX_RETRIES: 5, MAX_FILE_BYTES: 524_288_000 };
 function orderCsrf() {
     return document.querySelector('meta[name="csrf-token"]')?.content
-        || document.querySelector('input[name="_token"]')?.value
-        || '';
+        || document.querySelector('input[name="_token"]')?.value || '';
 }
 function orderFmt(b) {
     if (!b) return '0 B';
@@ -233,20 +671,18 @@ function orderFmt(b) {
     const i = Math.floor(Math.log(b) / Math.log(k));
     return parseFloat((b / Math.pow(k, i)).toFixed(1)) + ' ' + sizes[i];
 }
-
 async function uploadOrderZipToR2(file) {
     const status = document.getElementById('orderUploadStatus');
     const bar = document.getElementById('orderUploadProgressBar');
     const txt = document.getElementById('orderUploadProgressText');
     const doneBadge = document.getElementById('orderUploadDoneBadge');
-    const submitBtn = document.getElementById('completeOrderSubmitBtn');
-    const hint = document.getElementById('completeOrderHint');
+    const nextBtn = document.getElementById('cmStep4Next');
+    const hint = document.getElementById('cmStep4Hint');
 
     status.classList.remove('d-none');
     document.getElementById('orderUploadFilename').textContent = file.name;
     document.getElementById('orderUploadSize').textContent = orderFmt(file.size);
-    bar.style.width = '0%';
-    txt.textContent = '0%';
+    bar.style.width = '0%'; txt.textContent = '0%';
     doneBadge.classList.add('d-none');
 
     if (file.size > ORDER_R2.MAX_FILE_BYTES * 1.05) {
@@ -254,33 +690,20 @@ async function uploadOrderZipToR2(file) {
         return false;
     }
 
-    // 1. initiate
     let initiate;
     try {
         const r = await fetch('{{ route("upload.r2.order.initiate") }}', {
             method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'X-CSRF-TOKEN': orderCsrf(),
-                'Accept': 'application/json',
-            },
+            headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': orderCsrf(), 'Accept': 'application/json' },
             credentials: 'same-origin',
-            body: JSON.stringify({
-                file_size: file.size,
-                file_name: file.name,
-                content_type: file.type || 'application/octet-stream',
-            }),
+            body: JSON.stringify({ file_size: file.size, file_name: file.name, content_type: file.type || 'application/octet-stream' }),
         });
         initiate = await r.json();
         if (!r.ok || !initiate.success) {
-            console.error('R2 initiate failed', initiate);
             Swal.fire({ icon: 'error', title: 'Yükleme Başlatılamadı', text: initiate?.message || 'Sunucu hatası' });
             return false;
         }
-    } catch (e) {
-        console.error('initiate exception', e);
-        return false;
-    }
+    } catch (e) { console.error(e); return false; }
 
     const { upload_id, key, part_size, part_count, part_urls } = initiate;
     const partResults = new Array(part_count);
@@ -295,7 +718,7 @@ async function uploadOrderZipToR2(file) {
                 const r = await fetch(partInfo.url, { method: 'PUT', body: blob });
                 if (!r.ok) throw new Error('PUT ' + r.status);
                 let etag = r.headers.get('ETag') || r.headers.get('etag');
-                if (!etag) throw new Error('ETag missing (CORS?)');
+                if (!etag) throw new Error('ETag missing');
                 etag = etag.replace(/^"|"$/g, '');
                 partResults[partInfo.partNumber - 1] = { PartNumber: partInfo.partNumber, ETag: etag };
                 uploadedBytes += blob.size;
@@ -304,7 +727,6 @@ async function uploadOrderZipToR2(file) {
                 txt.textContent = pct + '% (' + orderFmt(uploadedBytes) + ' / ' + orderFmt(file.size) + ')';
                 return true;
             } catch (err) {
-                console.warn('Part', partInfo.partNumber, 'attempt', attempt, err.message);
                 if (attempt < ORDER_R2.MAX_RETRIES) {
                     await new Promise(r => setTimeout(r, Math.min(1000 * Math.pow(2, attempt - 1), 30000)));
                 }
@@ -313,7 +735,6 @@ async function uploadOrderZipToR2(file) {
         return false;
     };
 
-    // 2. parallel parts
     const queue = [...part_urls];
     let aborted = false;
     const workers = [];
@@ -337,12 +758,11 @@ async function uploadOrderZipToR2(file) {
                 credentials: 'same-origin',
                 body: JSON.stringify({ key, upload_id }),
             });
-        } catch (e) { /* best-effort */ }
+        } catch (e) {}
         Swal.fire({ icon: 'error', title: 'Yükleme Hatası', text: 'Lütfen tekrar deneyin.' });
         return false;
     }
 
-    // 3. complete
     try {
         const r = await fetch('{{ route("upload.r2.order.complete") }}', {
             method: 'POST',
@@ -352,419 +772,91 @@ async function uploadOrderZipToR2(file) {
         });
         const d = await r.json();
         if (!r.ok || !d.success) {
-            console.error('complete failed', d);
             Swal.fire({ icon: 'error', title: 'Yükleme Tamamlanamadı', text: d?.message || 'Sunucu hatası' });
             return false;
         }
-    } catch (e) {
-        console.error('complete exception', e);
-        return false;
-    }
+    } catch (e) { console.error(e); return false; }
 
     bar.style.width = '100%';
     txt.textContent = '100%';
     doneBadge.classList.remove('d-none');
-    submitBtn.disabled = false;
-    if (hint) hint.classList.add('d-none');
+    nextBtn.disabled = false;
+    if (hint) hint.textContent = 'İleri';
+    nextBtn.innerHTML = 'İleri <i class="fas fa-arrow-right"></i>';
     return true;
 }
-
-document.addEventListener('DOMContentLoaded', function() {
-    const fileInput = document.getElementById('orderUploadFile');
-    if (fileInput) {
-        fileInput.addEventListener('change', async (e) => {
-            const file = e.target.files?.[0];
-            if (!file) return;
-
-            // Disable submit during upload
-            const submitBtn = document.getElementById('completeOrderSubmitBtn');
-            if (submitBtn) submitBtn.disabled = true;
-            fileInput.disabled = true;
-
-            const ok = await uploadOrderZipToR2(file);
-            fileInput.disabled = false;
-            if (!ok) {
-                fileInput.value = '';
-            }
+document.addEventListener('DOMContentLoaded', () => {
+    const fi = document.getElementById('orderUploadFile');
+    if (fi) {
+        fi.addEventListener('change', async (e) => {
+            const f = e.target.files?.[0];
+            if (!f) return;
+            const next = document.getElementById('cmStep4Next');
+            if (next) next.disabled = true;
+            fi.disabled = true;
+            const ok = await uploadOrderZipToR2(f);
+            fi.disabled = false;
+            if (!ok) fi.value = '';
         });
     }
 });
-// ============ /ORDER-LEVEL R2 DIRECT UPLOAD ============
 
-// Sayfa yüklendiğinde illeri yükle
-document.addEventListener('DOMContentLoaded', function() {
-    loadCities();
+// ============ NEW ADDRESS MODAL ============
+let cmModalCurrentTabBtn = null;
+document.querySelectorAll('[data-cm-add-address]').forEach(btn => {
+    btn.addEventListener('click', () => {
+        const type = btn.dataset.cmAddAddress;
+        document.getElementById('cmModalType').value = type;
+        document.getElementById('cmAddressModalTitle').textContent =
+            type === 'company' ? 'Yeni Şirket Adresi Ekle' : 'Yeni Müşteri Adresi Ekle';
+        // Clear form
+        ['cmModalTitle','cmModalAd','cmModalSoyad','cmModalTelefon','cmModalAdres'].forEach(id => document.getElementById(id).value = '');
+        document.getElementById('cmModalCity').value = '';
+        document.getElementById('cmModalDistrict').innerHTML = '<option value="">İlçe Seçin</option>';
+        cmModalCurrentTabBtn = btn;
+        new bootstrap.Modal(document.getElementById('cmAddressModal')).show();
+    });
 });
 
-// İlleri yükle
-function loadCities() {
-    const citySelect = document.getElementById('city_select');
-    const cities = getCities();
-    
-    cities.forEach(city => {
-        const option = document.createElement('option');
-        option.value = city;
-        option.textContent = city;
-        citySelect.appendChild(option);
-    });
-}
-
-// İl seçildiğinde ilçeleri güncelle
-function updateDistricts() {
-    const citySelect = document.getElementById('city_select');
-    const districtSelect = document.getElementById('district_select');
-    const selectedCity = citySelect.value;
-    
-    // İlçe select'i temizle
-    districtSelect.innerHTML = '<option value="">İlçe Seçiniz *</option>';
-    
-    if (selectedCity) {
-        const districts = getDistricts(selectedCity);
-        districts.forEach(district => {
-            const option = document.createElement('option');
-            option.value = district;
-            option.textContent = district;
-            districtSelect.appendChild(option);
-        });
-    }
-}
-
-function showSuccessAlert(message) {
-    Swal.fire({
-        icon: 'success',
-        title: 'Başarılı!',
-        text: message,
-        confirmButtonText: 'Tamam'
-    });
-}
-
-function showErrorAlert(message) {
-    Swal.fire({
-        icon: 'error',
-        title: 'Hata!',
-        text: message,
-        confirmButtonText: 'Tamam'
-    });
-}
-
-function fillAddressForm() {
-    const select = document.getElementById('address_select');
-    const selectedOption = select.options[select.selectedIndex];
-    
-    if (select.value === '') {
-        // Yeni adres seçildi - formu temizle
-        document.getElementById('customer_name').value = '';
-        document.getElementById('customer_surname').value = '';
-        document.getElementById('customer_phone').value = '';
-        document.getElementById('city_select').value = '';
-        document.getElementById('district_select').innerHTML = '<option value="">İlçe Seçiniz *</option>';
-        document.getElementById('shipping_address').value = '';
-    } else {
-        // Kayıtlı adres seçildi - formu doldur
-        document.getElementById('customer_name').value = selectedOption.getAttribute('data-ad');
-        document.getElementById('customer_surname').value = selectedOption.getAttribute('data-soyad');
-        document.getElementById('customer_phone').value = selectedOption.getAttribute('data-telefon');
-        
-        // İl ve ilçe bilgilerini doldur
-        const city = selectedOption.getAttribute('data-city');
-        const district = selectedOption.getAttribute('data-district');
-        
-        if (city) {
-            document.getElementById('city_select').value = city;
-            updateDistricts(); // İlçeleri yükle
-            
-            // İlçe seçimini geciktir çünkü updateDistricts asenkron çalışıyor
-            setTimeout(() => {
-                if (district) {
-                    document.getElementById('district_select').value = district;
-                }
-            }, 100);
-        }
-        
-        document.getElementById('shipping_address').value = selectedOption.getAttribute('data-adres');
-    }
-}
-
-function saveAddress() {
-    // Form validasyonu
-    const customerName = document.getElementById('customer_name').value.trim();
-    const customerSurname = document.getElementById('customer_surname').value.trim();
-    const customerPhone = document.getElementById('customer_phone').value.trim();
-    const city = document.getElementById('city_select').value.trim();
-    const district = document.getElementById('district_select').value.trim();
-    const shippingAddress = document.getElementById('shipping_address').value.trim();
-    
-    let isValid = true;
-    
-    // Ad validasyonu
-    if (customerName.length < 2) {
-        showFieldError('customer_name', 'Ad en az 2 karakter olmalıdır.');
-        isValid = false;
-    } else if (!/^[A-Za-zğüşıöçĞÜŞİÖÇ\s]+$/.test(customerName)) {
-        showFieldError('customer_name', 'Ad sadece harf ve boşluk karakterleri içerebilir.');
-        isValid = false;
-    } else {
-        clearFieldError('customer_name');
-    }
-    
-    // Soyad validasyonu
-    if (customerSurname.length < 2) {
-        showFieldError('customer_surname', 'Soyad en az 2 karakter olmalıdır.');
-        isValid = false;
-    } else if (!/^[A-Za-zğüşıöçĞÜŞİÖÇ\s]+$/.test(customerSurname)) {
-        showFieldError('customer_surname', 'Soyad sadece harf ve boşluk karakterleri içerebilir.');
-        isValid = false;
-    } else {
-        clearFieldError('customer_surname');
-    }
-    
-    // Telefon validasyonu
-    if (customerPhone.length < 10) {
-        showFieldError('customer_phone', 'Telefon numarası en az 10 karakter olmalıdır.');
-        isValid = false;
-    } else if (!/^[0-9\s\-\+\(\)]+$/.test(customerPhone)) {
-        showFieldError('customer_phone', 'Geçerli bir telefon numarası giriniz.');
-        isValid = false;
-    } else {
-        clearFieldError('customer_phone');
-    }
-    
-    // İl validasyonu
-    if (!city) {
-        showFieldError('city_select', 'Lütfen il seçiniz.');
-        isValid = false;
-    } else {
-        clearFieldError('city_select');
-    }
-    
-    // İlçe validasyonu
-    if (!district) {
-        showFieldError('district_select', 'Lütfen ilçe seçiniz.');
-        isValid = false;
-    } else {
-        clearFieldError('district_select');
-    }
-    
-    // Adres validasyonu
-    if (shippingAddress.length < 10) {
-        showFieldError('shipping_address', 'Adres en az 10 karakter olmalıdır.');
-        isValid = false;
-    } else {
-        clearFieldError('shipping_address');
-    }
-    
-    if (!isValid) {
-        showErrorAlert('Lütfen form alanlarını kontrol ediniz.');
-        return;
-    }
-    
-    // Modal'ı aç
-    document.getElementById('address_title').value = '';
-    const modal = new bootstrap.Modal(document.getElementById('addressTitleModal'));
-    modal.show();
-}
-
-function confirmSaveAddress() {
-    const addressTitle = document.getElementById('address_title').value.trim();
-    
-    if (addressTitle.length < 2) {
-        showFieldError('address_title', 'Adres başlığı en az 2 karakter olmalıdır.');
-        return;
-    }
-    
-    clearFieldError('address_title');
-    
-    // Form verilerini al
-    const formData = {
-        title: addressTitle,
-        ad: document.getElementById('customer_name').value.trim(),
-        soyad: document.getElementById('customer_surname').value.trim(),
-        telefon: document.getElementById('customer_phone').value.trim(),
-        city: document.getElementById('city_select').value.trim(),
-        district: document.getElementById('district_select').value.trim(),
-        adres: document.getElementById('shipping_address').value.trim(),
-        _token: document.querySelector('input[name="_token"]').value
+document.getElementById('cmModalSaveBtn').addEventListener('click', async () => {
+    const type = document.getElementById('cmModalType').value;
+    const data = {
+        type: type,
+        title: document.getElementById('cmModalTitle').value.trim(),
+        ad: document.getElementById('cmModalAd').value.trim(),
+        soyad: document.getElementById('cmModalSoyad').value.trim(),
+        telefon: document.getElementById('cmModalTelefon').value.trim(),
+        city: document.getElementById('cmModalCity').value,
+        district: document.getElementById('cmModalDistrict').value,
+        adres: document.getElementById('cmModalAdres').value.trim(),
+        _token: orderCsrf()
     };
-    
-    // AJAX ile adres kaydet
-    console.log('Sending form data:', formData);
-    
-    fetch('{{ route("profile.addresses.store") }}', {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-            'X-CSRF-TOKEN': document.querySelector('input[name="_token"]').value,
-            'Accept': 'application/json'
-        },
-        body: JSON.stringify(formData)
-    })
-    .then(response => {
-        console.log('Response status:', response.status);
-        console.log('Response headers:', response.headers);
-        return response.json();
-    })
-    .then(data => {
-        console.log('Response data:', data);
-        
-        // Modal'ı kapat
-        const modal = bootstrap.Modal.getInstance(document.getElementById('addressTitleModal'));
-        modal.hide();
-        
-        if (data.success) {
-            showSuccessAlert(data.message || 'Adres başarıyla kaydedildi.');
-        } else {
-            // Validation hatalarını göster
-            if (data.errors) {
-                let errorMessage = 'Lütfen aşağıdaki hataları düzeltin:\n';
-                Object.keys(data.errors).forEach(field => {
-                    data.errors[field].forEach(error => {
-                        errorMessage += `• ${error}\n`;
-                    });
-                });
-                
-                showErrorAlert(errorMessage);
-            } else {
-                showErrorAlert(data.message || 'Adres kaydedilirken bir hata oluştu.');
-            }
+    const required = ['title','ad','soyad','telefon','city','district','adres'];
+    for (const k of required) {
+        if (!data[k]) {
+            Swal.fire({ icon: 'warning', title: 'Eksik alan', text: 'Lütfen tüm zorunlu alanları doldurun.' });
+            return;
         }
-    })
-    .catch(error => {
-        console.error('Error:', error);
-        const modal = bootstrap.Modal.getInstance(document.getElementById('addressTitleModal'));
-        modal.hide();
-        
-        showErrorAlert('Bir hata oluştu. Lütfen tekrar deneyiniz.');
-    });
-}
-
-function showFieldError(fieldId, message) {
-    const field = document.getElementById(fieldId);
-    const errorDiv = document.getElementById(fieldId + '_error');
-    
-    field.classList.add('is-invalid');
-    if (errorDiv) {
-        errorDiv.textContent = message;
     }
-}
-
-function clearFieldError(fieldId) {
-    const field = document.getElementById(fieldId);
-    const errorDiv = document.getElementById(fieldId + '_error');
-    
-    field.classList.remove('is-invalid');
-    if (errorDiv) {
-        errorDiv.textContent = '';
-    }
-}
-
-// Dosya zorunluluğu kontrolü (backend tarafından hesaplanan eksik dosyalı ürünler)
-const missingFileItems = @json($missingFileItems ?? []);
-
-// Form submit validasyonu
-document.getElementById('checkoutForm').addEventListener('submit', function(e) {
-    // Önce dosya zorunluluğu kontrolü
-    if (missingFileItems.length > 0) {
-        e.preventDefault();
-        const productListText = missingFileItems.map(function(p){ return '• ' + p; }).join('\n');
-        const escapeHtml = function(s){
-            return String(s).replace(/[&<>"']/g, function(c){
-                return ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'})[c];
-            });
-        };
-        if (window.Swal) {
-            Swal.fire({
-                icon: 'warning',
-                title: 'Dosya Yüklemesi Zorunlu',
-                html: 'Aşağıdaki ürünler için dosya yüklemesi zorunludur:<br><br><strong>' +
-                      missingFileItems.map(function(p){ return '• ' + escapeHtml(p); }).join('<br>') +
-                      '</strong><br><br>Lütfen sepete dönüp dosyayı yükleyin.',
-                confirmButtonText: 'Sepete Dön',
-                showCancelButton: true,
-                cancelButtonText: 'Kapat'
-            }).then(function(result){
-                if (result.isConfirmed) {
-                    window.location.href = "{{ route('cart.index') }}";
-                }
-            });
+    try {
+        const r = await fetch('{{ route("profile.addresses.store") }}', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': orderCsrf(), 'Accept': 'application/json' },
+            credentials: 'same-origin',
+            body: JSON.stringify(data)
+        });
+        const res = await r.json();
+        if (res.success) {
+            Swal.fire({ icon: 'success', title: 'Kaydedildi', text: 'Adres listesini yenilemek için sayfa yeniden yüklenecek.' })
+                .then(() => window.location.reload());
         } else {
-            if (confirm('Aşağıdaki ürünler için dosya yüklemesi zorunludur:\n\n' + productListText + '\n\nSepete dönmek ister misiniz?')) {
-                window.location.href = "{{ route('cart.index') }}";
-            }
+            Swal.fire({ icon: 'error', title: 'Hata', text: res.message || 'Kaydedilemedi.' });
         }
-        return;
-    }
-
-    const customerName = document.getElementById('customer_name').value.trim();
-    const customerSurname = document.getElementById('customer_surname').value.trim();
-    const customerPhone = document.getElementById('customer_phone').value.trim();
-    const city = document.getElementById('city_select').value.trim();
-    const district = document.getElementById('district_select').value.trim();
-    const shippingAddress = document.getElementById('shipping_address').value.trim();
-    
-    let isValid = true;
-    
-    // Ad validasyonu
-    if (customerName.length < 2) {
-        showFieldError('customer_name', 'Ad en az 2 karakter olmalıdır.');
-        isValid = false;
-    } else if (!/^[A-Za-zğüşıöçĞÜŞİÖÇ\s]+$/.test(customerName)) {
-        showFieldError('customer_name', 'Ad sadece harf ve boşluk karakterleri içerebilir.');
-        isValid = false;
-    } else {
-        clearFieldError('customer_name');
-    }
-    
-    // Soyad validasyonu
-    if (customerSurname.length < 2) {
-        showFieldError('customer_surname', 'Soyad en az 2 karakter olmalıdır.');
-        isValid = false;
-    } else if (!/^[A-Za-zğüşıöçĞÜŞİÖÇ\s]+$/.test(customerSurname)) {
-        showFieldError('customer_surname', 'Soyad sadece harf ve boşluk karakterleri içerebilir.');
-        isValid = false;
-    } else {
-        clearFieldError('customer_surname');
-    }
-    
-    // Telefon validasyonu
-    if (customerPhone.length < 10) {
-        showFieldError('customer_phone', 'Telefon numarası en az 10 karakter olmalıdır.');
-        isValid = false;
-    } else if (!/^[0-9\s\-\+\(\)]+$/.test(customerPhone)) {
-        showFieldError('customer_phone', 'Geçerli bir telefon numarası giriniz.');
-        isValid = false;
-    } else {
-        clearFieldError('customer_phone');
-    }
-    
-    // İl validasyonu
-    if (!city) {
-        showFieldError('city_select', 'Lütfen il seçiniz.');
-        isValid = false;
-    } else {
-        clearFieldError('city_select');
-    }
-    
-    // İlçe validasyonu
-    if (!district) {
-        showFieldError('district_select', 'Lütfen ilçe seçiniz.');
-        isValid = false;
-    } else {
-        clearFieldError('district_select');
-    }
-    
-    // Adres validasyonu
-    if (shippingAddress.length < 10) {
-        showFieldError('shipping_address', 'Adres en az 10 karakter olmalıdır.');
-        isValid = false;
-    } else {
-        clearFieldError('shipping_address');
-    }
-    
-    if (!isValid) {
-        e.preventDefault();
-        showErrorAlert('Lütfen form alanlarını kontrol ediniz.');
+    } catch (e) {
+        Swal.fire({ icon: 'error', title: 'Hata', text: 'Sunucu hatası.' });
     }
 });
+
 </script>
-  @endsection
+@endsection
 @endsection

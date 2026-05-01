@@ -7,6 +7,7 @@ use App\Models\Product;
 use App\Models\Order;
 use App\Models\OrderStatusHistory;
 use App\Models\CartFile;
+use App\Models\ShippingMethod;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Storage;
@@ -91,14 +92,28 @@ class CartController extends Controller
 
         $total = $subtotal - $totalDiscount + $totalUrgentPrice;
 
-        // Kullanıcının adreslerini getir
-        $addresses = $user->addresses()->orderBy('created_at', 'desc')->get();
+        // Adresleri 2 grup halinde getir
+        $companyAddresses = $user->addresses()->where('type', 'company')->orderBy('created_at', 'desc')->get();
+        $customerAddresses = $user->addresses()->where('type', 'customer')->orderBy('created_at', 'desc')->get();
+
+        // Aktif kargo metodları
+        $shippingMethods = ShippingMethod::active()->ordered()->get();
 
         // Cleanup zaten sadece dosyasi tamam cart'lari birakti, popup logic'e
         // bir sey gondermiyoruz ama view uyumlulugu icin bos dizi geciyoruz
         $missingFileItems = [];
 
-        return view('frontend.cart.checkout', compact('cartItems', 'subtotal', 'total', 'totalDiscount', 'totalUrgentPrice', 'addresses', 'missingFileItems'));
+        return view('frontend.cart.checkout', compact(
+            'cartItems',
+            'subtotal',
+            'total',
+            'totalDiscount',
+            'totalUrgentPrice',
+            'companyAddresses',
+            'customerAddresses',
+            'shippingMethods',
+            'missingFileItems'
+        ));
     }
     
     public function complete(Request $request)
@@ -117,27 +132,39 @@ class CartController extends Controller
                 'city' => 'required|string|max:255',
                 'district' => 'required|string|max:255',
                 'shipping_address' => 'required|string|min:10|max:1000',
+                'shipping_method_id' => 'required|exists:shipping_methods,id',
+                'billing_same_as_shipping' => 'nullable|boolean',
+                'billing_name' => 'required_if:billing_same_as_shipping,0|nullable|string|min:2|max:255',
+                'billing_surname' => 'required_if:billing_same_as_shipping,0|nullable|string|min:2|max:255',
+                'billing_phone' => 'required_if:billing_same_as_shipping,0|nullable|string|min:10|max:20|regex:/^[0-9\s\-\+\(\)]+$/',
+                'billing_city' => 'required_if:billing_same_as_shipping,0|nullable|string|max:255',
+                'billing_district' => 'required_if:billing_same_as_shipping,0|nullable|string|max:255',
+                'billing_address' => 'required_if:billing_same_as_shipping,0|nullable|string|min:10|max:1000',
+                'billing_company' => 'nullable|string|max:255',
+                'billing_tax_no' => 'nullable|string|max:50',
                 'payment_method' => 'required|in:bakiye'
             ], [
                 'customer_name.required' => 'Ad alanı zorunludur.',
                 'customer_name.min' => 'Ad en az 2 karakter olmalıdır.',
-                'customer_name.max' => 'Ad 255 karakterden uzun olamaz.',
                 'customer_name.regex' => 'Ad sadece harf ve boşluk karakterleri içerebilir.',
                 'customer_surname.required' => 'Soyad alanı zorunludur.',
                 'customer_surname.min' => 'Soyad en az 2 karakter olmalıdır.',
-                'customer_surname.max' => 'Soyad 255 karakterden uzun olamaz.',
                 'customer_surname.regex' => 'Soyad sadece harf ve boşluk karakterleri içerebilir.',
                 'customer_phone.required' => 'Telefon alanı zorunludur.',
                 'customer_phone.min' => 'Telefon numarası en az 10 karakter olmalıdır.',
-                'customer_phone.max' => 'Telefon numarası 20 karakterden uzun olamaz.',
                 'customer_phone.regex' => 'Geçerli bir telefon numarası giriniz.',
                 'city.required' => 'İl seçimi zorunludur.',
-                'city.max' => 'İl adı 255 karakterden uzun olamaz.',
                 'district.required' => 'İlçe seçimi zorunludur.',
-                'district.max' => 'İlçe adı 255 karakterden uzun olamaz.',
                 'shipping_address.required' => 'Teslimat adresi zorunludur.',
                 'shipping_address.min' => 'Teslimat adresi en az 10 karakter olmalıdır.',
-                'shipping_address.max' => 'Teslimat adresi 1000 karakterden uzun olamaz.',
+                'shipping_method_id.required' => 'Kargo yöntemi seçimi zorunludur.',
+                'shipping_method_id.exists' => 'Seçilen kargo yöntemi geçerli değil.',
+                'billing_name.required_if' => 'Fatura adı zorunludur.',
+                'billing_surname.required_if' => 'Fatura soyadı zorunludur.',
+                'billing_phone.required_if' => 'Fatura telefonu zorunludur.',
+                'billing_city.required_if' => 'Fatura ili zorunludur.',
+                'billing_district.required_if' => 'Fatura ilçesi zorunludur.',
+                'billing_address.required_if' => 'Fatura adresi zorunludur.',
                 'payment_method.required' => 'Ödeme yöntemi seçimi zorunludur.',
                 'payment_method.in' => 'Geçersiz ödeme yöntemi.'
             ]);
@@ -161,13 +188,44 @@ class CartController extends Controller
             // Toplam fiyatı hesapla (indirimli fiyatlar)
             $totalPrice = 0;
             $totalDiscount = 0;
-            
+
             foreach ($cartItems as $item) {
                 $originalTotal = $item->original_price * $item->quantity;
                 $discountedTotal = $item->price * $item->quantity;
-                
+
                 $totalPrice += $discountedTotal;
                 $totalDiscount += ($originalTotal - $discountedTotal);
+            }
+
+            // Kargo metodunu al ve toplam fiyata ekle
+            $shippingMethod = ShippingMethod::find($request->shipping_method_id);
+            $shippingCost = $shippingMethod ? (float) $shippingMethod->price : 0;
+            $totalPrice += $shippingCost;
+
+            // Fatura adresi mantığı: same_as_shipping=1 ise teslimat alanlarını kopyala
+            $billingSame = $request->boolean('billing_same_as_shipping', true);
+            if ($billingSame) {
+                $billingData = [
+                    'billing_name' => $request->customer_name,
+                    'billing_surname' => $request->customer_surname,
+                    'billing_phone' => $request->customer_phone,
+                    'billing_city' => $request->city,
+                    'billing_district' => $request->district,
+                    'billing_address' => $request->shipping_address,
+                    'billing_company' => $request->input('billing_company'),
+                    'billing_tax_no' => $request->input('billing_tax_no'),
+                ];
+            } else {
+                $billingData = [
+                    'billing_name' => $request->billing_name,
+                    'billing_surname' => $request->billing_surname,
+                    'billing_phone' => $request->billing_phone,
+                    'billing_city' => $request->billing_city,
+                    'billing_district' => $request->billing_district,
+                    'billing_address' => $request->billing_address,
+                    'billing_company' => $request->billing_company,
+                    'billing_tax_no' => $request->billing_tax_no,
+                ];
             }
 
             // Sipariş numarası oluştur (ken-000000001 formatında)
@@ -193,7 +251,7 @@ class CartController extends Controller
             }
             
             // Siparişi oluştur
-            $order = Order::create([
+            $order = Order::create(array_merge([
                 'user_id' => $user->id,
                 'order_number' => $orderNumber,
                 'customer_name' => $request->customer_name,
@@ -202,12 +260,15 @@ class CartController extends Controller
                 'city' => $request->city,
                 'district' => $request->district,
                 'shipping_address' => $request->shipping_address,
-                'payment_method' => 'bakiye', // Ödeme türünü bakiye olarak ayarla
+                'shipping_method_id' => $shippingMethod ? $shippingMethod->id : null,
+                'shipping_cost' => $shippingCost,
+                'billing_same_as_shipping' => $billingSame,
+                'payment_method' => 'bakiye',
                 'total_price' => $totalPrice,
                 'discount_amount' => $totalDiscount,
                 'notes' => !empty($orderNotes) ? implode("\n", $orderNotes) : null,
-                'status' => 0 // İşlemde durumu
-            ]);
+                'status' => 0
+            ], $billingData));
 
             // Sepet kalemlerini siparişe bağla, durumlarını güncelle ve cart_id'yi sipariş numarasıyla yenile
             // Not: Yeni akışta dosya order seviyesinde, cart-level rename yok.
