@@ -503,7 +503,8 @@
                                  Bir step birden çok customization-section içerebilir. --}}
                             @foreach($customizationSteps as $i => $step)
                                 @php $idx = $firstCustomIdx + $i; @endphp
-                                @php $isMulti = count($step['categories']) > 1; @endphp
+                                @php $isDigerStep = $step['step_label'] === 'Diğer'; @endphp
+                                @php $isMulti = count($step['categories']) > 1 || $isDigerStep; @endphp
                                 <div class="wizard-step{{ $idx === 0 ? ' active' : '' }}{{ $isMulti ? ' wizard-step-grouped' : '' }}"
                                      data-step-index="{{ $idx }}"
                                      data-step-kind="customization"
@@ -530,6 +531,102 @@
                                             ])
                                         </div>
                                     @endforeach
+
+                                    {{-- DİĞER tab'ı: tüm siparişlerde olması gereken hardcoded sabit alanlar.
+                                         Customization olmayan ama her ürün için anlamlı olan seçimler:
+                                         - Tasarım Hizmeti (Tasarımı bize yaptır / kendin yap)
+                                         - Acil Üretim
+                                         - Sipariş Notu --}}
+                                    @if($isDigerStep)
+                                        {{-- Tasarım Hizmeti --}}
+                                        <div class="wizard-step-section">
+                                            <h5 class="wizard-section-title">Tasarım Hizmeti</h5>
+                                            <p class="wizard-step-desc">Albüm tasarımını bizim yapmamızı mı, yoksa kendinizin yapmasını mı istiyorsunuz?</p>
+                                            <div class="customization-section mb-4" data-category="design_service" data-type="radio" data-required="1">
+                                                <div class="row g-3 option-card-grid">
+                                                    <div class="col-6 col-md-6 option-card-wrapper" data-parent-pivot-id="0">
+                                                        <label class="option-card" for="design_service_with">
+                                                            <input class="option-card-input design-service-radio"
+                                                                   type="radio"
+                                                                   name="design_service"
+                                                                   value="with_design"
+                                                                   id="design_service_with"
+                                                                   data-price="{{ (float)($product->design_service_price ?? 0) }}"
+                                                                   data-title="Tasarımı bize yaptır">
+                                                            <div class="option-card-image-wrap">
+                                                                <div class="option-card-no-image">
+                                                                    <i class="fas fa-pen-fancy"></i>
+                                                                </div>
+                                                                <span class="option-card-checkmark"><i class="fas fa-check"></i></span>
+                                                            </div>
+                                                            <div class="option-card-body">
+                                                                <div class="option-card-title">Tasarımı bize yaptır</div>
+                                                                @if(($product->design_service_price ?? 0) > 0)
+                                                                    @if(Auth::check() and Auth::user()->roles->contains('id', 3) or Auth::user()->roles->contains('id', 1))
+                                                                        <div class="option-card-price">+{{ number_format($product->design_service_price, 2) }} ₺</div>
+                                                                    @endif
+                                                                @endif
+                                                            </div>
+                                                        </label>
+                                                    </div>
+                                                    <div class="col-6 col-md-6 option-card-wrapper" data-parent-pivot-id="0">
+                                                        <label class="option-card" for="design_service_self">
+                                                            <input class="option-card-input design-service-radio"
+                                                                   type="radio"
+                                                                   name="design_service"
+                                                                   value="self_design"
+                                                                   id="design_service_self"
+                                                                   data-price="0"
+                                                                   data-title="Tasarımı kendin yap">
+                                                            <div class="option-card-image-wrap">
+                                                                <div class="option-card-no-image">
+                                                                    <i class="fas fa-user-edit"></i>
+                                                                </div>
+                                                                <span class="option-card-checkmark"><i class="fas fa-check"></i></span>
+                                                            </div>
+                                                            <div class="option-card-body">
+                                                                <div class="option-card-title">Tasarımı kendin yap</div>
+                                                                <small class="option-card-hint d-block">Hazır tasarım yükleyebilirsin</small>
+                                                            </div>
+                                                        </label>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        {{-- Acil Üretim --}}
+                                        @if($product->urgent_price)
+                                            <div class="wizard-step-section">
+                                                <h5 class="wizard-section-title">Acil Üretim</h5>
+                                                <div class="card">
+                                                    <div class="card-body">
+                                                        <div class="form-check">
+                                                            <input class="form-check-input" type="checkbox" name="urgent_production" id="urgent_production" value="1">
+                                                            <label class="form-check-label" for="urgent_production">
+                                                                <strong>Acil Üretim İstiyorum</strong>
+                                                                @if(Auth::check() and Auth::user()->roles->contains('id', 3) or Auth::user()->roles->contains('id', 1))
+                                                                    <span class="text-success-2 fw-bold">+ {{ number_format($product->urgent_price, 2) }} ₺</span>
+                                                                @endif
+                                                                <small class="text-muted d-block">Ek ücret karşılığında ürününüz acil olarak üretilecektir.</small>
+                                                            </label>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        @endif
+
+                                        {{-- Sipariş Notu --}}
+                                        <div class="wizard-step-section">
+                                            <h5 class="wizard-section-title">Sipariş Notu</h5>
+                                            <textarea class="form-control"
+                                                      id="order_note"
+                                                      name="order_note"
+                                                      rows="3"
+                                                      placeholder="Siparişiniz ile ilgili özel notlarınızı buraya yazabilirsiniz... (opsiyonel)"
+                                                      style="resize: vertical;"></textarea>
+                                        </div>
+                                    @endif
+
                                     @if($step['is_cascade'])
                                         <div class="cascade-empty-state text-center py-4 text-muted" style="display:none;">
                                             <i class="fas fa-arrow-up fa-2x mb-2"></i>
@@ -572,40 +669,13 @@
                                 </div>
                             @endif
 
-                            {{-- Sipariş Özeti step (her zaman, son step) --}}
+                            {{-- Sipariş Özeti step (her zaman, son step).
+                                 Acil Üretim, Sipariş Notu ve Tasarım Hizmeti seçimleri
+                                 artık "Diğer" tab'ında — burası sadece özet + submit. --}}
                             <div class="wizard-step" data-step-index="{{ $summaryIdx }}" data-step-kind="summary">
                                 <h3 class="wizard-step-title">Sipariş Özeti</h3>
                                 <div id="wizard-summary" class="wizard-summary mb-3">
                                     {{-- JS ile dolduruluyor --}}
-                                </div>
-
-                                @if($product->urgent_price)
-                                <div class="mb-4">
-                                    <div class="card">
-                                        <div class="card-body">
-                                            <div class="form-check">
-                                                <input class="form-check-input" type="checkbox" name="urgent_production" id="urgent_production" value="1">
-                                                <label class="form-check-label" for="urgent_production">
-                                                    <strong>Acil Üretim</strong>
-                                                    <span class="text-success-2 fw-bold">+ {{ number_format($product->urgent_price, 2) }} ₺</span>
-                                                    <small class="text-muted d-block">Ek ücret karşılığında ürününüz acil olarak üretilecektir.</small>
-                                                </label>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                                @endif
-
-                                <div class="mb-4">
-                                    <label for="order_note" class="form-label">
-                                        <i class="fas fa-sticky-note"></i> Sipariş Notu (Opsiyonel)
-                                    </label>
-                                    <textarea class="form-control"
-                                              id="order_note"
-                                              name="order_note"
-                                              rows="3"
-                                              placeholder="Siparişiniz ile ilgili özel notlarınızı buraya yazabilirsiniz..."
-                                              style="resize: vertical;"></textarea>
                                 </div>
 
                                 <div class="d-grid">
@@ -1704,6 +1774,11 @@
                 $('#urgent_production').off('change.urgent').on('change.urgent', function() {
                     updatePrice();
                 });
+
+                // Tasarım Hizmeti radio'ları için event listener
+                $('.design-service-radio').off('change.designService').on('change.designService', function() {
+                    updatePrice();
+                });
                 
                 // Input'lar için event listener
                 $('.customization-input, .child-customization-input').off('change.input').on('change.input', function() {
@@ -1834,6 +1909,12 @@
                 if ($('#urgent_production').is(':checked')) {
                     var urgentPrice = {{ $product->urgent_price ?? 0 }};
                     totalPrice += urgentPrice;
+                }
+
+                // Tasarım Hizmeti — "Tasarımı bize yaptır" seçili ise design_service_price ekle
+                if ($('input[name="design_service"]:checked').val() === 'with_design') {
+                    var designPrice = {{ $product->design_service_price ?? 0 }};
+                    totalPrice += designPrice;
                 }
                 
                 // Yaprak adeti fiyatını hesapla (sadece sayfa seçimi varsa)

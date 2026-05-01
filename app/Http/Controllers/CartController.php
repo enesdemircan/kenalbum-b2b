@@ -480,10 +480,23 @@ class CartController extends Controller
             'customizations' => $customizationData,
             'total_customization_price' => $request->price,
         ];
-        
+
         // Sipariş notu varsa ekle
         if ($request->has('order_note') && !empty(trim($request->order_note))) {
             $notesData['order_note'] = trim($request->order_note);
+        }
+
+        // Acil Üretim — frontend JS toplam fiyata zaten ekledi (cart.price'a dahil),
+        // sadece flag tutuyoruz ki admin/order ekranları "Acil Üretim" rozetini gösterebilsin.
+        if ($request->boolean('urgent_production')) {
+            $notesData['urgent_production'] = true;
+        }
+
+        // Tasarım Hizmeti seçimi (Diğer tab) — Tasarımı bize yaptır / kendin yap.
+        // "with_design" durumunda design_service_price toplam fiyata frontend tarafından eklendi.
+        $designService = $request->input('design_service');
+        if (in_array($designService, ['with_design', 'self_design'], true)) {
+            $notesData['design_service'] = $designService;
         }
         
         $cart->notes = json_encode($notesData);

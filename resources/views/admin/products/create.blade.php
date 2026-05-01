@@ -108,6 +108,16 @@
                         </div>
                         <div class="col-md-6">
                             <div class="mb-3">
+                                <label for="design_service_price" class="form-label">Tasarım Hizmeti Ücreti</label>
+                                <div class="input-group">
+                                    <input type="number" name="design_service_price" id="design_service_price" class="form-control form-control-material" step="0.01" min="0">
+                                    <span class="input-group-text">₺</span>
+                                </div>
+                                <small class="text-muted">"Tasarımı bize yaptır" seçilirse eklenecek ek ücret (opsiyonel)</small>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
                                 <label for="price_difference_per_page" class="form-label">Artan Sayfa Yüzdesi</label>
                                 <div class="input-group">
                                     <input type="number" name="price_difference_per_page" id="price_difference_per_page" class="form-control form-control-material" min="0" step="1">

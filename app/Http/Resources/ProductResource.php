@@ -21,6 +21,7 @@ class ProductResource extends JsonResource
             'slug' => $this->slug,
             'price' => (float) $this->price,
             'urgent_price' => (float) $this->urgent_price,
+            'design_service_price' => (float) $this->design_service_price,
             'main_category_id' => $this->main_category_id,
             'main_category' => [
                 'id' => $this->mainCategory?->id,

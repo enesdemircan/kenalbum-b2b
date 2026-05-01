@@ -6,8 +6,8 @@ use Illuminate\Support\Facades\DB;
 /**
  * Mevcut step_label seed'ini normalize et:
  * - Her ana customization kategorisi kendi adıyla bir tab olsun (Ebat, Kumaş, Renk, Paket vb.)
- * - "Albüm Üzerine Yazılacak Yazı" + "Not" tek "Özel" tab'ında gruplansın
- *   (admin yeni "Çalışma Tipi", "Dizgi", "Rötüş" gibi kategorileri de step_label='Özel' ile aynı tab'a alabilir)
+ * - "Albüm Üzerine Yazılacak Yazı" + "Not" tek "Diğer" tab'ında gruplansın
+ *   (admin yeni "Çalışma Tipi", "Dizgi", "Rötüş" gibi kategorileri de step_label='Diğer' ile aynı tab'a alabilir)
  */
 return new class extends Migration
 {
@@ -23,13 +23,13 @@ return new class extends Migration
             ['title_like' => 'Model',      'label' => 'Model'],
             ['title_like' => 'Boyut',      'label' => 'Ebat'],
             ['title_like' => 'Pvc Kalın',  'label' => 'Pvc Kalınlığı'],
-            // "Özel" tab — birden fazla kategori bu label ile gruplanır
-            ['title_like' => 'Albüm Üzerine', 'label' => 'Özel'],
-            ['title_like' => 'Yazılacak Yazı','label' => 'Özel'],
-            ['title_like' => 'Not',          'label' => 'Özel'],
-            ['title_like' => 'Extra Ürün',   'label' => 'Özel'],
+            // "Diğer" tab — birden fazla kategori bu label ile gruplanır
+            ['title_like' => 'Albüm Üzerine', 'label' => 'Diğer'],
+            ['title_like' => 'Yazılacak Yazı','label' => 'Diğer'],
+            ['title_like' => 'Not',          'label' => 'Diğer'],
+            ['title_like' => 'Extra Ürün',   'label' => 'Diğer'],
             // Yeni kategoriler eklenecek (Çalışma Tipi, Dizgi, Rötüş vb.) — bunlar da admin
-            // panelden step_label='Özel' set ederek aynı tab'da görünür hale gelir.
+            // panelden step_label='Diğer' set ederek aynı tab'da görünür hale gelir.
         ];
 
         foreach ($rules as $rule) {

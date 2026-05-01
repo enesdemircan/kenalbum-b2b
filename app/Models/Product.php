@@ -12,7 +12,7 @@ class Product extends Model
     use HasFactory;
     
     protected $fillable = [
-        'title', 'slug', 'price', 'urgent_price', 'main_category_id', 'images', 'thumbnails', 'template_url', 'status', 'order', 'price_difference_per_page', 'decreasing_per_page', 'max_pages', 'min_pages', 'option1', 'option2', 'suggested_products', 'ust_id', 'tags', 'stock_status', 'description'
+        'title', 'slug', 'price', 'urgent_price', 'design_service_price', 'main_category_id', 'images', 'thumbnails', 'template_url', 'status', 'order', 'price_difference_per_page', 'decreasing_per_page', 'max_pages', 'min_pages', 'option1', 'option2', 'suggested_products', 'ust_id', 'tags', 'stock_status', 'description'
     ];
 
     protected $casts = [

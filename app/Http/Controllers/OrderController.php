@@ -131,6 +131,20 @@ class OrderController extends Controller
             $byLabel[$label]['min_cat_id'] = min($byLabel[$label]['min_cat_id'], $catInfo['category_id']);
         }
 
+        // "Diğer" tab her sipariş formunda görünmek zorunda — hardcoded
+        // alanlar (Tasarım Hizmeti, Acil Üretim, Sipariş Notu) burada render
+        // edilir. Eğer ürünün step_label='Diğer' ile eşleşen customization'ı
+        // yoksa synthetic bir step ekle.
+        if (!isset($byLabel['Diğer'])) {
+            $byLabel['Diğer'] = [
+                'step_label' => 'Diğer',
+                'categories' => [],
+                'is_cascade' => false,
+                'min_order' => 9998,
+                'min_cat_id' => 99998,
+            ];
+        }
+
         $customizationSteps = collect(array_values($byLabel))->sortBy([
             ['min_order', 'asc'],
             ['min_cat_id', 'asc'],
