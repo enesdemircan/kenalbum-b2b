@@ -712,17 +712,14 @@
   </div>
 
   <style>
+      /* "Sipariş Ver" linki diğer nav öğeleriyle aynı boyut/spacing —
+         farklılaşma sadece yazı renginde (vurgu için yeşil). */
       .navigation__item-cta .navigation__link {
-          background: linear-gradient(135deg, #198754, #20a745);
-          color: #fff !important;
-          padding: 8px 18px !important;
-          border-radius: 999px;
+          color: #198754 !important;
           font-weight: 700;
-          letter-spacing: .5px;
       }
       .navigation__item-cta .navigation__link:hover {
-          background: linear-gradient(135deg, #146c43, #198754);
-          color: #fff !important;
+          color: #146c43 !important;
       }
       .opp-cat-list { max-height: 60vh; overflow-y: auto; }
       .opp-cat-item {
