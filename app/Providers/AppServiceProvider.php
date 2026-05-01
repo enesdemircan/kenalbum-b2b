@@ -114,9 +114,5 @@ class AppServiceProvider extends ServiceProvider
             $roles = auth()->user()->roles;
             return $roles->contains('id', 1) || $roles->contains('id', 3);
         });
-
-        // Pagination view'ını ayarla
-        \Illuminate\Pagination\Paginator::defaultView('vendor.pagination.bootstrap-5');
-        \Illuminate\Pagination\Paginator::defaultSimpleView('vendor.pagination.simple-bootstrap-5');
     }
 }
