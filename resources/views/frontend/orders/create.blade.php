@@ -611,11 +611,9 @@
                                                                 <i class="fas fa-sliders-h"></i> Özelleştir ve Ekle
                                                             </button>
                                                         @else
-                                                            <div class="extra-qty-control">
-                                                                <button type="button" class="btn extra-qty-btn extra-qty-minus" aria-label="Azalt">−</button>
-                                                                <input type="number" class="form-control extra-qty" value="0" min="0" max="99" inputmode="numeric">
-                                                                <button type="button" class="btn extra-qty-btn extra-qty-plus" aria-label="Arttır">+</button>
-                                                            </div>
+                                                            <button type="button" class="btn btn-primary btn-sm extra-add-btn">
+                                                                <i class="fas fa-cart-plus"></i> Sepete Ekle
+                                                            </button>
                                                         @endif
                                                     </div>
                                                 </div>
@@ -1165,6 +1163,21 @@
         letter-spacing: .4px;
         text-transform: uppercase;
     }
+    /* Ekstralar adımında 2-kolon (galeri+wizard) yerine TEK KOLON tam genişlik —
+       galeri gizlenir, sağdaki container 12 kolon olur. Diğer adımlarda
+       eski 5/7 split korunur. */
+    .wizard-extras-mode .product-gallery-sticky,
+    .wizard-extras-mode .product-header-compact {
+        display: none !important;
+    }
+    .wizard-extras-mode > .col-lg-5 {
+        display: none !important;
+    }
+    .wizard-extras-mode > .col-lg-7 {
+        flex: 0 0 100% !important;
+        max-width: 100% !important;
+    }
+
     /* ============ EKSTRALAR — extra ürün kartları ============ */
     .extras-grid .extra-card {
         position: relative;
@@ -1480,6 +1493,11 @@
             const navPriceEl = document.getElementById('wizard-nav-price');
             if (navPriceEl) navPriceEl.style.visibility = isExtrasStep ? 'hidden' : '';
 
+            // Ekstralar adımında galeri/2-kolon layout gizlensin, full-width.
+            // Bu mode 2 col'lu .row.g-4 wrapper'a class ekler — CSS .col-lg-5 gizler.
+            const layoutRow = document.querySelector('.wizard-steps-container')?.closest('.row.g-4');
+            if (layoutRow) layoutRow.classList.toggle('wizard-extras-mode', isExtrasStep);
+
             // Sipariş Özeti'nde nextBtn label "Sepete Ekle ve Devam Et",
             // diğer step'lerde "İleri".
             if (isSummaryStep) {
@@ -1636,6 +1654,7 @@
                 if (data.success && data.cart_id) {
                     window._mainCommitted = true;
                     window._mainCartId = data.cart_id;
+                    if (typeof window.notifyCartAdd === 'function') window.notifyCartAdd('Ana ürün sepete eklendi');
                     return true;
                 }
                 Swal.fire({ icon: 'error', title: 'Hata', text: data.message || 'Sepete eklenemedi.' });
@@ -1681,31 +1700,43 @@
             ind.style.cursor = 'pointer';
         });
 
-        // Extras +/- — adet değişiminde live AJAX (POST /cart/extra/set).
-        // Ana ürün Sipariş Özeti adımında zaten cart'a eklendi; her ekstra
-        // ayrı bir cart item olarak set edilir (qty=0 → silinir).
-        const triggerPriceUpdate = () => {
-            if (typeof window.updatePrice === 'function') {
-                try { window.updatePrice(); } catch (e) { /* henüz init olmayabilir */ }
-            }
-        };
+        // ============ Cart-add bildirimleri (toast) ============
+        // Kullanıcı her sepet ekleme işleminden sonra kısa bir toast görür.
+        const cartAddToast = (typeof Swal !== 'undefined') ? Swal.mixin({
+            toast: true,
+            position: 'top-end',
+            showConfirmButton: false,
+            timer: 1800,
+            timerProgressBar: true,
+        }) : null;
+        function notifyCartAdd(text) {
+            if (cartAddToast) cartAddToast.fire({ icon: 'success', title: text || 'Sepete eklendi' });
+        }
+        window.notifyCartAdd = notifyCartAdd; // diğer scope'lar erişebilsin
 
         const csrfToken = () => document.querySelector('input[name="_token"]')?.value
             || document.querySelector('meta[name="csrf-token"]')?.content || '';
 
-        async function syncExtraToCart(card, qty) {
-            const productId = card.getAttribute('data-extra-product-id');
-            if (!productId) return;
-            // Ana ürün commit edilmediyse extra eklemenin anlamı yok — kullanıcıyı uyar
+        // ============ Ekstralar — tek "Sepete Ekle" butonu ============
+        // Customization'sız ekstralar için tek tık → POST cart.extra.set qty=1.
+        // Buton state "Sepete Eklendi ✓" olur; tekrar tıklanırsa idempotent (qty=1 set).
+        async function addSimpleExtraToCart(card) {
             if (!window._mainCommitted) {
                 Swal.fire({ icon: 'info', title: 'Önce ana ürün', text: 'Önce Sipariş Özeti adımından ana ürünü sepete eklemelisiniz.' });
                 return;
             }
-            card.classList.add('extra-syncing');
+            const productId = card.getAttribute('data-extra-product-id');
+            const title = card.getAttribute('data-extra-title') || 'Ekstra';
+            const btn = card.querySelector('.extra-add-btn');
+            if (!productId || !btn) return;
+            const originalHtml = btn.dataset.originalHtml || btn.innerHTML;
+            btn.dataset.originalHtml = originalHtml;
+            btn.disabled = true;
+            btn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span>Ekleniyor...';
             try {
                 const fd = new FormData();
                 fd.append('product_id', productId);
-                fd.append('quantity', qty);
+                fd.append('quantity', 1);
                 fd.append('_token', csrfToken());
                 const res = await fetch('{{ route("cart.extra.set") }}', {
                     method: 'POST',
@@ -1713,54 +1744,33 @@
                     headers: { 'X-CSRF-TOKEN': csrfToken(), 'Accept': 'application/json' }
                 });
                 const data = await res.json();
-                if (!data.success) {
-                    Swal.fire({ icon: 'error', title: 'Hata', text: data.message || 'Ekstra güncellenemedi.' });
+                if (data.success) {
+                    card.classList.add('has-quantity');
+                    btn.classList.remove('btn-primary');
+                    btn.classList.add('btn-success');
+                    btn.innerHTML = '<i class="fas fa-check"></i> Sepete Eklendi';
+                    notifyCartAdd(title + ' sepete eklendi');
+                } else {
+                    btn.innerHTML = originalHtml;
+                    Swal.fire({ icon: 'error', title: 'Hata', text: data.message || 'Sepete eklenemedi.' });
                 }
             } catch (e) {
-                Swal.fire({ icon: 'error', title: 'Bağlantı hatası', text: 'Ekstra güncellenemedi, lütfen tekrar deneyin.' });
+                btn.innerHTML = originalHtml;
+                Swal.fire({ icon: 'error', title: 'Bağlantı hatası', text: 'Lütfen tekrar deneyin.' });
             } finally {
-                card.classList.remove('extra-syncing');
+                btn.disabled = false;
             }
-        }
-
-        // Debounce: kullanıcı hızlıca +/- tıklarsa son qty ile tek sync yap
-        const extraSyncTimers = new WeakMap();
-        function scheduleExtraSync(card, qty) {
-            if (extraSyncTimers.has(card)) clearTimeout(extraSyncTimers.get(card));
-            const t = setTimeout(() => syncExtraToCart(card, qty), 350);
-            extraSyncTimers.set(card, t);
         }
 
         document.querySelectorAll('.extra-card').forEach(card => {
             const hasCustomization = card.getAttribute('data-has-customization') === 'true';
-
-            // Customization'lı ekstralar: +/- yerine "Özelleştir ve Ekle" modal'ı
             if (hasCustomization) {
                 const customizeBtn = card.querySelector('.extra-customize-btn');
                 if (customizeBtn) customizeBtn.addEventListener('click', () => openExtraCustomizeModal(card));
-                return;
+            } else {
+                const addBtn = card.querySelector('.extra-add-btn');
+                if (addBtn) addBtn.addEventListener('click', () => addSimpleExtraToCart(card));
             }
-
-            // Customization'sız ekstralar: mevcut +/- live AJAX
-            const minus = card.querySelector('.extra-qty-minus');
-            const plus = card.querySelector('.extra-qty-plus');
-            const input = card.querySelector('.extra-qty');
-            if (!input) return;
-            const sync = () => {
-                const qty = parseInt(input.value || '0', 10);
-                card.classList.toggle('has-quantity', qty > 0);
-                triggerPriceUpdate();
-                scheduleExtraSync(card, qty);
-            };
-            if (minus) minus.addEventListener('click', () => {
-                input.value = Math.max(0, (parseInt(input.value || '0', 10) || 0) - 1);
-                sync();
-            });
-            if (plus) plus.addEventListener('click', () => {
-                input.value = Math.min(99, (parseInt(input.value || '0', 10) || 0) + 1);
-                sync();
-            });
-            input.addEventListener('input', sync);
         });
 
         // ============ Ekstra customization modal ============
@@ -1876,9 +1886,11 @@
                     const data = await res.json();
                     if (data.success && data.cart_id) {
                         hideExtraModal();
-                        Swal.fire({ icon: 'success', title: 'Sepete eklendi', timer: 1400, showConfirmButton: false });
                         const card = document.querySelector('.extra-card[data-extra-product-id="' + productId + '"]');
                         if (card) card.classList.add('has-quantity');
+                        const title = form.dataset.extraProductTitle || 'Ekstra';
+                        if (typeof window.notifyCartAdd === 'function') window.notifyCartAdd(title + ' sepete eklendi');
+                        else Swal.fire({ icon: 'success', title: 'Sepete eklendi', timer: 1400, showConfirmButton: false });
                     } else {
                         Swal.fire({ icon: 'error', title: 'Hata', text: data.message || 'Sepete eklenemedi.' });
                     }
