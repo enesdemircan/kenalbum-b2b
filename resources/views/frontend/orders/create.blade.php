@@ -1767,12 +1767,29 @@
         // Modal show/hide — Bootstrap 5 API varsa onu kullan, yoksa vanilla fallback.
         // Bazı sayfalarda window.bootstrap namespace mevcut olmayabilir
         // (master layout yükleme sırası, başka bir global override).
+        // Tekil modal instance — her show'da yenisini yaratmak yerine reuse et.
+        // Bootstrap version'a göre getOrCreateInstance / new Modal / vanilla fallback.
+        let _extraModalInstance = null;
+        function getBsModalInstance(modalEl) {
+            if (_extraModalInstance) return _extraModalInstance;
+            if (!window.bootstrap || !window.bootstrap.Modal) return null;
+            try {
+                if (typeof window.bootstrap.Modal.getOrCreateInstance === 'function') {
+                    _extraModalInstance = window.bootstrap.Modal.getOrCreateInstance(modalEl);
+                } else {
+                    _extraModalInstance = new window.bootstrap.Modal(modalEl);
+                }
+                return _extraModalInstance;
+            } catch (e) {
+                return null;
+            }
+        }
         function showExtraModal() {
             const modalEl = document.getElementById('extraCustomizeModal');
             if (!modalEl) return;
-            if (window.bootstrap && window.bootstrap.Modal) {
-                window.bootstrap.Modal.getOrCreateInstance(modalEl).show();
-                return;
+            const bs = getBsModalInstance(modalEl);
+            if (bs) {
+                try { bs.show(); return; } catch (e) { /* fallthrough vanilla */ }
             }
             // Vanilla fallback
             modalEl.classList.add('show');
@@ -1791,9 +1808,8 @@
         function hideExtraModal() {
             const modalEl = document.getElementById('extraCustomizeModal');
             if (!modalEl) return;
-            if (window.bootstrap && window.bootstrap.Modal) {
-                window.bootstrap.Modal.getInstance(modalEl)?.hide();
-                return;
+            if (_extraModalInstance) {
+                try { _extraModalInstance.hide(); return; } catch (e) { /* fallthrough */ }
             }
             modalEl.classList.remove('show');
             modalEl.style.display = 'none';
