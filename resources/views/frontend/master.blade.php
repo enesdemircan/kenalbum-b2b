@@ -739,13 +739,13 @@
           font-size: 0.84rem;
           color: #6c757d;
       }
-      /* Geçmişim history kartları */
+      /* Geçmişim history kartları — dikey layout: üstte ürün satırı, altta tam-genişlik aksiyon satırı */
       .opp-history-card {
           display: flex;
-          gap: 12px;
+          flex-direction: column;
           border: 1px solid #e9ecef;
           border-radius: 10px;
-          padding: 10px;
+          padding: 12px;
           background: #fff;
           height: 100%;
           transition: box-shadow .15s, border-color .15s;
@@ -753,6 +753,11 @@
       .opp-history-card:hover {
           border-color: #f0ad4e;
           box-shadow: 0 4px 12px rgba(240,173,78,.15);
+      }
+      .opp-history-row {
+          display: flex;
+          gap: 12px;
+          flex: 1;
       }
       .opp-history-img {
           width: 80px;
@@ -784,19 +789,23 @@
           font-size: 0.72rem;
           color: #6c757d;
           line-height: 1.4;
-          max-height: 50px;
+          max-height: 70px;
           overflow: hidden;
       }
       .opp-history-summary div { display: block; }
+      /* Aksiyon satırı — kart altında tam genişlik, 2 eşit buton */
       .opp-history-actions {
-          display: flex;
-          gap: 6px;
-          margin-top: 8px;
+          display: grid;
+          grid-template-columns: 1fr 1fr;
+          gap: 8px;
+          margin-top: 12px;
+          padding-top: 10px;
+          border-top: 1px dashed #e9ecef;
       }
       .opp-history-actions .btn {
-          flex: 1;
-          font-size: 0.75rem;
-          padding: 4px 8px;
+          width: 100%;
+          font-size: 0.78rem;
+          padding: 6px 10px;
       }
       .opp-card {
           display: block;
@@ -904,21 +913,23 @@
           grid.innerHTML = items.map(it => `
               <div class="col">
                   <div class="opp-history-card">
-                      ${it.product_image
-                          ? `<img src="${escHtml(it.product_image)}" alt="${escHtml(it.product_title)}" class="opp-history-img" loading="lazy">`
-                          : '<div class="opp-history-img-empty"><i class="fas fa-cube"></i></div>'}
-                      <div class="opp-history-body">
-                          <div class="opp-history-title">${escHtml(it.product_title)}</div>
-                          <div class="opp-history-summary">
-                              ${(it.summary || []).slice(0, 4).map(s => `<div>${escHtml(s)}</div>`).join('')}
-                              ${it.created_at ? `<div class="text-muted">${escHtml(it.created_at)}</div>` : ''}
+                      <div class="opp-history-row">
+                          ${it.product_image
+                              ? `<img src="${escHtml(it.product_image)}" alt="${escHtml(it.product_title)}" class="opp-history-img" loading="lazy">`
+                              : '<div class="opp-history-img-empty"><i class="fas fa-cube"></i></div>'}
+                          <div class="opp-history-body">
+                              <div class="opp-history-title">${escHtml(it.product_title)}</div>
+                              <div class="opp-history-summary">
+                                  ${(it.summary || []).slice(0, 4).map(s => `<div>${escHtml(s)}</div>`).join('')}
+                                  ${it.created_at ? `<div class="text-muted">${escHtml(it.created_at)}</div>` : ''}
+                              </div>
                           </div>
-                          <div class="opp-history-actions">
-                              <a href="${it.order_url}" class="btn btn-sm btn-outline-primary"><i class="fas fa-sliders-h"></i> Özelleştir</a>
-                              <button type="button" class="btn btn-sm btn-success opp-history-add" data-duplicate-url="${it.duplicate_url}" data-title="${escHtml(it.product_title)}">
-                                  <i class="fas fa-cart-plus"></i> Sepete Ekle
-                              </button>
-                          </div>
+                      </div>
+                      <div class="opp-history-actions">
+                          <a href="${it.order_url}" class="btn btn-outline-primary"><i class="fas fa-sliders-h"></i> Özelleştir</a>
+                          <button type="button" class="btn btn-success opp-history-add" data-duplicate-url="${it.duplicate_url}" data-title="${escHtml(it.product_title)}">
+                              <i class="fas fa-cart-plus"></i> Sepete Ekle
+                          </button>
                       </div>
                   </div>
               </div>
