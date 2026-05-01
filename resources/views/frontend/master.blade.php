@@ -660,6 +660,23 @@
 
   <!-- Footer Scripts -->
   <script src="{{ asset('js/theme.js') }}"></script>
+  {{-- Header sticky shadow toggle on scroll --}}
+  <script>
+  (function(){
+      var header = document.getElementById('header');
+      if (!header) return;
+      var lastY = 0;
+      function onScroll() {
+          var y = window.scrollY || window.pageYOffset;
+          if (y > 4 && lastY <= 4) header.classList.add('is-scrolled');
+          else if (y <= 4 && lastY > 4) header.classList.remove('is-scrolled');
+          lastY = y;
+      }
+      window.addEventListener('scroll', onScroll, { passive: true });
+      onScroll();
+  })();
+  </script>
+
   @yield('scripts')
 
   @auth
