@@ -113,7 +113,7 @@
                     <div class="option-card-body">
                         <div class="option-card-title">{{ $param->key }}</div>
                         @if(($pivot->price ?: 0) > 0)
-                            @if(Auth::check() and Auth::user()->roles->contains('id', 3) or Auth::user()->roles->contains('id', 1))
+                            @canSeePrices
                             <div class="option-card-price">+{{ number_format($pivot->price ?: 0, 2) }} ₺</div>
                             @endif
                         @endif
@@ -160,7 +160,7 @@
                     <div class="option-card-body">
                         <div class="option-card-title">{{ $param->key }}</div>
                         @if(($pivot->price ?: 0) > 0)
-                            @if(Auth::check() and Auth::user()->roles->contains('id', 3) or Auth::user()->roles->contains('id', 1))
+                            @canSeePrices
                             <div class="option-card-price">+{{ number_format($pivot->price ?: 0, 2) }} ₺</div>
                             @endif
                         @endif
@@ -220,7 +220,7 @@
                 <label for="param_file_{{ $param->id }}" class="form-label fw-bold">
                     <i class="fas fa-file-archive"></i> {{ $param->key }}
                     @if(($pivot->price ?: 0) > 0)
-                        @if(Auth::check() and Auth::user()->roles->contains('id', 3) or Auth::user()->roles->contains('id', 1))
+                        @canSeePrices
                         <span class="text-success-2">(+{{ number_format($pivot->price ?: 0, 2) }} TL)</span>
                         @endif
                     @endif

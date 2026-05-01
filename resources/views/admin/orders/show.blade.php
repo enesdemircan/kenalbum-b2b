@@ -158,6 +158,18 @@
                                         Acil Üretim +{{ number_format($item->product->urgent_price, 2) }} ₺
                                     </div>
                                 @endif
+                                @php $itemNotes = $item->notes ? json_decode($item->notes, true) : []; @endphp
+                                @if(($itemNotes['design_service'] ?? null) === 'with_design')
+                                    <div class="material-badge material-badge-info mb-3">
+                                        <span class="material-icons" style="font-size:16px">edit</span>
+                                        Tasarımı Bize Yaptır +{{ number_format($item->product->design_service_price ?? 0, 2) }} ₺
+                                    </div>
+                                @elseif(($itemNotes['design_service'] ?? null) === 'self_design')
+                                    <div class="material-badge mb-3">
+                                        <span class="material-icons" style="font-size:16px">edit</span>
+                                        Müşteri kendi tasarımını yükleyecek
+                                    </div>
+                                @endif
                                 
                                 <!-- Durum Güncelleme -->
                                 <div class="mb-3">

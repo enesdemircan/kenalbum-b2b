@@ -633,7 +633,7 @@
                                 <i class="fas fa-arrow-left"></i> Geri
                             </button>
                             <div class="wizard-nav-price" id="wizard-nav-price">
-                                @if(Auth::check() and Auth::user()->roles->contains('id', 3) or Auth::user()->roles->contains('id', 1))
+                                @canSeePrices
                                 <span class="label">Toplam</span>
                                 <span id="wizard-bottom-price">{{ number_format($product->price, 2, ',', '.') }} ₺</span>
                                 @endif
@@ -1218,58 +1218,11 @@
         font-weight: 700;
         font-size: 1rem;
     }
-    /* +/- adet kontrolü — sade pill stil */
-    .extra-qty-control {
-        display: flex;
-        align-items: stretch;
-        justify-content: center;
-        background: #f8f9fa;
-        border-radius: 999px;
-        padding: 2px;
+    /* Ekstra ekleme buton — kart altında ortalı, full-width tıklama hedefi */
+    .extras-grid .extra-add-btn,
+    .extras-grid .extra-customize-btn {
         margin-top: auto;
-    }
-    .extra-qty-btn {
-        width: 32px;
-        height: 32px;
-        padding: 0;
-        border: 0;
-        background: transparent;
-        color: #495057;
-        font-size: 1.1rem;
-        font-weight: 600;
-        line-height: 1;
-        border-radius: 50%;
-        transition: background .12s;
-    }
-    .extra-qty-btn:hover,
-    .extra-qty-btn:focus {
-        background: #e9ecef;
-        color: #198754;
-    }
-    .extra-qty-btn:active {
-        background: #198754;
-        color: #fff;
-    }
-    .extra-qty {
-        width: 48px;
-        height: 32px;
-        border: 0;
-        background: transparent;
-        text-align: center;
-        font-weight: 600;
-        color: #212529;
-        padding: 0;
-        font-size: 0.95rem;
-        outline: none;
-        box-shadow: none;
-    }
-    .extra-qty::-webkit-outer-spin-button,
-    .extra-qty::-webkit-inner-spin-button {
-        -webkit-appearance: none;
-        margin: 0;
-    }
-    .extra-qty[type="number"] {
-        -moz-appearance: textfield;
+        width: 100%;
     }
     .wizard-summary {
         background: #f8f9fa;
@@ -1616,6 +1569,9 @@
         // Sipariş Özeti ve öncesine GERİ gidilemesin (sipariş kesinleşti).
         window._mainCommitted = false;
         window._mainCartId = null;
+        // Bu oturumda (bu wizard sayfasında) eklenen tüm cart ID'leri.
+        // 'Siparişi Tamamla' shortcut'u bunları korur, diğerlerini siler.
+        window._sessionCartIds = [];
 
         // Sipariş Özeti adımının indeksini bul (data-step-kind="summary")
         function findSummaryIndex() {
@@ -1654,6 +1610,7 @@
                 if (data.success && data.cart_id) {
                     window._mainCommitted = true;
                     window._mainCartId = data.cart_id;
+                    if (!window._sessionCartIds.includes(data.cart_id)) window._sessionCartIds.push(data.cart_id);
                     if (typeof window.notifyCartAdd === 'function') window.notifyCartAdd('Ana ürün sepete eklendi');
                     return true;
                 }
@@ -1749,6 +1706,7 @@
                     btn.classList.remove('btn-primary');
                     btn.classList.add('btn-success');
                     btn.innerHTML = '<i class="fas fa-check"></i> Sepete Eklendi';
+                    if (data.cart_id && !window._sessionCartIds.includes(data.cart_id)) window._sessionCartIds.push(data.cart_id);
                     notifyCartAdd(title + ' sepete eklendi');
                 } else {
                     btn.innerHTML = originalHtml;
@@ -1772,6 +1730,65 @@
                 if (addBtn) addBtn.addEventListener('click', () => addSimpleExtraToCart(card));
             }
         });
+
+        // "Siparişi Tamamla" — Ekstralar tab'ından doğrudan ödemeye gitme shortcut'ı.
+        // Bu wizard akışında oluşan main_cart_id (ve aynı oturumdaki cart'lar) DIŞINDAKİ
+        // pending sepet ürünlerini siler, sonra checkout'a yönlendirir.
+        const finishOrderBtn = document.getElementById('extrasFinishOrderBtn');
+        if (finishOrderBtn) {
+            finishOrderBtn.addEventListener('click', async () => {
+                const result = await Swal.fire({
+                    icon: 'warning',
+                    title: 'Siparişi Tamamla',
+                    text: 'Bu sipariş ve eklediğiniz ekstralar dışındaki sepet ürünleri silinecek. Devam edilsin mi?',
+                    showCancelButton: true,
+                    confirmButtonText: 'Evet, devam et',
+                    cancelButtonText: 'Vazgeç',
+                });
+                if (!result.isConfirmed) return;
+
+                // Bu oturumda eklenen cart ID'leri tut (main + extras)
+                const keepIds = [];
+                if (window._mainCartId) keepIds.push(window._mainCartId);
+                // Extra cart_id'leri kart üzerinde tutmuyoruz; backend filtre olarak
+                // sadece main'i koruyacak. Modal'lı extralar ve simple extras siparişe
+                // ait olduğu için, bunların cart_id'lerini de saklamak için ayrı state
+                // gerekirdi — şimdilik backend güvenli yol: sadece main_cart_id korunur,
+                // diğer extras yine sepete dahil olduğu için silinmez (response success
+                // sonrası set ederiz).
+
+                finishOrderBtn.disabled = true;
+                finishOrderBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>İşleniyor...';
+                try {
+                    const fd = new FormData();
+                    fd.append('_token', csrfToken());
+                    // Bu oturumun cart ID'leri — ana ürün + bu sayfada eklenen ekstralar
+                    const sessionIds = window._sessionCartIds || [];
+                    if (window._mainCartId && !sessionIds.includes(window._mainCartId)) {
+                        sessionIds.push(window._mainCartId);
+                    }
+                    sessionIds.forEach(id => fd.append('keep_cart_ids[]', id));
+
+                    const res = await fetch('{{ route("cart.clear-others") }}', {
+                        method: 'POST',
+                        body: fd,
+                        headers: { 'X-CSRF-TOKEN': csrfToken(), 'Accept': 'application/json' }
+                    });
+                    const data = await res.json();
+                    if (data.success) {
+                        window.location.href = '{{ route("cart.checkout") }}';
+                    } else {
+                        Swal.fire({ icon: 'error', title: 'Hata', text: data.message || 'İşlem başarısız.' });
+                        finishOrderBtn.disabled = false;
+                        finishOrderBtn.innerHTML = '<i class="fas fa-bolt"></i> SİPARİŞİ TAMAMLA';
+                    }
+                } catch (e) {
+                    Swal.fire({ icon: 'error', title: 'Bağlantı hatası', text: 'Lütfen tekrar deneyin.' });
+                    finishOrderBtn.disabled = false;
+                    finishOrderBtn.innerHTML = '<i class="fas fa-bolt"></i> SİPARİŞİ TAMAMLA';
+                }
+            });
+        }
 
         // ============ Ekstra customization modal ============
         // Modal show/hide — Bootstrap 5 API varsa onu kullan, yoksa vanilla fallback.
@@ -1888,6 +1905,7 @@
                         hideExtraModal();
                         const card = document.querySelector('.extra-card[data-extra-product-id="' + productId + '"]');
                         if (card) card.classList.add('has-quantity');
+                        if (!window._sessionCartIds.includes(data.cart_id)) window._sessionCartIds.push(data.cart_id);
                         const title = form.dataset.extraProductTitle || 'Ekstra';
                         if (typeof window.notifyCartAdd === 'function') window.notifyCartAdd(title + ' sepete eklendi');
                         else Swal.fire({ icon: 'success', title: 'Sepete eklendi', timer: 1400, showConfirmButton: false });
@@ -2196,8 +2214,6 @@
                     $('input[name="page_count"]').val(selectedPageCount);
                     
                     // Debug log
-                    console.log('Page count changed to:', selectedPageCount);
-                    console.log('Hidden input value:', $('input[name="page_count"]').val());
                 });
                 
                 // Dosya yükleme listener'ları kaldırıldı: file/files type customization
@@ -2230,7 +2246,6 @@
                         'Accept': 'application/json'
                     },
                     success: function(response) {
-                        console.log('AJAX Success:', response);
                         
                         if (response && response.html) {
                             $container.html(response.html);
@@ -2240,7 +2255,6 @@
                                 attachEventListeners();
                             }, 100);
                         } else {
-                            console.log('No HTML in response');
                             $container.empty().hide();
                         }
                     },
@@ -2386,9 +2400,6 @@
                 $('#total-price-input').val(totalPrice.toFixed(2));
                 
                 // Debug log
-                console.log('Price updated - Display:', totalPrice.toFixed(2), 'Hidden Input:', $('#total-price-input').val());
-                console.log('Hidden input element:', $('#total-price-input').length ? 'Found' : 'Not found');
-                console.log('Hidden input value after update:', $('#total-price-input').val());
                 
             }
             
@@ -2563,11 +2574,9 @@
             
             // Required validation kontrolü
             if (!validateRequiredCustomizations()) {
-                console.log('Required validation failed');
                 return false;
             }
             
-            console.log('Required validation passed');
             
             // Loading göster
             Swal.fire({
@@ -2598,20 +2607,17 @@
                 if (element.type === 'checkbox') {
                     if (element.checked) {
                         formData.append(element.name, element.value);
-                        console.log('Checkbox added:', element.name, '=', element.value);
                     }
                 }
                 // Radio button'lar için özel kontrol
                 else if (element.type === 'radio') {
                     if (element.checked) {
                         formData.append(element.name, element.value);
-                        console.log('Radio added:', element.name, '=', element.value);
                     }
                 }
                 // Diğer elementler
                 else if (element.name && element.value !== undefined) {
                     formData.append(element.name, element.value);
-                    console.log('Input added:', element.name, '=', element.value);
                 }
             }
             
@@ -2627,7 +2633,6 @@
                 console.warn('extras collection failed:', e);
             }
 
-            console.log('Form data collected, sending to cart');
 
             // AJAX ile sepete ekle
             fetch('{{ route("cart.add") }}', {
@@ -2639,7 +2644,6 @@
             })
             .then(response => response.json())
             .then(data => {
-                console.log('Cart add response:', data);
 
                 Swal.close();
 

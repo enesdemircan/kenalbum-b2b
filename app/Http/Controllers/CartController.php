@@ -440,7 +440,9 @@ class CartController extends Controller
         $cart->product_id = $request->product_id;
         $cart->quantity = $request->quantity ?? 1;
         $cart->page_count = $request->page_count;
-        if($request->has('urgent_status')){
+        // Form 'urgent_production' field'ı gönderir (eski 'urgent_status' field
+        // adı kullanılmıyor). Çevirici: notes flag'i + cart sütunu birlikte set.
+        if ($request->boolean('urgent_production')) {
             $cart->urgent_status = 1;
         }
         // Fiyatları güncelle
@@ -760,6 +762,42 @@ class CartController extends Controller
                 'cart_count' => $user->cart()->where('status', 0)->count()
             ]);
         }
+    }
+
+    /**
+     * Wizard akışında "Siparişi Tamamla (yalnız bu sepetlerle)" shortcut'ı için.
+     * Verilen cart_id_keep listesi DIŞINDAKİ tüm aktif (status=0) cart'ları siler,
+     * dosyalarını ve OrderStatusHistory kayıtlarını temizler.
+     */
+    public function clearOtherCarts(Request $request)
+    {
+        if (!Auth::check()) {
+            return response()->json(['success' => false, 'message' => 'Giriş gerekli.'], 401);
+        }
+
+        $request->validate([
+            'keep_cart_ids' => 'nullable|array',
+            'keep_cart_ids.*' => 'integer',
+        ]);
+
+        $keepIds = $request->input('keep_cart_ids', []);
+        $user = Auth::user();
+
+        $toDelete = $user->cart()
+            ->where('status', 0)
+            ->when(!empty($keepIds), fn($q) => $q->whereNotIn('id', $keepIds))
+            ->get();
+
+        foreach ($toDelete as $cart) {
+            $cart->deleteAssociatedFiles();
+            OrderStatusHistory::where('cart_id', $cart->id)->delete();
+            $cart->delete();
+        }
+
+        return response()->json([
+            'success' => true,
+            'deleted_count' => $toDelete->count(),
+        ]);
     }
 
     /**

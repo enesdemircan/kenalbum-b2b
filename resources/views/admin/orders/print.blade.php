@@ -373,19 +373,32 @@
             @php
                 $cartNotes = null;
                 $urgentProduction = false;
+                $designService = null;
                 if ($item->notes) {
                     $parsedNotes = json_decode($item->notes, true);
                     $cartNotes = $parsedNotes['order_note'] ?? null;
                     $urgentProduction = !empty($parsedNotes['urgent_production']);
+                    $designService = $parsedNotes['design_service'] ?? null;
                 }
             @endphp
-            @if(!empty($cartNotes) || $urgentProduction)
+            @if(!empty($cartNotes) || $urgentProduction || $designService)
                 <div style="width: 100%; clear: both; margin-top: 10px;" class="cart-notes-section">
                     <div class="customization-title">Sipariş Notu:</div>
                     @if($urgentProduction)
                         <div class="customization-item">
                             <strong>Acil Üretim:</strong>
                             <span class="text-muted">Evet</span>
+                        </div>
+                    @endif
+                    @if($designService === 'with_design')
+                        <div class="customization-item">
+                            <strong>Tasarım Hizmeti:</strong>
+                            <span class="text-muted">Tasarımı bize yaptır (+{{ number_format($item->product->design_service_price ?? 0, 2) }} ₺)</span>
+                        </div>
+                    @elseif($designService === 'self_design')
+                        <div class="customization-item">
+                            <strong>Tasarım Hizmeti:</strong>
+                            <span class="text-muted">Müşteri kendi tasarımını yükleyecek</span>
                         </div>
                     @endif
                     @if(!empty($cartNotes))

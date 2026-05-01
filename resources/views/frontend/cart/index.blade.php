@@ -61,9 +61,9 @@
               <tr>
                 <th>Ürün</th>
                 <th></th>
-                @if(Auth::check() and Auth::user()->roles->contains('id', 3) or Auth::user()->roles->contains('id', 1)) <th>Fiyat</th> @endif
+                @canSeePrices <th>Fiyat</th> @endif
                 <th style="text-align: center;"></th>
-                @if(Auth::check() and Auth::user()->roles->contains('id', 3) or Auth::user()->roles->contains('id', 1)) <th>Toplam Fiyat</th> @endif
+                @canSeePrices <th>Toplam Fiyat</th> @endif
                 <th></th>
               </tr>
             </thead>
@@ -89,7 +89,7 @@
                         $urgentProduction = $notes['urgent_production'] ?? false;
                         $urgentPrice = $notes['urgent_price'] ?? 0;
                     @endphp
-                    @if(Auth::check() and Auth::user()->roles->contains('id', 3) or Auth::user()->roles->contains('id', 1))
+                    @canSeePrices
                     <ul style="overflow: scroll;" class="shopping-cart__product-item__options">
                        @if($item->page_count > 1)
                       @if($item->page_count)
@@ -134,15 +134,25 @@
                         <!-- Acil üretim bilgisi -->
                         @if($item->urgent_status == 1)
                         <li>
-                            <small class="text-success-2 fw-bold">🚨 Acil Üretim @if(Auth::check() and Auth::user()->roles->contains('id', 3) or Auth::user()->roles->contains('id', 1)) +{{ number_format($item->product->urgent_price, 2) }} ₺ @endif</small>
+                            <small class="text-success-2 fw-bold">🚨 Acil Üretim @canSeePrices +{{ number_format($item->product->urgent_price, 2) }} ₺ @endcanSeePrices</small>
                         </li>
-                    @endif
+                        @endif
+                        <!-- Tasarım hizmeti bilgisi -->
+                        @if(($notes['design_service'] ?? null) === 'with_design')
+                        <li>
+                            <small class="text-success-2 fw-bold">✏️ Tasarımı Bize Yaptır @canSeePrices +{{ number_format($item->product->design_service_price ?? 0, 2) }} ₺ @endcanSeePrices</small>
+                        </li>
+                        @elseif(($notes['design_service'] ?? null) === 'self_design')
+                        <li>
+                            <small class="text-muted">✏️ Tasarımı kendim yapacağım</small>
+                        </li>
+                        @endif
                     </ul>
                     @endif
                     @endif
                   </div>
                 </td>
-                @if(Auth::check() and Auth::user()->roles->contains('id', 3) or Auth::user()->roles->contains('id', 1)) <td>
+                @canSeePrices <td>
                   <x-price-display :item="$item" :showQuantity="false" :showDiscountBadge="true" />
                 </td>
                 @endif
@@ -153,7 +163,7 @@
                     <div class="qty-control__increase">+</div>
                   </div><!-- .qty-control -->
                 </td>
-                @if(Auth::check() and Auth::user()->roles->contains('id', 3) or Auth::user()->roles->contains('id', 1)) <td>
+                @canSeePrices <td>
                   <x-price-display :item="$item" :showQuantity="true" :showDiscountBadge="true" />
                 </td>
                 @endif
@@ -176,7 +186,7 @@
           <div class="sticky-content">
             <div class="shopping-cart__totals">
               <h3>Sepet Özeti</h3>
-              @if(Auth::check() and Auth::user()->roles->contains('id', 3) or Auth::user()->roles->contains('id', 1))
+              @canSeePrices
               
               <table class="cart-totals">
                 <tbody>

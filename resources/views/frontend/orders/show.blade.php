@@ -47,7 +47,7 @@
             <label>Tarih</label>
             <span>{{ $order->created_at->format('d.m.Y H:i') }}</span>
           </div>
-          @if(Auth::check() and Auth::user()->roles->contains('id', 3) or Auth::user()->roles->contains('id', 1))
+          @canSeePrices
           <div class="order-info__item">
             <label>Toplam</label>
             <span>{{ number_format($order->total_price, 2) }} ₺</span>
@@ -66,8 +66,8 @@
                 <tr>
                   <th>ÜRÜN</th>
                   <th style="text-align: left;">ADET</th>
-                  @if(Auth::check() and Auth::user()->roles->contains('id', 3) or Auth::user()->roles->contains('id', 1)) <th>FİYAT</th> @endif
-                  @if(Auth::check() and Auth::user()->roles->contains('id', 3) or Auth::user()->roles->contains('id', 1)) <th>TOPLAM</th> @endif
+                  @canSeePrices <th>FİYAT</th> @endif
+                  @canSeePrices <th>TOPLAM</th> @endif
                 </tr>
               </thead>
               <tbody>
@@ -138,9 +138,19 @@
                                            <!-- Acil üretim bilgisi -->
                                            @if($item->urgent_status == 1)
                                            <li>
-                                               <small class="text-success-2 fw-bold">🚨 Acil Üretim @if(Auth::check() and Auth::user()->roles->contains('id', 3) or Auth::user()->roles->contains('id', 1)) +{{ number_format($item->product->urgent_price, 2) }} ₺ @endif</small>
+                                               <small class="text-success-2 fw-bold">🚨 Acil Üretim @canSeePrices +{{ number_format($item->product->urgent_price, 2) }} ₺ @endcanSeePrices</small>
                                            </li>
-                                       @endif
+                                           @endif
+                                           @php $itemNotes = $item->notes ? json_decode($item->notes, true) : []; @endphp
+                                           @if(($itemNotes['design_service'] ?? null) === 'with_design')
+                                           <li>
+                                               <small class="text-success-2 fw-bold">✏️ Tasarımı Bize Yaptır @canSeePrices +{{ number_format($item->product->design_service_price ?? 0, 2) }} ₺ @endcanSeePrices</small>
+                                           </li>
+                                           @elseif(($itemNotes['design_service'] ?? null) === 'self_design')
+                                           <li>
+                                               <small class="text-muted">✏️ Tasarımı kendim yapacağım</small>
+                                           </li>
+                                           @endif
                              
                           </ul>
                           </small>
@@ -149,8 +159,8 @@
                     </div>
                   </td>
                   <td>{{ $item->quantity }} Adet</td>
-                  @if(Auth::check() and Auth::user()->roles->contains('id', 3) or Auth::user()->roles->contains('id', 1)) <td><x-price-display :item="$item" :showQuantity="false" :showDiscountBadge="true" /></td> @endif
-                  @if(Auth::check() and Auth::user()->roles->contains('id', 3) or Auth::user()->roles->contains('id', 1)) <td><strong><x-price-display :item="$item" :showQuantity="true" :showDiscountBadge="true" /></strong></td> @endif
+                  @canSeePrices <td><x-price-display :item="$item" :showQuantity="false" :showDiscountBadge="true" /></td> @endif
+                  @canSeePrices <td><strong><x-price-display :item="$item" :showQuantity="true" :showDiscountBadge="true" /></strong></td> @endif
                 </tr>
                 @endforeach
               </tbody>

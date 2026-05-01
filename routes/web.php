@@ -57,6 +57,7 @@ Route::middleware(['auth', 'approval'])->group(function () {
     Route::post('/cart/add', [CartController::class, 'add'])->name('cart.add');
     Route::post('/cart/add-extra', [CartController::class, 'addExtra'])->name('cart.add-extra');
     Route::post('/cart/extra/set', [CartController::class, 'setExtraQuantity'])->name('cart.extra.set');
+    Route::post('/cart/clear-others', [CartController::class, 'clearOtherCarts'])->name('cart.clear-others');
     Route::put('/cart/{id}', [CartController::class, 'update'])->name('cart.update');
     Route::post('/cart/quantity/{id}', [CartController::class, 'updateQuantity'])->name('cart.quantity');
     Route::delete('/cart/remove/{id}', [CartController::class, 'remove'])->name('cart.remove');

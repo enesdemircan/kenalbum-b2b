@@ -23,7 +23,7 @@
         <small class="text-muted">{{ $pivotParam->param->key }}</small>
         @if($pivotParam->price > 0)
             @php $totalPrice += $pivotParam->price; @endphp
-            @if(Auth::check() and Auth::user()->roles->contains('id', 3) or Auth::user()->roles->contains('id', 1))
+            @canSeePrices
               
             <span class="badge badge-success" style="color: #27ae60; font-size: 0.8em;">(+{{ number_format($pivotParam->price, 2) }} ₺)</span>
             @endif
@@ -47,7 +47,7 @@
         <small class="text-muted">{{ $pivotParam->param->key }}</small>
         @if($pivotParam->price > 0)
             @php $totalPrice += $pivotParam->price; @endphp
-            @if(Auth::check() and Auth::user()->roles->contains('id', 3) or Auth::user()->roles->contains('id', 1))
+            @canSeePrices
               
             <span class="badge badge-success" style="color: #27ae60; font-size: 0.8em;">(+{{ number_format($pivotParam->price, 2) }} ₺)</span>
             @endif
@@ -70,7 +70,7 @@
             $totalPrice += $totalCheckboxPrice;
         @endphp
         @if($totalCheckboxPrice > 0)
-        @if(Auth::check() and Auth::user()->roles->contains('id', 3) or Auth::user()->roles->contains('id', 1))
+        @canSeePrices
               
             <span class="badge badge-success" style="color: #27ae60; font-size: 0.8em;">(+{{ number_format($totalCheckboxPrice, 2) }} ₺)</span>
             @endif

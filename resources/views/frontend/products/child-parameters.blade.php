@@ -50,7 +50,7 @@
                                             data-category-title="{{ $childCategory->title }}">
                                         {{ $childParam->key }}
                                         @if(($childPivotParam->price ?? 0) > 0)
-                                            @if(Auth::check() and Auth::user()->roles->contains('id', 3) or Auth::user()->roles->contains('id', 1))
+                                            @canSeePrices
                                             (+{{ number_format($childPivotParam->price ?? 0, 2) }} TL)
                                             @endif
                                         @endif
@@ -112,7 +112,7 @@
                                                 <div class="radio-content">
                                                     <div class="fw-bold">{{ $childParam->key }}</div>
                                                     @if(($childPivotParam->price ?? 0) > 0)
-                                                        @if(Auth::check() and Auth::user()->roles->contains('id', 3) or Auth::user()->roles->contains('id', 1))
+                                                        @canSeePrices
                                                         <div class="text-success-2">(+{{ number_format($childPivotParam->price ?? 0, 2) }} TL)</div>
                                                         @endif
                                                         @endif
@@ -145,7 +145,7 @@
                                            data-category-title="{{ $childCategory->title }}">
                                     <label class="form-check-label" for="child_checkbox_{{ $childPivotParam->id }}">
                                         {{ $childParam->key }}
-                                        @if(Auth::check() and Auth::user()->roles->contains('id', 3) or Auth::user()->roles->contains('id', 1))
+                                        @canSeePrices
                                         @if(($childPivotParam->price ?? 0) > 0)
                                             <span class="text-success-2">(+{{ number_format($childPivotParam->price ?? 0, 2) }} TL)</span>
                                         @endif
@@ -173,7 +173,7 @@
                                            data-category-title="{{ $childCategory->title }}"
                                            value=""
                                            @if($childParam->required == 1) required @endif>
-                                        @if(Auth::check() and Auth::user()->roles->contains('id', 3) or Auth::user()->roles->contains('id', 1))
+                                        @canSeePrices
                                     @if(($childPivotParam->price ?? 0) > 0)
                                         <small class="text-success-2">(+{{ number_format($childPivotParam->price ?? 0, 2) }} TL)</small>
                                     @endif

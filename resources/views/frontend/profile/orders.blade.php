@@ -120,7 +120,7 @@
                                 <p class="mb-2"><strong>Sipariş No:</strong> <span class="text-primary">{{ $order->order_number }}</span></p>
                                 <p class="mb-2"><strong>Tarih:</strong> {{ $order->created_at->format('d.m.Y H:i') }}</p>
                                 <p class="mb-2"><strong>Ödeme Yöntemi:</strong> {{ ucfirst($order->payment_method) }}</p>
-                                @if(Auth::check() and Auth::user()->roles->contains('id', 3) or Auth::user()->roles->contains('id', 1))
+                                @canSeePrices
                                 <p class="mb-0"><strong>Toplam:</strong> <b>{{ number_format($order->total_price, 2) }} ₺</b></p>
                                 @endif
                               </div>
@@ -220,7 +220,7 @@
                                       <h6 class="card-title mb-1">{{ $item->product->title }}</h6>
                                       <p class="card-text mb-0">
                                         <small class="text-muted">Adet: {{ $item->quantity }}</small>
-                                        @if(Auth::check() and Auth::user()->roles->contains('id', 3) or Auth::user()->roles->contains('id', 1))
+                                        @canSeePrices
                                         <span class="ms-2 fw-bold text-primary">
                                           <x-price-display :item="$item" :showQuantity="true" :showDiscountBadge="true" />
                                         </span>
@@ -254,9 +254,12 @@
                                     @endif
                                   @endif
                                   @if($item->urgent_status == 1)
-                               
-                                    <small class="text-success-2 fw-bold">🚨 Acil Üretim @if(Auth::check() and Auth::user()->roles->contains('id', 3) or Auth::user()->roles->contains('id', 1)) +{{ number_format($item->product->urgent_price, 2) }} ₺ @endif</small>
-                                
+                                    <small class="text-success-2 fw-bold d-block">🚨 Acil Üretim @canSeePrices +{{ number_format($item->product->urgent_price, 2) }} ₺ @endcanSeePrices</small>
+                                  @endif
+                                  @if(($notes['design_service'] ?? null) === 'with_design')
+                                    <small class="text-success-2 fw-bold d-block">✏️ Tasarımı Bize Yaptır @canSeePrices +{{ number_format($item->product->design_service_price ?? 0, 2) }} ₺ @endcanSeePrices</small>
+                                  @elseif(($notes['design_service'] ?? null) === 'self_design')
+                                    <small class="text-muted d-block">✏️ Tasarımı kendim yapacağım</small>
                                   @endif
                                   <!-- En Güncel Durum -->
                                   <div class="timeline-container">
