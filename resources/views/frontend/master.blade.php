@@ -19,9 +19,6 @@
 
   <link rel="stylesheet" href="{{ asset('css/style.css') }}" type="text/css">
 
-  {{-- Modern overlay — geri almak için bu satırı kaldır. --}}
-  <link rel="stylesheet" href="{{ asset('css/modern-overlay.css') }}?v={{ filemtime(public_path('css/modern-overlay.css')) }}" type="text/css">
-
   <!-- FontAwesome -->
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" integrity="sha512-iecdLmaskl7CVkqkXNQ/ZH/XLlvWZOJyj7Yy7tcenmpD1ypASozpmT/E0iPtmFIB46ZmdtAc9eNBvH0H/ZpiBw==" crossorigin="anonymous" referrerpolicy="no-referrer" />
   
@@ -660,23 +657,6 @@
 
   <!-- Footer Scripts -->
   <script src="{{ asset('js/theme.js') }}"></script>
-  {{-- Header sticky shadow toggle on scroll --}}
-  <script>
-  (function(){
-      var header = document.getElementById('header');
-      if (!header) return;
-      var lastY = 0;
-      function onScroll() {
-          var y = window.scrollY || window.pageYOffset;
-          if (y > 4 && lastY <= 4) header.classList.add('is-scrolled');
-          else if (y <= 4 && lastY > 4) header.classList.remove('is-scrolled');
-          lastY = y;
-      }
-      window.addEventListener('scroll', onScroll, { passive: true });
-      onScroll();
-  })();
-  </script>
-
   @yield('scripts')
 
   @auth
