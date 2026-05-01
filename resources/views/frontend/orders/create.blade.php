@@ -512,7 +512,13 @@
                                      @if($step['is_cascade']) data-step-cascade="true" @endif>
                                     <h4 class="wizard-step-title">{{ $step['step_label'] }}</h4>
                                     @foreach($step['categories'] as $cat)
-                                        <div class="wizard-step-section">
+                                        @php
+                                            // Çalışma Tipi (Dizgi/Rötüş) sadece Tasarım Hizmeti'nde
+                                            // "Tasarımı bize yaptır" seçilince görünür — JS toggle.
+                                            $isCalismaTipi = stripos($cat['category']->title, 'Çalışma Tipi') !== false;
+                                        @endphp
+                                        <div class="wizard-step-section{{ $isCalismaTipi ? ' depends-on-design-service' : '' }}"
+                                             @if($isCalismaTipi) data-show-when-design-service="with_design" style="display:none;" @endif>
                                             @if($isMulti)
                                                 {{-- Grouped step'te her section'ın kendi başlığı/açıklaması olsun --}}
                                                 <h5 class="wizard-section-title">{{ $cat['category']->title }}</h5>
@@ -595,7 +601,7 @@
                                         @endforeach
                                     </div>
 
-                                    @include('frontend.orders.partials.wizard-submit-buttons')
+                                    @include('frontend.orders.partials.wizard-extras-actions')
                                 </div>
                             @endif
 
@@ -1416,7 +1422,6 @@
                 ind.classList.toggle('active', i === currentStep);
                 ind.classList.toggle('completed', i < currentStep);
             });
-            prevBtn.style.visibility = currentStep > 0 ? 'visible' : 'hidden';
             const isLast = currentStep === totalSteps - 1;
             nextBtn.style.display = isLast ? 'none' : '';
             if (submitBtn) submitBtn.style.display = '';
@@ -1424,7 +1429,38 @@
             // Sipariş Özeti VEYA son step'e (Ekstralar) girdiğinde summary'i yenile
             const currentEl = wizardSteps[currentStep];
             const isSummaryStep = currentEl && currentEl.getAttribute('data-step-kind') === 'summary';
+            const isExtrasStep  = currentEl && currentEl.getAttribute('data-step-kind') === 'extras';
             if (isSummaryStep || isLast) renderWizardSummary();
+
+            // Sipariş Özeti'nde nextBtn label "Sepete Ekle ve Devam Et",
+            // diğer step'lerde "İleri".
+            if (isSummaryStep) {
+                nextBtn.innerHTML = '<i class="fas fa-shopping-cart"></i> SEPETE EKLE VE DEVAM ET';
+                nextBtn.classList.add('btn-primary');
+                nextBtn.classList.remove('btn-sm');
+            } else {
+                nextBtn.innerHTML = 'İleri <i class="fas fa-arrow-right"></i>';
+                nextBtn.classList.remove('btn-primary');
+                nextBtn.classList.add('btn-sm');
+            }
+
+            // Ana ürün commit edildiyse ve şu an Ekstralar veya sonrası ise prev kilitli.
+            // Aksi halde currentStep > 0 olduğunda görünür.
+            const summaryIdxLocal = (function() {
+                for (let i = 0; i < wizardSteps.length; i++) {
+                    if (wizardSteps[i].getAttribute('data-step-kind') === 'summary') return i;
+                }
+                return -1;
+            })();
+            const lockedAfterCommit = window._mainCommitted && summaryIdxLocal >= 0 && currentStep > summaryIdxLocal;
+            prevBtn.style.visibility = (currentStep > 0 && !lockedAfterCommit) ? 'visible' : 'hidden';
+
+            // Indicator'lara visual lock (cursor + opacity) — erişilemez tab'lar gri görünsün
+            wizardIndicators.forEach((ind, i) => {
+                const locked = window._mainCommitted && summaryIdxLocal >= 0 && i <= summaryIdxLocal && currentStep > summaryIdxLocal;
+                ind.style.cursor = locked ? 'not-allowed' : 'pointer';
+                ind.style.opacity = locked ? '0.55' : '';
+            });
 
             // Scroll to top of wizard area
             const progress = document.getElementById('wizard-progress');
@@ -1451,9 +1487,13 @@
             // Customization sections — type-aware validation.
             // Bir step birden çok customization-section içerebilir (grouped tab).
             // Tüm data-required="1" olan section'ları doğrula.
+            // Gizli section'lar (örn. Çalışma Tipi when design_service != with_design) atlanır.
             const sections = step.querySelectorAll('.customization-section[data-required="1"]');
 
             for (const section of sections) {
+                // Wrapper depends-on-design-service ile gizliyse atla
+                const depWrapper = section.closest('.depends-on-design-service');
+                if (depWrapper && depWrapper.style.display === 'none') continue;
                 const sectionType = section.getAttribute('data-type') || '';
                 // Section başlığı: önce wizard-section-title (grouped step), sonra h4, sonra step title
                 const sectionTitle = section.closest('.wizard-step-section')?.querySelector('.wizard-section-title')?.textContent?.trim()
@@ -1506,27 +1546,143 @@
             return true;
         }
 
-        prevBtn.addEventListener('click', () => showStep(currentStep - 1));
-        nextBtn.addEventListener('click', () => {
-            if (validateCurrentStep()) showStep(currentStep + 1);
+        // Wizard step kilidi: ana ürün sepete commit edildikten sonra
+        // Sipariş Özeti ve öncesine GERİ gidilemesin (sipariş kesinleşti).
+        window._mainCommitted = false;
+        window._mainCartId = null;
+
+        // Sipariş Özeti adımının indeksini bul (data-step-kind="summary")
+        function findSummaryIndex() {
+            for (let i = 0; i < wizardSteps.length; i++) {
+                if (wizardSteps[i].getAttribute('data-step-kind') === 'summary') return i;
+            }
+            return -1;
+        }
+
+        // Ana ürünü sepete ekle (extras dahil etmeden, ayrı endpoint /cart/add).
+        async function commitMainProductToCart() {
+            const form = document.getElementById('product-form');
+            if (!form) return false;
+            const fd = new FormData();
+            // Form alanlarını topla — file input'ları, ekstralara ait alanlar dışında
+            for (const el of form.elements) {
+                if (!el.name) continue;
+                if (el.type === 'file') continue;
+                if (el.name.startsWith('extras[')) continue;
+                if (el.type === 'checkbox' || el.type === 'radio') {
+                    if (el.checked) fd.append(el.name, el.value);
+                } else {
+                    fd.append(el.name, el.value);
+                }
+            }
+            // Ana POST
+            try {
+                Swal.fire({ title: 'Sepete ekleniyor...', allowOutsideClick: false, showConfirmButton: false, didOpen: () => Swal.showLoading() });
+                const res = await fetch('{{ route("cart.add") }}', {
+                    method: 'POST',
+                    body: fd,
+                    headers: { 'X-CSRF-TOKEN': document.querySelector('input[name="_token"]').value, 'Accept': 'application/json' }
+                });
+                const data = await res.json();
+                Swal.close();
+                if (data.success && data.cart_id) {
+                    window._mainCommitted = true;
+                    window._mainCartId = data.cart_id;
+                    return true;
+                }
+                Swal.fire({ icon: 'error', title: 'Hata', text: data.message || 'Sepete eklenemedi.' });
+                return false;
+            } catch (e) {
+                Swal.close();
+                Swal.fire({ icon: 'error', title: 'Bağlantı hatası', text: 'Lütfen tekrar deneyin.' });
+                return false;
+            }
+        }
+
+        prevBtn.addEventListener('click', () => {
+            const summaryIdx = findSummaryIndex();
+            if (window._mainCommitted && summaryIdx >= 0 && currentStep > summaryIdx) {
+                // Ekstralar'dan Sipariş Özeti veya öncesine geri dönüş kilitli
+                return;
+            }
+            showStep(currentStep - 1);
         });
 
-        // Indicators clickable: only allow jumping back to completed steps
+        nextBtn.addEventListener('click', async () => {
+            if (!validateCurrentStep()) return;
+            const cur = wizardSteps[currentStep];
+            const isSummary = cur && cur.getAttribute('data-step-kind') === 'summary';
+            // Sipariş Özeti'nde İleri'ye basınca ana ürünü sepete commit et,
+            // sonra Ekstralar tab'ına geç. main_committed olduktan sonra tekrar
+            // commit etmiyoruz (indicator click ile geri dönüş kilitlemesi var).
+            if (isSummary && !window._mainCommitted) {
+                const ok = await commitMainProductToCart();
+                if (!ok) return;
+            }
+            showStep(currentStep + 1);
+        });
+
+        // Indicators clickable: only allow jumping back to completed steps,
+        // ANA ÜRÜN COMMIT EDİLDİKTEN SONRA Sipariş Özeti'nden öncesine kilitli.
         wizardIndicators.forEach((ind, idx) => {
             ind.addEventListener('click', () => {
+                const summaryIdx = findSummaryIndex();
+                if (window._mainCommitted && summaryIdx >= 0 && idx <= summaryIdx) return;
                 if (idx < currentStep) showStep(idx);
             });
             ind.style.cursor = 'pointer';
         });
 
-        // Extras step quantity controls — +/- adet değişiminde card highlight + alt navbar TOPLAM güncelle.
-        // Cart-add gerçek anlamda en sondaki "Sepete Ekle" submit'inde olur (single form,
-        // ana ürün + ekstralar tek POST'ta). +/- buton sadece visual feedback + toplam güncelleme.
+        // Extras +/- — adet değişiminde live AJAX (POST /cart/extra/set).
+        // Ana ürün Sipariş Özeti adımında zaten cart'a eklendi; her ekstra
+        // ayrı bir cart item olarak set edilir (qty=0 → silinir).
         const triggerPriceUpdate = () => {
             if (typeof window.updatePrice === 'function') {
                 try { window.updatePrice(); } catch (e) { /* henüz init olmayabilir */ }
             }
         };
+
+        const csrfToken = () => document.querySelector('input[name="_token"]')?.value
+            || document.querySelector('meta[name="csrf-token"]')?.content || '';
+
+        async function syncExtraToCart(card, qty) {
+            const productId = card.getAttribute('data-extra-product-id');
+            if (!productId) return;
+            // Ana ürün commit edilmediyse extra eklemenin anlamı yok — kullanıcıyı uyar
+            if (!window._mainCommitted) {
+                Swal.fire({ icon: 'info', title: 'Önce ana ürün', text: 'Önce Sipariş Özeti adımından ana ürünü sepete eklemelisiniz.' });
+                return;
+            }
+            card.classList.add('extra-syncing');
+            try {
+                const fd = new FormData();
+                fd.append('product_id', productId);
+                fd.append('quantity', qty);
+                fd.append('_token', csrfToken());
+                const res = await fetch('{{ route("cart.extra.set") }}', {
+                    method: 'POST',
+                    body: fd,
+                    headers: { 'X-CSRF-TOKEN': csrfToken(), 'Accept': 'application/json' }
+                });
+                const data = await res.json();
+                if (!data.success) {
+                    Swal.fire({ icon: 'error', title: 'Hata', text: data.message || 'Ekstra güncellenemedi.' });
+                }
+            } catch (e) {
+                Swal.fire({ icon: 'error', title: 'Bağlantı hatası', text: 'Ekstra güncellenemedi, lütfen tekrar deneyin.' });
+            } finally {
+                card.classList.remove('extra-syncing');
+            }
+        }
+
+        // Debounce: kullanıcı hızlıca +/- tıklarsa son qty ile tek sync yap
+        const extraSyncTimers = new WeakMap();
+        function scheduleExtraSync(card, qty) {
+            if (extraSyncTimers.has(card)) clearTimeout(extraSyncTimers.get(card));
+            const t = setTimeout(() => syncExtraToCart(card, qty), 350);
+            extraSyncTimers.set(card, t);
+        }
+
         document.querySelectorAll('.extra-card').forEach(card => {
             const minus = card.querySelector('.extra-qty-minus');
             const plus = card.querySelector('.extra-qty-plus');
@@ -1536,6 +1692,7 @@
                 const qty = parseInt(input.value || '0', 10);
                 card.classList.toggle('has-quantity', qty > 0);
                 triggerPriceUpdate();
+                scheduleExtraSync(card, qty);
             };
             if (minus) minus.addEventListener('click', () => {
                 input.value = Math.max(0, (parseInt(input.value || '0', 10) || 0) - 1);
@@ -1799,9 +1956,24 @@
                     updatePrice();
                 });
 
-                // Tasarım Hizmeti radio'ları için event listener
+                // Tasarım Hizmeti radio'ları — fiyat + Çalışma Tipi (Dizgi/Rötüş) toggle.
+                // depends-on-design-service section sadece value=with_design seçilince görünür.
                 $('.design-service-radio').off('change.designService').on('change.designService', function() {
                     updatePrice();
+                    var selected = $('input[name="design_service"]:checked').val();
+                    $('.depends-on-design-service').each(function() {
+                        var requiredVal = $(this).attr('data-show-when-design-service');
+                        if (selected === requiredVal) {
+                            $(this).show();
+                        } else {
+                            $(this).hide();
+                            // Gizleyince içerideki radio/checkbox seçimlerini temizle ki
+                            // validation ve fiyat hesabı eksiksiz çalışsın
+                            $(this).find('input[type="radio"]:checked, input[type="checkbox"]:checked')
+                                   .prop('checked', false)
+                                   .trigger('change.customization');
+                        }
+                    });
                 });
                 
                 // Input'lar için event listener

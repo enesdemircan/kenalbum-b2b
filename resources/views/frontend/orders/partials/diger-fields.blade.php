@@ -47,9 +47,7 @@
                         </div>
                         <div class="option-card-body">
                             <div class="option-card-title">{{ $opt['title'] }}</div>
-                            @if($opt['price'] > 0)
-                                <div class="option-card-price">+{{ number_format($opt['price'], 2) }} ₺</div>
-                            @elseif($opt['hint'])
+                            @if($opt['hint'])
                                 <small class="option-card-hint d-block">{{ $opt['hint'] }}</small>
                             @endif
                         </div>

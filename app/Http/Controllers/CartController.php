@@ -762,6 +762,93 @@ class CartController extends Controller
         }
     }
 
+    /**
+     * Wizard "Ekstralar" tab'ından canlı +/- tıklamaları için endpoint.
+     * - quantity = 0 → varsa cart item'ı sil
+     * - mevcut item varsa → quantity'i güncelle
+     * - yoksa → yeni cart item oluştur (firma indirimi uygulanır)
+     *
+     * Ana ürün cart-add'i ayrıca yapıldıktan SONRA çağrılır (Sipariş Özeti
+     * adımında main commit, Ekstralar adımında bu endpoint).
+     */
+    public function setExtraQuantity(Request $request)
+    {
+        if (!Auth::check()) {
+            return response()->json(['success' => false, 'message' => 'Giriş gerekli.'], 401);
+        }
+
+        $request->validate([
+            'product_id' => 'required|exists:products,id',
+            'quantity'   => 'required|integer|min:0|max:99',
+        ]);
+
+        $user = Auth::user();
+        $existing = $user->cart()
+            ->where('product_id', $request->product_id)
+            ->where('status', 0)
+            ->first();
+
+        if ((int) $request->quantity === 0) {
+            if ($existing) {
+                $existing->deleteAssociatedFiles();
+                OrderStatusHistory::where('cart_id', $existing->id)->delete();
+                $existing->delete();
+                return response()->json(['success' => true, 'action' => 'removed']);
+            }
+            return response()->json(['success' => true, 'action' => 'noop']);
+        }
+
+        if ($existing) {
+            $existing->update(['quantity' => (int) $request->quantity]);
+            return response()->json([
+                'success' => true,
+                'action'  => 'updated',
+                'cart_id' => $existing->id,
+                'quantity' => (int) $request->quantity,
+            ]);
+        }
+
+        // Yeni ekstra cart item — firma indirimi varsa uygula
+        $product = Product::findOrFail($request->product_id);
+        $discountedPrice = $product->price;
+        $discountGroupId = null;
+        if ($user->customer_id && $product->main_category_id) {
+            $valid = \App\Models\DiscountGroup::getValidDiscountsForUser($user->id, $product->main_category_id);
+            if ($valid->isNotEmpty()) {
+                $maxPct = $valid->max('discount_percentage');
+                $discountedPrice = $product->price * (1 - $maxPct / 100);
+                $discountGroupId = $valid->where('discount_percentage', $maxPct)->first()->id;
+            }
+        }
+
+        $cart = new Cart();
+        $cart->user_id = $user->id;
+        $cart->product_id = $product->id;
+        $cart->quantity = (int) $request->quantity;
+        $cart->page_count = 0;
+        $cart->original_price = $product->price;
+        $cart->price = $discountedPrice;
+        if ($discountGroupId) $cart->discount_group_id = $discountGroupId;
+        $cart->notes = json_encode(['customizations' => []]);
+        $cart->save();
+        $cart->cart_id = $cart->generateCartIdentifier();
+        $cart->barcode = $cart->generateUniqueBarcode();
+        $cart->save();
+
+        OrderStatusHistory::create([
+            'cart_id' => $cart->id,
+            'order_status_id' => 1,
+            'user_id' => $user->id,
+        ]);
+
+        return response()->json([
+            'success'  => true,
+            'action'   => 'created',
+            'cart_id'  => $cart->id,
+            'quantity' => (int) $request->quantity,
+        ]);
+    }
+
     public function getCartCount()
     {
         $count = Auth::user()->cart()->where('status', 0)->count();
