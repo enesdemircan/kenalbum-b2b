@@ -47,6 +47,39 @@ class OrderController extends Controller
 
 
 
+    /**
+     * Ekstra ürün modal'ı için flat customization formu HTML'i.
+     * Ana wizard'a kıyasla file/files/hidden tipleri atlanır,
+     * Diğer tab'ı sabit alanları yok — sadece ekstrayı sepete eklemek
+     * için minimum gerekli alanlar.
+     */
+    public function extraForm($id)
+    {
+        $product = Product::with(['customizationPivotParams.param.category'])->findOrFail($id);
+
+        $allCatPivots = $product->customizationPivotParams->groupBy(fn($p) => (int) $p->param->customization_category_id);
+
+        $categories = [];
+        foreach ($allCatPivots as $categoryId => $catPivots) {
+            $category = $catPivots->first()->param->category;
+            if (!$category) continue;
+            if (in_array($category->type, ['file', 'files', 'hidden'], true)) continue;
+
+            $topLevelPivots = $catPivots->where('customization_params_ust_id', 0)->values();
+            $isCascade = $topLevelPivots->isEmpty();
+            $params = $isCascade ? $catPivots->values() : $topLevelPivots;
+
+            $categories[] = [
+                'category' => $category,
+                'params' => $params,
+                'order' => (int) ($category->order ?? 9999),
+            ];
+        }
+        usort($categories, fn($a, $b) => $a['order'] <=> $b['order']);
+
+        return view('frontend.orders.partials.extra-customize-form', compact('product', 'categories'));
+    }
+
     public function ordercreateById($id)
     {
         // GET request ise sipariş form sayfasını göster
@@ -150,20 +183,28 @@ class OrderController extends Controller
             ['min_cat_id', 'asc'],
         ])->values();
 
-        // Ekstra ürünler (wizard'ın "Ekstralar" step'i için — eski popup'ın yerine)
-        $extraSales = \App\Models\ExtraSale::with('childProduct')
+        // Ekstra ürünler (wizard'ın "Ekstralar" step'i için).
+        // has_customization flag: child product'ın file/files olmayan customization'ı
+        // var mı? Varsa kart üzerinde "Özelleştir ve Ekle" modalı tetiklenir,
+        // yoksa direkt +/- ile sepete eklenir.
+        $extraSales = \App\Models\ExtraSale::with('childProduct.customizationPivotParams.param.category')
             ->where('main_product_id', $product->id)
             ->where('is_active', true)
             ->orderBy('sort_order')
             ->get()
             ->filter(fn($e) => $e->childProduct !== null)
             ->map(function ($extraSale) {
+                $child = $extraSale->childProduct;
+                $hasCustomization = $child->customizationPivotParams
+                    ->filter(fn($p) => !in_array($p->param->category->type ?? '', ['file', 'files', 'hidden'], true))
+                    ->isNotEmpty();
                 return [
-                    'id' => $extraSale->childProduct->id,
-                    'title' => $extraSale->childProduct->title,
-                    'price' => (float) $extraSale->childProduct->price,
-                    'images' => $extraSale->childProduct->images,
-                    'slug' => $extraSale->childProduct->slug ?? null,
+                    'id' => $child->id,
+                    'title' => $child->title,
+                    'price' => (float) $child->price,
+                    'images' => $child->images,
+                    'slug' => $child->slug ?? null,
+                    'has_customization' => $hasCustomization,
                 ];
             })
             ->values();

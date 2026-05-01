@@ -25,6 +25,9 @@ Route::get('/search', [FrontendController::class, 'search'])->name('search')->mi
 Route::get('/products/{product}/customization-params', [FrontendController::class, 'getCustomizationParams'])->name('products.customization-params');
 Route::get('/products/{product}/customization-params/{parentParam}/children', [FrontendController::class, 'getCustomizationChildren'])->name('products.customization-children');
 
+// Ekstra ürün modal customization formu
+Route::get('/products/{id}/extra-form', [OrderController::class, 'extraForm'])->name('products.extra-form');
+
 // Approval pending route
 Route::get('/approval-pending', function () {
     return view('frontend.approval-pending');

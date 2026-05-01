@@ -588,8 +588,13 @@
                                     <p class="wizard-step-desc">Siparişinize ek ürünler ekleyebilirsiniz. İstemiyorsanız doğrudan "Sepete Ekle" diyebilirsiniz.</p>
                                     <div class="row g-3 extras-grid">
                                         @foreach($extraSales as $extra)
+                                            @php $hasCustomization = !empty($extra['has_customization']); @endphp
                                             <div class="col-md-4 col-sm-6">
-                                                <div class="card h-100 extra-card" data-extra-product-id="{{ $extra['id'] }}" data-extra-price="{{ (float) $extra['price'] }}">
+                                                <div class="card h-100 extra-card"
+                                                     data-extra-product-id="{{ $extra['id'] }}"
+                                                     data-extra-price="{{ (float) $extra['price'] }}"
+                                                     data-extra-title="{{ $extra['title'] }}"
+                                                     data-has-customization="{{ $hasCustomization ? 'true' : 'false' }}">
                                                     @if(!empty($extra['images']))
                                                         @php
                                                             $extraImg = is_array($extra['images']) ? ($extra['images'][0] ?? null) : explode(',', $extra['images'])[0];
@@ -601,11 +606,17 @@
                                                     <div class="card-body extra-card-body">
                                                         <h6 class="card-title extra-card-title">{{ $extra['title'] }}</h6>
                                                         <div class="extra-card-price">{{ number_format($extra['price'], 2) }} ₺</div>
-                                                        <div class="extra-qty-control">
-                                                            <button type="button" class="btn extra-qty-btn extra-qty-minus" aria-label="Azalt">−</button>
-                                                            <input type="number" class="form-control extra-qty" value="0" min="0" max="99" inputmode="numeric">
-                                                            <button type="button" class="btn extra-qty-btn extra-qty-plus" aria-label="Arttır">+</button>
-                                                        </div>
+                                                        @if($hasCustomization)
+                                                            <button type="button" class="btn btn-outline-primary btn-sm extra-customize-btn">
+                                                                <i class="fas fa-sliders-h"></i> Özelleştir ve Ekle
+                                                            </button>
+                                                        @else
+                                                            <div class="extra-qty-control">
+                                                                <button type="button" class="btn extra-qty-btn extra-qty-minus" aria-label="Azalt">−</button>
+                                                                <input type="number" class="form-control extra-qty" value="0" min="0" max="99" inputmode="numeric">
+                                                                <button type="button" class="btn extra-qty-btn extra-qty-plus" aria-label="Arttır">+</button>
+                                                            </div>
+                                                        @endif
                                                     </div>
                                                 </div>
                                             </div>
@@ -646,6 +657,26 @@
       </div>
 
     </section>
+
+    {{-- Ekstra ürün özelleştirme modal'ı — customization'lı ekstra ürünler için.
+         Buton tıklamasında AJAX /products/{id}/extra-form HTML'i yüklenir,
+         submit /cart/add'e POST eder. --}}
+    <div class="modal fade" id="extraCustomizeModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-lg modal-dialog-scrollable modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="extraCustomizeTitle">Ekstra Ürünü Özelleştir</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Kapat"></button>
+                </div>
+                <div class="modal-body" id="extraCustomizeBody">
+                    <div class="text-center py-4">
+                        <div class="spinner-border text-primary"></div>
+                        <p class="text-muted mt-2 mb-0">Özelleştirme alanları yükleniyor...</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
 <br>
 
 <style>
@@ -1701,6 +1732,16 @@
         }
 
         document.querySelectorAll('.extra-card').forEach(card => {
+            const hasCustomization = card.getAttribute('data-has-customization') === 'true';
+
+            // Customization'lı ekstralar: +/- yerine "Özelleştir ve Ekle" modal'ı
+            if (hasCustomization) {
+                const customizeBtn = card.querySelector('.extra-customize-btn');
+                if (customizeBtn) customizeBtn.addEventListener('click', () => openExtraCustomizeModal(card));
+                return;
+            }
+
+            // Customization'sız ekstralar: mevcut +/- live AJAX
             const minus = card.querySelector('.extra-qty-minus');
             const plus = card.querySelector('.extra-qty-plus');
             const input = card.querySelector('.extra-qty');
@@ -1721,6 +1762,77 @@
             });
             input.addEventListener('input', sync);
         });
+
+        // ============ Ekstra customization modal ============
+        async function openExtraCustomizeModal(card) {
+            if (!window._mainCommitted) {
+                Swal.fire({ icon: 'info', title: 'Önce ana ürün', text: 'Önce Sipariş Özeti adımından ana ürünü sepete eklemelisiniz.' });
+                return;
+            }
+            const productId = card.getAttribute('data-extra-product-id');
+            const title = card.getAttribute('data-extra-title') || 'Ekstra Ürünü Özelleştir';
+            const titleEl = document.getElementById('extraCustomizeTitle');
+            const bodyEl = document.getElementById('extraCustomizeBody');
+            if (titleEl) titleEl.textContent = title;
+            if (bodyEl) bodyEl.innerHTML = '<div class="text-center py-4"><div class="spinner-border text-primary"></div><p class="text-muted mt-2 mb-0">Yükleniyor...</p></div>';
+
+            const modalEl = document.getElementById('extraCustomizeModal');
+            const modal = bootstrap.Modal.getOrCreateInstance(modalEl);
+            modal.show();
+
+            try {
+                const res = await fetch('/products/' + encodeURIComponent(productId) + '/extra-form', {
+                    headers: { 'Accept': 'text/html' }
+                });
+                if (!res.ok) throw new Error('HTTP ' + res.status);
+                const html = await res.text();
+                if (bodyEl) bodyEl.innerHTML = html;
+            } catch (e) {
+                if (bodyEl) bodyEl.innerHTML = '<div class="alert alert-danger">Form yüklenemedi: ' + e.message + '</div>';
+            }
+        }
+
+        // Modal body'sindeki form submit'i delegate olarak yakala — AJAX /cart/add
+        const extraModalBody = document.getElementById('extraCustomizeBody');
+        if (extraModalBody) {
+            extraModalBody.addEventListener('submit', async (e) => {
+                if (e.target.id !== 'extraCustomizeForm') return;
+                e.preventDefault();
+                const form = e.target;
+                const productId = form.dataset.extraProductId;
+                const submitBtn = form.querySelector('button[type="submit"]');
+                if (submitBtn) {
+                    submitBtn.disabled = true;
+                    submitBtn.dataset.originalHtml = submitBtn.innerHTML;
+                    submitBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Ekleniyor...';
+                }
+                try {
+                    const fd = new FormData(form);
+                    const res = await fetch('{{ route("cart.add") }}', {
+                        method: 'POST',
+                        body: fd,
+                        headers: { 'X-CSRF-TOKEN': csrfToken(), 'Accept': 'application/json' }
+                    });
+                    const data = await res.json();
+                    if (data.success && data.cart_id) {
+                        const modalEl = document.getElementById('extraCustomizeModal');
+                        bootstrap.Modal.getInstance(modalEl)?.hide();
+                        Swal.fire({ icon: 'success', title: 'Sepete eklendi', timer: 1400, showConfirmButton: false });
+                        const card = document.querySelector('.extra-card[data-extra-product-id="' + productId + '"]');
+                        if (card) card.classList.add('has-quantity');
+                    } else {
+                        Swal.fire({ icon: 'error', title: 'Hata', text: data.message || 'Sepete eklenemedi.' });
+                    }
+                } catch (err) {
+                    Swal.fire({ icon: 'error', title: 'Bağlantı hatası', text: 'Lütfen tekrar deneyin.' });
+                } finally {
+                    if (submitBtn) {
+                        submitBtn.disabled = false;
+                        submitBtn.innerHTML = submitBtn.dataset.originalHtml;
+                    }
+                }
+            });
+        }
 
         // Build summary on last step
         function renderWizardSummary() {
