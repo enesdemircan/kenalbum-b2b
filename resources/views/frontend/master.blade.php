@@ -413,7 +413,13 @@
         <div class="container">
           <nav class="navigation w-100 d-flex align-items-center justify-content-center py-2 border-top-1">
             <ul class="navigation__list list-unstyled d-flex my-1">
-              
+              @auth
+              <li class="navigation__item navigation__item-cta">
+                <a href="#" class="navigation__link order-quick-trigger" data-bs-toggle="modal" data-bs-target="#orderProductPickerModal">
+                  <i class="fas fa-bolt"></i> SİPARİŞ VER
+                </a>
+              </li>
+              @endauth
 
 
               @foreach($mainCategories->where('ust_id', 0) as $mainCategory)
@@ -661,7 +667,190 @@
   <!-- Footer Scripts -->
   <script src="{{ asset('js/theme.js') }}"></script>
   @yield('scripts')
-  
+
+  @auth
+  {{-- ============ Hızlı Sipariş Ver — ürün seçim modalı ============ --}}
+  <div class="modal fade" id="orderProductPickerModal" tabindex="-1" aria-hidden="true">
+      <div class="modal-dialog modal-xl modal-dialog-scrollable modal-dialog-centered">
+          <div class="modal-content">
+              <div class="modal-header align-items-center gap-3">
+                  <h5 class="modal-title m-0">Sipariş Ver — Ürün Seçimi</h5>
+                  <input type="search"
+                         id="oppSearchInput"
+                         class="form-control form-control-sm flex-grow-1 mx-3"
+                         style="max-width:380px;"
+                         placeholder="Ürün ara (başlık veya etiket)…"
+                         autocomplete="off">
+                  <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Kapat"></button>
+              </div>
+              <div class="modal-body">
+                  <div class="row g-3">
+                      <div class="col-md-3">
+                          <ul class="list-group opp-cat-list">
+                              <li class="list-group-item opp-cat-item active" data-cat="">
+                                  <i class="fas fa-th-large me-2"></i>Tüm Kategoriler
+                              </li>
+                              @foreach($mainCategories->where('ust_id', 0)->sortBy('order') as $mainCat)
+                                  <li class="list-group-item opp-cat-item" data-cat="{{ $mainCat->id }}">
+                                      {{ $mainCat->title }}
+                                  </li>
+                              @endforeach
+                          </ul>
+                      </div>
+                      <div class="col-md-9">
+                          <div id="oppGrid" class="row row-cols-2 row-cols-md-3 row-cols-lg-4 g-3">
+                              <div class="col-12 text-center py-5 text-muted">
+                                  <div class="spinner-border text-primary"></div>
+                                  <p class="mt-2 mb-0">Ürünler yükleniyor…</p>
+                              </div>
+                          </div>
+                      </div>
+                  </div>
+              </div>
+          </div>
+      </div>
+  </div>
+
+  <style>
+      .navigation__item-cta .navigation__link {
+          background: linear-gradient(135deg, #198754, #20a745);
+          color: #fff !important;
+          padding: 8px 18px !important;
+          border-radius: 999px;
+          font-weight: 700;
+          letter-spacing: .5px;
+      }
+      .navigation__item-cta .navigation__link:hover {
+          background: linear-gradient(135deg, #146c43, #198754);
+          color: #fff !important;
+      }
+      .opp-cat-list { max-height: 60vh; overflow-y: auto; }
+      .opp-cat-item {
+          cursor: pointer;
+          font-size: 0.9rem;
+          border: 0;
+          border-bottom: 1px solid #f1f3f5;
+          padding: 10px 14px;
+          transition: background .12s, color .12s;
+      }
+      .opp-cat-item:hover { background: #f8f9fa; }
+      .opp-cat-item.active { background: #198754; color: #fff; font-weight: 600; }
+      .opp-card {
+          display: block;
+          height: 100%;
+          border: 1px solid #e9ecef;
+          border-radius: 10px;
+          overflow: hidden;
+          background: #fff;
+          color: #212529;
+          transition: transform .15s, box-shadow .15s, border-color .15s;
+      }
+      .opp-card:hover {
+          transform: translateY(-2px);
+          box-shadow: 0 6px 18px rgba(0,0,0,.08);
+          border-color: #198754;
+          color: #212529;
+      }
+      .opp-card-img {
+          height: 120px;
+          background: #f8f9fa;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          color: #adb5bd;
+          overflow: hidden;
+      }
+      .opp-card-img img { width: 100%; height: 100%; object-fit: cover; }
+      .opp-card-body { padding: 10px 12px; }
+      .opp-card-title {
+          font-size: 0.88rem;
+          font-weight: 600;
+          line-height: 1.3;
+          margin: 0;
+          display: -webkit-box;
+          -webkit-line-clamp: 2;
+          -webkit-box-orient: vertical;
+          overflow: hidden;
+      }
+      .opp-card-cat {
+          font-size: 0.72rem;
+          color: #6c757d;
+          margin-top: 4px;
+      }
+  </style>
+
+  <script>
+  (function() {
+      const grid = document.getElementById('oppGrid');
+      const searchInput = document.getElementById('oppSearchInput');
+      const catItems = document.querySelectorAll('.opp-cat-item');
+      const modalEl = document.getElementById('orderProductPickerModal');
+      if (!grid || !modalEl) return;
+
+      let currentCat = '';
+      let debounceT;
+      let firstLoadDone = false;
+
+      function escHtml(s) {
+          return String(s ?? '').replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
+      }
+
+      async function loadProducts() {
+          grid.innerHTML = '<div class="col-12 text-center py-5 text-muted"><div class="spinner-border text-primary"></div><p class="mt-2 mb-0">Yükleniyor…</p></div>';
+          const url = new URL('{{ route("order.product-picker") }}', window.location.origin);
+          if (currentCat) url.searchParams.set('category', currentCat);
+          const q = searchInput.value.trim();
+          if (q) url.searchParams.set('search', q);
+          try {
+              const res = await fetch(url, { headers: {'Accept': 'application/json'} });
+              if (!res.ok) throw new Error('HTTP ' + res.status);
+              const data = await res.json();
+              if (!data.products || !data.products.length) {
+                  grid.innerHTML = '<div class="col-12 text-center py-5 text-muted"><i class="fas fa-search fa-2x mb-2 d-block"></i>Ürün bulunamadı.</div>';
+                  return;
+              }
+              grid.innerHTML = data.products.map(p => `
+                  <div class="col">
+                      <a href="${p.order_url}" class="opp-card text-decoration-none">
+                          <div class="opp-card-img">
+                              ${p.image ? `<img src="${escHtml(p.image)}" alt="${escHtml(p.title)}" loading="lazy">` : '<i class="fas fa-cube fa-2x"></i>'}
+                          </div>
+                          <div class="opp-card-body">
+                              <div class="opp-card-title">${escHtml(p.title)}</div>
+                              ${p.category ? `<div class="opp-card-cat">${escHtml(p.category)}</div>` : ''}
+                          </div>
+                      </a>
+                  </div>
+              `).join('');
+          } catch (e) {
+              grid.innerHTML = '<div class="col-12"><div class="alert alert-danger">Ürünler yüklenemedi: ' + escHtml(e.message) + '</div></div>';
+          }
+      }
+
+      catItems.forEach(li => {
+          li.addEventListener('click', () => {
+              catItems.forEach(x => x.classList.remove('active'));
+              li.classList.add('active');
+              currentCat = li.getAttribute('data-cat') || '';
+              loadProducts();
+          });
+      });
+
+      searchInput.addEventListener('input', () => {
+          clearTimeout(debounceT);
+          debounceT = setTimeout(loadProducts, 300);
+      });
+
+      modalEl.addEventListener('shown.bs.modal', () => {
+          if (!firstLoadDone) {
+              firstLoadDone = true;
+              loadProducts();
+          }
+          searchInput.focus();
+      });
+  })();
+  </script>
+  @endauth
 
 </body>
 </html>

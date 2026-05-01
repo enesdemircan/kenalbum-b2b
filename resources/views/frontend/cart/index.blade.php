@@ -61,8 +61,7 @@
               <tr>
                 <th>Ürün</th>
                 <th></th>
-                @canSeePrices <th>Fiyat</th> @endif
-                <th style="text-align: center;"></th>
+                <th style="text-align: center;">Adet</th>
                 @canSeePrices <th>Toplam Fiyat</th> @endif
                 <th></th>
               </tr>
@@ -152,16 +151,18 @@
                     @endif
                   </div>
                 </td>
-                @canSeePrices <td>
-                  <x-price-display :item="$item" :showQuantity="false" :showDiscountBadge="true" />
-                </td>
-                @endif
-                <td>
-                  <div class="qty-control position-relative">
-                    <input type="number" name="quantity" value="{{ $item->quantity }}" min="1" class="qty-control__number text-center" data-cart-item-id="{{ $item->id }}">
-                    <div class="qty-control__reduce">-</div>
-                    <div class="qty-control__increase">+</div>
-                  </div><!-- .qty-control -->
+                <td style="text-align: center;">
+                  @php $hasCustomization = !empty($customizations ?? []); @endphp
+                  @if($hasCustomization)
+                    {{-- Özelleştirmeli ürünlerde adet edit yok — her cart row özelleştirilmiş 1 sipariş. --}}
+                    <span class="text-muted">{{ $item->quantity }} Adet</span>
+                  @else
+                    <div class="qty-control position-relative">
+                      <input type="number" name="quantity" value="{{ $item->quantity }}" min="1" class="qty-control__number text-center" data-cart-item-id="{{ $item->id }}">
+                      <div class="qty-control__reduce">-</div>
+                      <div class="qty-control__increase">+</div>
+                    </div>
+                  @endif
                 </td>
                 @canSeePrices <td>
                   <x-price-display :item="$item" :showQuantity="true" :showDiscountBadge="true" />

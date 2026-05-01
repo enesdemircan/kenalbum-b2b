@@ -48,6 +48,51 @@ class OrderController extends Controller
 
 
     /**
+     * Header "Sipariş Ver" modal'ı için ana ürün listesi JSON.
+     * Kategori (main_category_id) ve search (title/tags LIKE) filtreleri.
+     * Çocuk ürünler (ust_id != null) listelenmiyor — ana ürünler hızlı sipariş için.
+     */
+    public function productPicker(Request $request)
+    {
+        $query = Product::with('mainCategory')
+            ->where('status', 1)
+            ->whereNull('ust_id')
+            ->orderBy('order')
+            ->orderBy('title');
+
+        if ($categoryId = $request->input('category')) {
+            $query->where('main_category_id', (int) $categoryId);
+        }
+
+        if ($search = trim((string) $request->input('search'))) {
+            $like = '%' . $search . '%';
+            $query->where(function ($q) use ($like) {
+                $q->where('title', 'like', $like)
+                  ->orWhere('tags', 'like', $like);
+            });
+        }
+
+        $products = $query->limit(60)->get()->map(function ($p) {
+            $img = null;
+            if (is_array($p->images)) {
+                $img = $p->images[0] ?? null;
+            } elseif (is_string($p->images) && $p->images !== '') {
+                $img = explode(',', $p->images)[0];
+            }
+            return [
+                'id'        => $p->id,
+                'title'     => $p->title,
+                'slug'      => $p->slug,
+                'image'     => $img,
+                'category'  => $p->mainCategory?->title,
+                'order_url' => route('products.ordercreate.id', $p->id),
+            ];
+        });
+
+        return response()->json(['products' => $products]);
+    }
+
+    /**
      * Ekstra ürün modal'ı için flat customization formu HTML'i.
      * Ana wizard'a kıyasla file/files/hidden tipleri atlanır,
      * Diğer tab'ı sabit alanları yok — sadece ekstrayı sepete eklemek

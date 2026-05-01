@@ -2,14 +2,22 @@
 
 @php
     $discountPercentage = $item->calculateDiscount();
-    $totalprice= $item->price * $item->quantity;
-
+    $qty = $showQuantity ? $item->quantity : 1;
+    $unitOriginal = (float) $item->original_price;
+    $unitDiscounted = (float) $item->price;
+    $totalOriginal = $unitOriginal * $qty;
+    $totalDiscounted = $unitDiscounted * $qty;
+    $hasDiscount = $unitOriginal > $unitDiscounted;
 @endphp
 
-@if ($item->original_price == $item->price)
-    <span class="price">{{ number_format($totalprice, 2) }} ₺</span>
+@if($hasDiscount)
+    <div class="price-block">
+        <span class="price-original" style="text-decoration: line-through; color:#9ca3af; font-size:0.85em;">{{ number_format($totalOriginal, 2) }} ₺</span>
+        <div class="price fw-bold">{{ number_format($totalDiscounted, 2) }} ₺</div>
+        @if($showDiscountBadge && $discountPercentage > 0)
+            <span class="badge bg-success-subtle text-success" style="font-size:0.75em;">%{{ number_format($discountPercentage, 0) }} indirim</span>
+        @endif
+    </div>
 @else
-   
-    <span style="text-decoration: line-through;" class="price-discount">{{ number_format($item->original_price, 2) }} ₺</span><br>
-    <span class="price">{{ number_format($totalprice, 2) }} ₺</span>
+    <span class="price fw-bold">{{ number_format($totalDiscounted, 2) }} ₺</span>
 @endif

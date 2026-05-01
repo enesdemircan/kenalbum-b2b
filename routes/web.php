@@ -28,6 +28,9 @@ Route::get('/products/{product}/customization-params/{parentParam}/children', [F
 // Ekstra ürün modal customization formu
 Route::get('/products/{id}/extra-form', [OrderController::class, 'extraForm'])->name('products.extra-form');
 
+// Hızlı sipariş ürün seçim API'si — header 'Sipariş Ver' modalı için JSON.
+Route::get('/api/order/products', [OrderController::class, 'productPicker'])->name('order.product-picker')->middleware('auth');
+
 // Approval pending route
 Route::get('/approval-pending', function () {
     return view('frontend.approval-pending');
