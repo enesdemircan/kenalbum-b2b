@@ -681,38 +681,16 @@ class OrderController extends Controller
 
     /**
      * Order seviyesinde yüklenmiş ZIP'i indir.
-     * Dosya adı sipariş kalemlerinin cart_id (künye) değerlerinden oluşturulur:
-     * - 1 kalem → kalemin cart_id'si
-     * - N kalem → tüm cart_id'ler "__" ile birleştirilir (250 char ile capped)
-     * - Hiç kalem yoksa → order_number fallback
+     * Dosya adı order_number — R2 public URL zaten son segmentten dosya adını veriyor.
      */
     public function downloadOrderZip($orderId)
     {
-        $order = Order::with('cartItems')->findOrFail($orderId);
+        $order = Order::findOrFail($orderId);
 
         if (empty($order->s3_zip)) {
             return back()->with('error', 'Bu sipariş için yüklenmiş dosya bulunamadı.');
         }
 
-        $r2 = app(\App\Services\R2UploadService::class);
-        $key = $r2->extractKeyFromUrl($order->s3_zip);
-        if (!$key) {
-            return redirect()->away($order->s3_zip);
-        }
-
-        $ext = strtolower(pathinfo($key, PATHINFO_EXTENSION) ?: 'zip');
-
-        $cartIds = $order->cartItems->pluck('cart_id')->filter()->values()->all();
-        if (count($cartIds) > 0) {
-            $combined = implode('__', $cartIds);
-            if (strlen($combined) > 250) {
-                $combined = substr($combined, 0, 240) . '__' . count($cartIds) . 'kalem';
-            }
-            $filename = $combined . '.' . $ext;
-        } else {
-            $filename = ($order->order_number ?: ('order-' . $order->id)) . '.' . $ext;
-        }
-
-        return redirect()->away($r2->presignedDownloadUrl($key, $filename));
+        return redirect()->away($order->s3_zip);
     }
 }
