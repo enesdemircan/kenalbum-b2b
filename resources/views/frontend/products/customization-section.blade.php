@@ -257,32 +257,24 @@
     @elseif($category->type == 'input')
 
         @foreach($categoryParams as $pivot)
-            @php
-                $param = $pivot->param;
-                // Bu parametrenin child'ları var mı kontrol et - customization_params_ust_id pivot ID'si
-                $hasChildren = $product->customizationPivotParams->where('customization_params_ust_id', $pivot->id)->count() > 0;
-            @endphp
-
-            <div class="col-md-6">
-                <div class="form-group">
-
-                    <input type="text"
-                           class="form-control customization-input"
-                           name="customizations[0][{{ $category->id }}]"
-                           id="input_{{ $param->id }}"
-                           data-param-id="{{ $param->id }}"
-                           data-title="{{ $param->key }}"
-                           data-price="{{ $pivot->price ?: 0 }}"
-                           data-category-id="{{ $category->id }}"
-                           data-category-title="{{ $category->title }}"
-                           value=""
-                           @if($param->required == 1) required @endif>
-                    @if(($pivot->price ?: 0) > 0)
-                        @if(Auth::check() and Auth::user()->roles->contains('id', 3) or Auth::user()->roles->contains('id', 1))
+            @php $param = $pivot->param; @endphp
+            <div class="customization-input-wrap">
+                <input type="text"
+                       class="form-control customization-input"
+                       name="customizations[0][{{ $category->id }}]"
+                       id="input_{{ $param->id }}"
+                       data-param-id="{{ $param->id }}"
+                       data-title="{{ $param->key }}"
+                       data-price="{{ $pivot->price ?: 0 }}"
+                       data-category-id="{{ $category->id }}"
+                       data-category-title="{{ $category->title }}"
+                       value=""
+                       @if($param->required == 1) required @endif>
+                @if(($pivot->price ?: 0) > 0)
+                    @canSeePrices
                         <small class="text-success-2">(+{{ number_format($pivot->price ?: 0, 2) }} TL)</small>
-                        @endif
-                        @endif
-                </div>
+                    @endcanSeePrices
+                @endif
             </div>
         @endforeach
 

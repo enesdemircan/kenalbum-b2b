@@ -532,99 +532,11 @@
                                         </div>
                                     @endforeach
 
-                                    {{-- DİĞER tab'ı: tüm siparişlerde olması gereken hardcoded sabit alanlar.
-                                         Customization olmayan ama her ürün için anlamlı olan seçimler:
-                                         - Tasarım Hizmeti (Tasarımı bize yaptır / kendin yap)
-                                         - Acil Üretim
-                                         - Sipariş Notu --}}
+                                    {{-- Diğer tab'ı için hardcoded sabit alanlar (Tasarım Hizmeti / Acil Üretim / Sipariş Notu).
+                                         Markup partial'da; her sipariş formunda görünmesi gereken,
+                                         customization sistemine bağlı olmayan alanlar tek yerden yönetilir. --}}
                                     @if($isDigerStep)
-                                        {{-- Tasarım Hizmeti --}}
-                                        <div class="wizard-step-section">
-                                            <h5 class="wizard-section-title">Tasarım Hizmeti</h5>
-                                            <p class="wizard-step-desc">Albüm tasarımını bizim yapmamızı mı, yoksa kendinizin yapmasını mı istiyorsunuz?</p>
-                                            <div class="customization-section mb-4" data-category="design_service" data-type="radio" data-required="1">
-                                                <div class="row g-3 option-card-grid">
-                                                    <div class="col-6 col-md-6 option-card-wrapper" data-parent-pivot-id="0">
-                                                        <label class="option-card" for="design_service_with">
-                                                            <input class="option-card-input design-service-radio"
-                                                                   type="radio"
-                                                                   name="design_service"
-                                                                   value="with_design"
-                                                                   id="design_service_with"
-                                                                   data-price="{{ (float)($product->design_service_price ?? 0) }}"
-                                                                   data-title="Tasarımı bize yaptır">
-                                                            <div class="option-card-image-wrap">
-                                                                <div class="option-card-no-image">
-                                                                    <i class="fas fa-pen-fancy"></i>
-                                                                </div>
-                                                                <span class="option-card-checkmark"><i class="fas fa-check"></i></span>
-                                                            </div>
-                                                            <div class="option-card-body">
-                                                                <div class="option-card-title">Tasarımı bize yaptır</div>
-                                                                @if(($product->design_service_price ?? 0) > 0)
-                                                                    @if(Auth::check() and Auth::user()->roles->contains('id', 3) or Auth::user()->roles->contains('id', 1))
-                                                                        <div class="option-card-price">+{{ number_format($product->design_service_price, 2) }} ₺</div>
-                                                                    @endif
-                                                                @endif
-                                                            </div>
-                                                        </label>
-                                                    </div>
-                                                    <div class="col-6 col-md-6 option-card-wrapper" data-parent-pivot-id="0">
-                                                        <label class="option-card" for="design_service_self">
-                                                            <input class="option-card-input design-service-radio"
-                                                                   type="radio"
-                                                                   name="design_service"
-                                                                   value="self_design"
-                                                                   id="design_service_self"
-                                                                   data-price="0"
-                                                                   data-title="Tasarımı kendin yap">
-                                                            <div class="option-card-image-wrap">
-                                                                <div class="option-card-no-image">
-                                                                    <i class="fas fa-user-edit"></i>
-                                                                </div>
-                                                                <span class="option-card-checkmark"><i class="fas fa-check"></i></span>
-                                                            </div>
-                                                            <div class="option-card-body">
-                                                                <div class="option-card-title">Tasarımı kendin yap</div>
-                                                                <small class="option-card-hint d-block">Hazır tasarım yükleyebilirsin</small>
-                                                            </div>
-                                                        </label>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        </div>
-
-                                        {{-- Acil Üretim --}}
-                                        @if($product->urgent_price)
-                                            <div class="wizard-step-section">
-                                                <h5 class="wizard-section-title">Acil Üretim</h5>
-                                                <div class="card">
-                                                    <div class="card-body">
-                                                        <div class="form-check">
-                                                            <input class="form-check-input" type="checkbox" name="urgent_production" id="urgent_production" value="1">
-                                                            <label class="form-check-label" for="urgent_production">
-                                                                <strong>Acil Üretim İstiyorum</strong>
-                                                                @if(Auth::check() and Auth::user()->roles->contains('id', 3) or Auth::user()->roles->contains('id', 1))
-                                                                    <span class="text-success-2 fw-bold">+ {{ number_format($product->urgent_price, 2) }} ₺</span>
-                                                                @endif
-                                                                <small class="text-muted d-block">Ek ücret karşılığında ürününüz acil olarak üretilecektir.</small>
-                                                            </label>
-                                                        </div>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        @endif
-
-                                        {{-- Sipariş Notu --}}
-                                        <div class="wizard-step-section">
-                                            <h5 class="wizard-section-title">Sipariş Notu</h5>
-                                            <textarea class="form-control"
-                                                      id="order_note"
-                                                      name="order_note"
-                                                      rows="3"
-                                                      placeholder="Siparişiniz ile ilgili özel notlarınızı buraya yazabilirsiniz... (opsiyonel)"
-                                                      style="resize: vertical;"></textarea>
-                                        </div>
+                                        @include('frontend.orders.partials.diger-fields', ['product' => $product])
                                     @endif
 
                                     @if($step['is_cascade'])
@@ -1131,10 +1043,11 @@
     }
 
     /* Grouped step: birden fazla customization section bir tab'da
-       Form-benzeri vertical stack, section'lar arasında sade ayraç */
+       Form-benzeri vertical stack, section'lar arasında sade ayraç.
+       Spacing kompakt — Diğer tab'ı 5+ section barındırabiliyor, sayfa altına uzamasın. */
     .wizard-step-section {
-        margin-bottom: 18px;
-        padding-bottom: 14px;
+        margin-bottom: 10px;
+        padding-bottom: 8px;
         border-bottom: 1px solid #f1f3f5;
     }
     .wizard-step-section:last-child {
@@ -1142,16 +1055,41 @@
         padding-bottom: 0;
         border-bottom: none;
     }
+    .wizard-step-section .wizard-step-desc {
+        margin-bottom: 6px;
+        font-size: 0.85rem;
+    }
+    .wizard-step-section .customization-section {
+        margin-bottom: 0 !important;
+    }
     .wizard-section-title {
         font-size: 0.95rem;
         font-weight: 600;
         color: #495057;
-        margin: 0 0 8px 0;
+        margin: 0 0 6px 0;
     }
     /* Grouped step'lerde input/text alanları daha kompakt */
     .wizard-step-grouped .form-control,
     .wizard-step-grouped textarea {
         max-width: 100%;
+    }
+    /* Customization "input" type — tam genişlik, satır içi etiketsiz */
+    .customization-input-wrap {
+        width: 100%;
+    }
+    .customization-input-wrap .form-control {
+        width: 100%;
+    }
+    /* Diğer tab — Acil Üretim toggle: card yerine sade form-check */
+    .diger-toggle-card {
+        background: #f8f9fa;
+        border: 1px solid #e9ecef;
+        border-radius: 6px;
+        padding: 10px 12px;
+        margin: 0;
+    }
+    .diger-toggle-card .form-check-label {
+        cursor: pointer;
     }
 
     /* Wizard nav (sticky bottom + price center, compact) */

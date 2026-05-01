@@ -105,6 +105,16 @@ class AppServiceProvider extends ServiceProvider
             return "<?php endif; ?>";
         });
 
+        // Fiyat görüntüleme — admin (role 1) veya editor (role 3) ise true.
+        // Eski pattern "Auth::check() and roles->contains('id',3) or roles->contains('id',1)"
+        // PHP precedence yüzünden buggy idi (and/or assignment seviyesinde) — bu directive
+        // tek doğru noktada kontrol eder.
+        Blade::if('canSeePrices', function () {
+            if (!auth()->check()) return false;
+            $roles = auth()->user()->roles;
+            return $roles->contains('id', 1) || $roles->contains('id', 3);
+        });
+
         // Pagination view'ını ayarla
         \Illuminate\Pagination\Paginator::defaultView('vendor.pagination.bootstrap-5');
         \Illuminate\Pagination\Paginator::defaultSimpleView('vendor.pagination.simple-bootstrap-5');
