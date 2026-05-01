@@ -19,12 +19,17 @@ class ShareViewData
      */
     public function handle(Request $request, Closure $next)
     {
-        // Ana kategorileri tüm view'lara paylaş
-        view()->share('mainCategories', MainCategory::all());
-        
+        // İçinde aktif ürün olan kategori ID'leri — header nav, sub-menü ve
+        // hızlı sipariş modal'ı bu listeye filter eder, boş kategoriler gizli.
+        $catIdsWithProducts = \App\Helpers\CategoryHelper::idsWithProducts();
+        view()->share('categoriesWithProducts', $catIdsWithProducts);
+
+        // Ana kategorileri tüm view'lara paylaş — sadece ürünü olanlar.
+        view()->share('mainCategories', MainCategory::whereIn('id', $catIdsWithProducts)->get());
+
         // Site ayarlarını tüm view'lara paylaş (ilk kaydı al)
         view()->share('siteSettings', SiteSetting::first());
-        
+
         // Sayfaları tüm view'lara paylaş
         view()->share('pages', Page::select('id','title','slug')->get());
 

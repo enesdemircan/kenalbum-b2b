@@ -48,6 +48,86 @@ class OrderController extends Controller
 
 
     /**
+     * Hızlı sipariş modal'ında "Geçmişim" tab'ı için kullanıcının önceden
+     * verdiği siparişlerin (status > 0) ürün+customization özetini döner.
+     * Aynı product için en güncel cart'ı tutar; en fazla 30 kayıt.
+     * Cart bağımlılıklarına sahip 'duplicate' ve 'order_url(?from_cart=...)'
+     * action'larıyla geri.
+     */
+    public function orderHistory(Request $request)
+    {
+        if (!auth()->check()) return response()->json(['items' => []]);
+
+        $userId = auth()->id();
+
+        // En güncel cart_id'leri product_id başına grupla
+        $cartIds = \DB::table('carts')
+            ->select(\DB::raw('MAX(id) as id'))
+            ->where('user_id', $userId)
+            ->where('status', '>', 0)
+            ->groupBy('product_id')
+            ->orderByDesc(\DB::raw('MAX(created_at)'))
+            ->limit(30)
+            ->pluck('id');
+
+        if ($cartIds->isEmpty()) return response()->json(['items' => []]);
+
+        $carts = \App\Models\Cart::with('product')
+            ->whereIn('id', $cartIds)
+            ->orderByDesc('id')
+            ->get();
+
+        $items = $carts->map(function ($cart) {
+            if (!$cart->product) return null;
+
+            $notes = $cart->notes ? json_decode($cart->notes, true) : [];
+            $customizations = $notes['customizations'] ?? [];
+
+            $summary = [];
+            foreach ($customizations as $catId => $c) {
+                $cat = \App\Models\CustomizationCategory::find($catId);
+                if (!$cat) continue;
+                $type = $c['type'] ?? null;
+                $value = '';
+                if (in_array($type, ['radio', 'select', 'hidden'], true)) {
+                    $pivot = \App\Models\CustomizationPivotParam::with('param')->find($c['value'] ?? null);
+                    if ($pivot && $pivot->param) $value = $pivot->param->key;
+                } elseif ($type === 'checkbox' && !empty($c['values'])) {
+                    $names = collect($c['values'])->map(function ($pid) {
+                        $p = \App\Models\CustomizationPivotParam::with('param')->find($pid);
+                        return $p?->param?->key;
+                    })->filter()->values();
+                    $value = $names->join(', ');
+                } elseif ($type === 'input') {
+                    $value = $c['value'] ?? '';
+                }
+                if ($value !== '') $summary[] = $cat->title . ': ' . $value;
+            }
+
+            $img = null;
+            if (is_array($cart->product->images)) {
+                $img = $cart->product->images[0] ?? null;
+            } elseif (is_string($cart->product->images) && $cart->product->images !== '') {
+                $img = explode(',', $cart->product->images)[0];
+            }
+
+            return [
+                'cart_id'        => $cart->id,
+                'product_id'     => $cart->product->id,
+                'product_title'  => $cart->product->title,
+                'product_image'  => $img,
+                'page_count'     => (int) $cart->page_count,
+                'summary'        => $summary,
+                'created_at'     => $cart->created_at?->format('d.m.Y'),
+                'order_url'      => route('products.ordercreate.id', $cart->product->id) . '?from_cart=' . $cart->id,
+                'duplicate_url'  => route('cart.duplicate', $cart->id),
+            ];
+        })->filter()->values();
+
+        return response()->json(['items' => $items]);
+    }
+
+    /**
      * Header "Sipariş Ver" modal'ı için ana ürün listesi JSON.
      * Kategori (main_category_id) ve search (title/tags LIKE) filtreleri.
      * Çocuk ürünler (ust_id != null) listelenmiyor — ana ürünler hızlı sipariş için.
@@ -130,10 +210,29 @@ class OrderController extends Controller
         return view('frontend.orders.partials.extra-customize-form', compact('product', 'categories'));
     }
 
-    public function ordercreateById($id)
+    public function ordercreateById($id, Request $request)
     {
         // GET request ise sipariş form sayfasını göster
         $product = Product::with(['customizationPivotParams.param.category', 'childProducts'])->findOrFail($id);
+
+        // Prefill: ?from_cart={cart_id} ile gelen geçmiş cart'ın customization
+        // verileri JS'e expose edilir, DOMContentLoaded'da form doldurulur.
+        $prefill = null;
+        if ($fromCartId = $request->query('from_cart')) {
+            $oldCart = \App\Models\Cart::where('user_id', auth()->id())
+                ->where('product_id', $product->id)
+                ->find($fromCartId);
+            if ($oldCart && $oldCart->notes) {
+                $oldNotes = json_decode($oldCart->notes, true) ?: [];
+                $prefill = [
+                    'page_count' => (int) ($oldCart->page_count ?? 0),
+                    'customizations' => $oldNotes['customizations'] ?? [],
+                    'urgent_production' => !empty($oldNotes['urgent_production']),
+                    'design_service' => $oldNotes['design_service'] ?? null,
+                    'order_note' => $oldNotes['order_note'] ?? null,
+                ];
+            }
+        }
 
         // Ana parametreleri al ve kategorilere göre gruplandır.
         // file/files type kategoriler wizard'da render edilmiyor (dosya artık order seviyesinde, checkout'ta).
@@ -272,7 +371,8 @@ class OrderController extends Controller
             'customizationSteps',
             'extraSales',
             'suggestedProducts',
-            'childProducts'
+            'childProducts',
+            'prefill'
         ));
     }
 

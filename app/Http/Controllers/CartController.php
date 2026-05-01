@@ -765,6 +765,45 @@ class CartController extends Controller
     }
 
     /**
+     * Geçmiş sipariş cart row'unu klonlayıp yeni status=0 cart oluşturur.
+     * "Geçmişim" tab'ında "Aynısını Sepete Ekle" butonu için.
+     * Customization data, page_count, fiyat aynen kopyalanır; cart_id, barcode,
+     * order_id sıfırlanır, OrderStatusHistory yeni cart için eklenir.
+     */
+    public function duplicateCart($cartId)
+    {
+        if (!Auth::check()) {
+            return response()->json(['success' => false, 'message' => 'Giriş gerekli.'], 401);
+        }
+
+        $old = Cart::where('user_id', Auth::id())->find($cartId);
+        if (!$old) {
+            return response()->json(['success' => false, 'message' => 'Sipariş bulunamadı.'], 404);
+        }
+
+        $new = $old->replicate(['cart_id', 'barcode', 'order_id', 'tracking_url']);
+        $new->status = 0;
+        $new->order_id = null;
+        $new->save();
+
+        $new->cart_id = $new->generateCartIdentifier();
+        $new->barcode = $new->generateUniqueBarcode();
+        $new->save();
+
+        OrderStatusHistory::create([
+            'cart_id' => $new->id,
+            'order_status_id' => 1,
+            'user_id' => Auth::id(),
+        ]);
+
+        return response()->json([
+            'success'  => true,
+            'cart_id'  => $new->id,
+            'message'  => 'Önceki sipariş sepete eklendi.',
+        ]);
+    }
+
+    /**
      * Wizard akışında "Siparişi Tamamla (yalnız bu sepetlerle)" shortcut'ı için.
      * Verilen cart_id_keep listesi DIŞINDAKİ tüm aktif (status=0) cart'ları siler,
      * dosyalarını ve OrderStatusHistory kayıtlarını temizler.

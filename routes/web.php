@@ -30,6 +30,8 @@ Route::get('/products/{id}/extra-form', [OrderController::class, 'extraForm'])->
 
 // Hızlı sipariş ürün seçim API'si — header 'Sipariş Ver' modalı için JSON.
 Route::get('/api/order/products', [OrderController::class, 'productPicker'])->name('order.product-picker')->middleware('auth');
+// Geçmiş siparişler — modal'ın 'Geçmişim' tab'ı için JSON.
+Route::get('/api/order/history', [OrderController::class, 'orderHistory'])->name('order.history')->middleware('auth');
 
 // Approval pending route
 Route::get('/approval-pending', function () {
@@ -61,6 +63,7 @@ Route::middleware(['auth', 'approval'])->group(function () {
     Route::post('/cart/add-extra', [CartController::class, 'addExtra'])->name('cart.add-extra');
     Route::post('/cart/extra/set', [CartController::class, 'setExtraQuantity'])->name('cart.extra.set');
     Route::post('/cart/clear-others', [CartController::class, 'clearOtherCarts'])->name('cart.clear-others');
+    Route::post('/cart/duplicate/{cartId}', [CartController::class, 'duplicateCart'])->name('cart.duplicate')->where('cartId', '[0-9]+');
     Route::put('/cart/{id}', [CartController::class, 'update'])->name('cart.update');
     Route::post('/cart/quantity/{id}', [CartController::class, 'updateQuantity'])->name('cart.quantity');
     Route::delete('/cart/remove/{id}', [CartController::class, 'remove'])->name('cart.remove');

@@ -2738,6 +2738,93 @@
     });
     </script>
 
+    {{-- Wizard prefill (geçmiş siparişten) — from_cart query ile gelen verileri
+         tüm wizard event handler'ları bağlandıktan SONRA forma uygula. --}}
+    @if(!empty($prefill))
+    <script>
+    window._wizardPrefill = @json($prefill);
+    document.addEventListener('DOMContentLoaded', function() {
+        // Tüm event listener'lar bağlandıktan sonra çalışsın diye küçük bir delay
+        setTimeout(function() {
+            const pf = window._wizardPrefill;
+            if (!pf) return;
+
+            // Yaprak adeti
+            if (pf.page_count > 0) {
+                const sel = document.getElementById('page-count-select');
+                if (sel) {
+                    sel.value = String(pf.page_count);
+                    sel.dispatchEvent(new Event('change', { bubbles: true }));
+                }
+                // option-card-mirror-select pattern'i için seçili kartı işaretle
+                document.querySelectorAll('.option-card-mirror-select[data-pivot-id="' + pf.page_count + '"]').forEach(c => c.click());
+            }
+
+            // Customization seçimleri (radio/checkbox/input/select)
+            Object.entries(pf.customizations || {}).forEach(([catId, cust]) => {
+                const type = cust.type;
+                if (type === 'radio' || type === 'select' || type === 'hidden') {
+                    if (cust.value) {
+                        const r = document.querySelector('input[type="radio"][name="customizations[0][' + catId + ']"][value="' + cust.value + '"]');
+                        if (r) {
+                            r.checked = true;
+                            r.dispatchEvent(new Event('change', { bubbles: true }));
+                        }
+                    }
+                } else if (type === 'checkbox' && Array.isArray(cust.values)) {
+                    cust.values.forEach(v => {
+                        const cb = document.querySelector('input[type="checkbox"][name="customizations[0][' + catId + '][]"][value="' + v + '"]');
+                        if (cb) {
+                            cb.checked = true;
+                            cb.dispatchEvent(new Event('change', { bubbles: true }));
+                        }
+                    });
+                } else if (type === 'input') {
+                    const inp = document.querySelector('input[type="text"][name="customizations[0][' + catId + ']"], textarea[name="customizations[0][' + catId + ']"]');
+                    if (inp) {
+                        inp.value = cust.value || '';
+                        inp.dispatchEvent(new Event('input', { bubbles: true }));
+                    }
+                }
+            });
+
+            // Acil üretim
+            if (pf.urgent_production) {
+                const u = document.getElementById('urgent_production');
+                if (u) {
+                    u.checked = true;
+                    u.dispatchEvent(new Event('change', { bubbles: true }));
+                }
+            }
+
+            // Tasarım Hizmeti
+            if (pf.design_service) {
+                const d = document.querySelector('input[name="design_service"][value="' + pf.design_service + '"]');
+                if (d) {
+                    d.checked = true;
+                    d.dispatchEvent(new Event('change', { bubbles: true }));
+                }
+            }
+
+            // Sipariş notu
+            if (pf.order_note) {
+                const n = document.getElementById('order_note');
+                if (n) n.value = pf.order_note;
+            }
+
+            // Bilgi toast
+            if (typeof Swal !== 'undefined') {
+                Swal.fire({
+                    toast: true, position: 'top-end',
+                    icon: 'info', title: 'Önceki seçimler yüklendi',
+                    showConfirmButton: false, timer: 2200, timerProgressBar: true
+                });
+            }
+        }, 250);
+    });
+    </script>
+    @endif
+
     <script>
     (function() {
         var ZOOM_SELECTOR = '.radio-option-image';

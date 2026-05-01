@@ -231,9 +231,6 @@
         </a>
       </div><!-- /.logo -->
 
-                  <a href="#" class="header-tools__item header-search-trigger me-2" data-bs-toggle="modal" data-bs-target="#headerSearchModal" title="Ara" aria-label="Ara">
-              <svg class="d-block" width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg"><use href="#icon_search" /></svg>
-            </a>
                   <a href="{{ route('cart.index') }}" class="header-tools__item header-tools__cart">
               <svg class="d-block" width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg"><use href="#icon_cart" /></svg>
               <span class="cart-amount d-block position-absolute js-cart-items-count" id="cart-count">{{ $cartCount ?? 0 }}</span>
@@ -385,12 +382,6 @@
           </div><!-- /.logo -->
 
           <div class="header-tools d-flex align-items-center flex-1 justify-content-end me-2">
-            <div class="header-tools__item">
-              <a href="#" class="header-search-trigger" data-bs-toggle="modal" data-bs-target="#headerSearchModal" title="Ara" aria-label="Ara">
-                <svg class="d-block" width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg"><use href="#icon_search" /></svg>
-              </a>
-            </div>
-
             <div class="header-tools__item hover-container">
            
                 <a href="{{ route('profile.index') }}">
@@ -687,15 +678,20 @@
                   <div class="row g-3">
                       <div class="col-md-3">
                           <ul class="list-group opp-cat-list">
-                              <li class="list-group-item opp-cat-item active" data-cat="">
+                              {{-- Geçmişim tab — modal açılınca JS fetch yapar; geçmiş yoksa gizli kalır. --}}
+                              <li class="list-group-item opp-cat-item opp-history-item" data-mode="history" style="display:none; background:#fff7e6; border-bottom:2px solid #f0ad4e;">
+                                  <i class="fas fa-history me-2"></i><strong>Geçmişim</strong>
+                                  <span class="badge bg-warning text-dark ms-2 opp-history-count" style="display:none;"></span>
+                              </li>
+                              <li class="list-group-item opp-cat-item active" data-cat="" data-mode="products">
                                   <i class="fas fa-th-large me-2"></i>Tüm Kategoriler
                               </li>
                               @foreach($mainCategories->where('ust_id', 0)->sortBy('order') as $mainCat)
-                                  <li class="list-group-item opp-cat-item opp-cat-parent" data-cat="{{ $mainCat->id }}">
+                                  <li class="list-group-item opp-cat-item opp-cat-parent" data-cat="{{ $mainCat->id }}" data-mode="products">
                                       <strong>{{ $mainCat->title }}</strong>
                                   </li>
                                   @foreach($mainCategories->where('ust_id', $mainCat->id)->sortBy('order') as $subCat)
-                                      <li class="list-group-item opp-cat-item opp-cat-child" data-cat="{{ $subCat->id }}">
+                                      <li class="list-group-item opp-cat-item opp-cat-child" data-cat="{{ $subCat->id }}" data-mode="products">
                                           ↳ {{ $subCat->title }}
                                       </li>
                                   @endforeach
@@ -742,6 +738,65 @@
           padding-left: 28px !important;
           font-size: 0.84rem;
           color: #6c757d;
+      }
+      /* Geçmişim history kartları */
+      .opp-history-card {
+          display: flex;
+          gap: 12px;
+          border: 1px solid #e9ecef;
+          border-radius: 10px;
+          padding: 10px;
+          background: #fff;
+          height: 100%;
+          transition: box-shadow .15s, border-color .15s;
+      }
+      .opp-history-card:hover {
+          border-color: #f0ad4e;
+          box-shadow: 0 4px 12px rgba(240,173,78,.15);
+      }
+      .opp-history-img {
+          width: 80px;
+          height: 80px;
+          object-fit: cover;
+          border-radius: 6px;
+          background: #f8f9fa;
+          flex-shrink: 0;
+      }
+      .opp-history-img-empty {
+          width: 80px;
+          height: 80px;
+          background: #f8f9fa;
+          border-radius: 6px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          color: #adb5bd;
+          flex-shrink: 0;
+      }
+      .opp-history-body { flex: 1; min-width: 0; }
+      .opp-history-title {
+          font-size: 0.9rem;
+          font-weight: 600;
+          margin: 0 0 4px;
+          line-height: 1.2;
+      }
+      .opp-history-summary {
+          font-size: 0.72rem;
+          color: #6c757d;
+          line-height: 1.4;
+          max-height: 50px;
+          overflow: hidden;
+      }
+      .opp-history-summary div { display: block; }
+      .opp-history-actions {
+          display: flex;
+          gap: 6px;
+          margin-top: 8px;
+      }
+      .opp-history-actions .btn {
+          flex: 1;
+          font-size: 0.75rem;
+          padding: 4px 8px;
       }
       .opp-card {
           display: block;
@@ -795,9 +850,13 @@
       const modalEl = document.getElementById('orderProductPickerModal');
       if (!grid || !modalEl) return;
 
+      let currentMode = 'products'; // 'products' | 'history'
       let currentCat = '';
       let debounceT;
       let firstLoadDone = false;
+      let historyCache = null;
+      const csrf = () => document.querySelector('meta[name="csrf-token"]')?.content
+          || document.querySelector('input[name="_token"]')?.value || '';
 
       function escHtml(s) {
           return String(s ?? '').replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
@@ -835,24 +894,139 @@
           }
       }
 
+      function renderHistoryCards(items) {
+          // Modal grid'i history için 2-3 kolonluk düzene çek
+          grid.className = 'row row-cols-1 row-cols-md-2 row-cols-lg-3 g-3';
+          if (!items.length) {
+              grid.innerHTML = '<div class="col-12 text-center py-5 text-muted"><i class="fas fa-history fa-2x mb-2 d-block"></i>Henüz geçmiş siparişiniz yok.</div>';
+              return;
+          }
+          grid.innerHTML = items.map(it => `
+              <div class="col">
+                  <div class="opp-history-card">
+                      ${it.product_image
+                          ? `<img src="${escHtml(it.product_image)}" alt="${escHtml(it.product_title)}" class="opp-history-img" loading="lazy">`
+                          : '<div class="opp-history-img-empty"><i class="fas fa-cube"></i></div>'}
+                      <div class="opp-history-body">
+                          <div class="opp-history-title">${escHtml(it.product_title)}</div>
+                          <div class="opp-history-summary">
+                              ${(it.summary || []).slice(0, 4).map(s => `<div>${escHtml(s)}</div>`).join('')}
+                              ${it.created_at ? `<div class="text-muted">${escHtml(it.created_at)}</div>` : ''}
+                          </div>
+                          <div class="opp-history-actions">
+                              <a href="${it.order_url}" class="btn btn-sm btn-outline-primary"><i class="fas fa-sliders-h"></i> Özelleştir</a>
+                              <button type="button" class="btn btn-sm btn-success opp-history-add" data-duplicate-url="${it.duplicate_url}" data-title="${escHtml(it.product_title)}">
+                                  <i class="fas fa-cart-plus"></i> Sepete Ekle
+                              </button>
+                          </div>
+                      </div>
+                  </div>
+              </div>
+          `).join('');
+      }
+
+      function restoreProductsGridLayout() {
+          grid.className = 'row row-cols-2 row-cols-md-3 row-cols-lg-4 g-3';
+      }
+
+      async function fetchHistory(forceReload = false) {
+          if (historyCache && !forceReload) return historyCache;
+          const res = await fetch('{{ route("order.history") }}', { headers: {'Accept': 'application/json'} });
+          if (!res.ok) return { items: [] };
+          historyCache = await res.json();
+          return historyCache;
+      }
+
+      async function showHistory() {
+          grid.innerHTML = '<div class="col-12 text-center py-5 text-muted"><div class="spinner-border text-warning"></div><p class="mt-2 mb-0">Geçmiş siparişler yükleniyor…</p></div>';
+          searchInput.style.display = 'none';
+          const data = await fetchHistory();
+          renderHistoryCards(data.items || []);
+      }
+
+      async function showProducts() {
+          searchInput.style.display = '';
+          restoreProductsGridLayout();
+          await loadProducts();
+      }
+
       catItems.forEach(li => {
           li.addEventListener('click', () => {
               catItems.forEach(x => x.classList.remove('active'));
               li.classList.add('active');
-              currentCat = li.getAttribute('data-cat') || '';
-              loadProducts();
+              const mode = li.getAttribute('data-mode') || 'products';
+              currentMode = mode;
+              if (mode === 'history') {
+                  showHistory();
+              } else {
+                  currentCat = li.getAttribute('data-cat') || '';
+                  showProducts();
+              }
           });
       });
 
+      // 'Aynısını Sepete Ekle' (history card) — POST cart.duplicate
+      grid.addEventListener('click', async (e) => {
+          const btn = e.target.closest('.opp-history-add');
+          if (!btn) return;
+          e.preventDefault();
+          const url = btn.dataset.duplicateUrl;
+          const title = btn.dataset.title || 'Sipariş';
+          if (!url) return;
+          btn.disabled = true;
+          const original = btn.innerHTML;
+          btn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span>Ekleniyor...';
+          try {
+              const fd = new FormData();
+              fd.append('_token', csrf());
+              const res = await fetch(url, {
+                  method: 'POST',
+                  body: fd,
+                  headers: {'X-CSRF-TOKEN': csrf(), 'Accept': 'application/json'}
+              });
+              const data = await res.json();
+              if (data.success) {
+                  Swal.fire({
+                      toast: true, position: 'top-end',
+                      icon: 'success', title: title + ' sepete eklendi',
+                      showConfirmButton: false, timer: 1800, timerProgressBar: true
+                  });
+                  btn.classList.remove('btn-success');
+                  btn.classList.add('btn-outline-success');
+                  btn.innerHTML = '<i class="fas fa-check"></i> Eklendi';
+              } else {
+                  btn.innerHTML = original;
+                  Swal.fire({icon: 'error', title: 'Hata', text: data.message || 'Eklenemedi.'});
+              }
+          } catch (err) {
+              btn.innerHTML = original;
+              Swal.fire({icon: 'error', title: 'Bağlantı hatası'});
+          } finally {
+              btn.disabled = false;
+          }
+      });
+
       searchInput.addEventListener('input', () => {
+          if (currentMode !== 'products') return; // history modunda search yok
           clearTimeout(debounceT);
           debounceT = setTimeout(loadProducts, 300);
       });
 
-      modalEl.addEventListener('shown.bs.modal', () => {
+      modalEl.addEventListener('shown.bs.modal', async () => {
           if (!firstLoadDone) {
               firstLoadDone = true;
-              loadProducts();
+              showProducts();
+              // Geçmiş varsa Geçmişim tab'ını aktif et
+              try {
+                  const data = await fetchHistory();
+                  const cnt = (data.items || []).length;
+                  if (cnt > 0) {
+                      const histItem = document.querySelector('.opp-history-item');
+                      const badge = document.querySelector('.opp-history-count');
+                      if (histItem) histItem.style.display = '';
+                      if (badge) { badge.textContent = cnt; badge.style.display = ''; }
+                  }
+              } catch (e) { /* sessiz geç */ }
           }
           searchInput.focus();
       });
