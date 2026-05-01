@@ -387,17 +387,18 @@
                         @endif
                         
                         @php
-                            // Yeni wizard: HER customization category = ayrı step
-                            // + Page count step (varsa, ürün > 1 sayfa) + Ekstralar + Sipariş Özeti
+                            // Wizard tab sırası: Yaprak Adeti? → ... customizations → Diğer
+                            //                    → Sipariş Özeti (review) → Ekstralar (varsa, son)
+                            // Ekstralar son tab'da çünkü kullanıcı önce ana ürünü gözden geçirsin,
+                            // sonra opsiyonel ekstraları ekleyip "Sepete Ekle" ile tamamlasın.
                             $hasPageCount = $product->price_difference_per_page > 0 && $product->min_pages > 0 && $product->max_pages > 0;
                             $hasExtras = isset($extraSales) && $extraSales->count() > 0;
 
                             $customStepCount = $customizationSteps->count();
-                            $pageCountStepIdx = $hasPageCount ? 0 : null;
                             $firstCustomIdx = $hasPageCount ? 1 : 0;
-                            $totalSteps = ($hasPageCount ? 1 : 0) + $customStepCount + ($hasExtras ? 1 : 0) + 1;
-                            $extrasIdx = ($hasPageCount ? 1 : 0) + $customStepCount;
-                            $summaryIdx = $totalSteps - 1;
+                            $totalSteps = ($hasPageCount ? 1 : 0) + $customStepCount + 1 + ($hasExtras ? 1 : 0);
+                            $summaryIdx = ($hasPageCount ? 1 : 0) + $customStepCount;
+                            $extrasIdx = $hasExtras ? ($summaryIdx + 1) : null;
                         @endphp
 
                         @if(!$hasPageCount)
@@ -419,16 +420,16 @@
                                     <span class="wsi-label">{{ $step['step_label'] }}</span>
                                 </div>
                             @endforeach
+                            <div class="wizard-step-indicator" data-step-index="{{ $summaryIdx }}">
+                                <span class="wsi-num">{{ $summaryIdx + 1 }}</span>
+                                <span class="wsi-label">Sipariş Özeti</span>
+                            </div>
                             @if($hasExtras)
                                 <div class="wizard-step-indicator" data-step-index="{{ $extrasIdx }}">
                                     <span class="wsi-num">{{ $extrasIdx + 1 }}</span>
                                     <span class="wsi-label">Ekstralar</span>
                                 </div>
                             @endif
-                            <div class="wizard-step-indicator" data-step-index="{{ $summaryIdx }}">
-                                <span class="wsi-num">{{ $totalSteps }}</span>
-                                <span class="wsi-label">Sipariş Özeti</span>
-                            </div>
                         </div>
 
                         <!-- 2-column layout: Gallery (left) + Wizard steps (right) -->
@@ -548,65 +549,55 @@
                                 </div>
                             @endforeach
 
-                            {{-- Ekstralar step (varsa) --}}
+                            {{-- Sipariş Özeti step — Ekstralar'dan ÖNCE.
+                                 Sadece review/summary; submit butonu son tab'da (Ekstralar). --}}
+                            <div class="wizard-step" data-step-index="{{ $summaryIdx }}" data-step-kind="summary">
+                                <h3 class="wizard-step-title">Sipariş Özeti</h3>
+                                <p class="wizard-step-desc">Seçimlerinizi gözden geçirin. @if($hasExtras)Ardından son adımda dilerseniz ekstra ürün ekleyebilirsiniz.@endif</p>
+                                <div id="wizard-summary" class="wizard-summary mb-3">
+                                    {{-- JS ile dolduruluyor --}}
+                                </div>
+                                @if(!$hasExtras)
+                                    {{-- Ekstralar yoksa submit'i burada göster --}}
+                                    @include('frontend.orders.partials.wizard-submit-buttons')
+                                @endif
+                            </div>
+
+                            {{-- Ekstralar step — son tab. Buradaki "Sepete Ekle" hem ana ürün
+                                 hem seçilen ekstraları tek seferde sepete ekler. --}}
                             @if($hasExtras)
                                 <div class="wizard-step" data-step-index="{{ $extrasIdx }}" data-step-kind="extras">
                                     <h3 class="wizard-step-title">Ekstralar</h3>
-                                    <p class="text-muted">Siparişinize ek ürünler ekleyebilirsiniz. Hiçbirini istemiyorsanız "İleri" diyerek atlayabilirsiniz.</p>
+                                    <p class="wizard-step-desc">Siparişinize ek ürünler ekleyebilirsiniz. İstemiyorsanız doğrudan "Sepete Ekle" diyebilirsiniz.</p>
                                     <div class="row g-3 extras-grid">
                                         @foreach($extraSales as $extra)
                                             <div class="col-md-4 col-sm-6">
-                                                <div class="card h-100 extra-card" data-extra-product-id="{{ $extra['id'] }}">
+                                                <div class="card h-100 extra-card" data-extra-product-id="{{ $extra['id'] }}" data-extra-price="{{ (float) $extra['price'] }}">
                                                     @if(!empty($extra['images']))
                                                         @php
                                                             $extraImg = is_array($extra['images']) ? ($extra['images'][0] ?? null) : explode(',', $extra['images'])[0];
                                                         @endphp
                                                         @if($extraImg)
-                                                            <img src="{{ $extraImg }}" class="card-img-top" style="height:160px;object-fit:cover;" alt="{{ $extra['title'] }}">
+                                                            <img src="{{ $extraImg }}" class="card-img-top extra-card-img" alt="{{ $extra['title'] }}">
                                                         @endif
                                                     @endif
-                                                    <div class="card-body">
-                                                        <h6 class="card-title">{{ $extra['title'] }}</h6>
-                                                        <p class="text-success fw-bold mb-2">{{ number_format($extra['price'], 2) }} ₺</p>
-                                                        <div class="input-group input-group-sm">
-                                                            <button type="button" class="btn btn-outline-secondary extra-qty-minus">−</button>
-                                                            <input type="number" class="form-control text-center extra-qty" value="0" min="0" max="99">
-                                                            <button type="button" class="btn btn-outline-secondary extra-qty-plus">+</button>
+                                                    <div class="card-body extra-card-body">
+                                                        <h6 class="card-title extra-card-title">{{ $extra['title'] }}</h6>
+                                                        <div class="extra-card-price">{{ number_format($extra['price'], 2) }} ₺</div>
+                                                        <div class="extra-qty-control">
+                                                            <button type="button" class="btn extra-qty-btn extra-qty-minus" aria-label="Azalt">−</button>
+                                                            <input type="number" class="form-control extra-qty" value="0" min="0" max="99" inputmode="numeric">
+                                                            <button type="button" class="btn extra-qty-btn extra-qty-plus" aria-label="Arttır">+</button>
                                                         </div>
                                                     </div>
                                                 </div>
                                             </div>
                                         @endforeach
                                     </div>
+
+                                    @include('frontend.orders.partials.wizard-submit-buttons')
                                 </div>
                             @endif
-
-                            {{-- Sipariş Özeti step (her zaman, son step).
-                                 Acil Üretim, Sipariş Notu ve Tasarım Hizmeti seçimleri
-                                 artık "Diğer" tab'ında — burası sadece özet + submit. --}}
-                            <div class="wizard-step" data-step-index="{{ $summaryIdx }}" data-step-kind="summary">
-                                <h3 class="wizard-step-title">Sipariş Özeti</h3>
-                                <div id="wizard-summary" class="wizard-summary mb-3">
-                                    {{-- JS ile dolduruluyor --}}
-                                </div>
-
-                                <div class="d-grid">
-                                    <button type="submit" class="btn btn-primary btn-lg" id="wizardSubmitBtn">
-                                        <i class="fas fa-shopping-cart"></i> SEPETE EKLE
-                                    </button>
-                                </div>
-
-                                <div class="d-grid mt-2">
-                                    <button type="button" id="completeOrderBtn" class="btn btn-success btn-lg">
-                                        <i class="fas fa-bolt"></i> SİPARİŞİ TAMAMLA
-                                    </button>
-                                    <small class="text-muted text-center mt-1">
-                                        Sepetteki diğer ürünler silinir ve doğrudan teslimat adımına ilerler
-                                    </small>
-                                </div>
-
-                                <input type="hidden" name="complete_order" id="completeOrderInput" value="0">
-                            </div>
 
                         </div>{{-- /wizard-steps-container --}}
 
@@ -1126,15 +1117,98 @@
         letter-spacing: .4px;
         text-transform: uppercase;
     }
+    /* ============ EKSTRALAR — extra ürün kartları ============ */
     .extras-grid .extra-card {
-        transition: transform .15s, box-shadow .15s;
+        position: relative;
+        border: 1px solid #e9ecef;
+        border-radius: 10px;
+        overflow: hidden;
+        transition: transform .15s, box-shadow .15s, border-color .15s;
     }
     .extras-grid .extra-card:hover {
         transform: translateY(-2px);
-        box-shadow: 0 4px 12px rgba(0,0,0,.08);
+        box-shadow: 0 4px 14px rgba(0,0,0,.08);
+        border-color: #ced4da;
     }
     .extras-grid .extra-card.has-quantity {
-        border: 2px solid #198754;
+        border-color: #198754;
+        box-shadow: 0 0 0 1px #198754, 0 4px 14px rgba(25,135,84,.15);
+    }
+    .extras-grid .extra-card-img {
+        width: 100%;
+        height: 140px;
+        object-fit: cover;
+    }
+    .extras-grid .extra-card-body {
+        padding: 12px;
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+    }
+    .extras-grid .extra-card-title {
+        font-size: 0.92rem;
+        font-weight: 600;
+        margin: 0;
+        line-height: 1.3;
+        color: #212529;
+    }
+    .extras-grid .extra-card-price {
+        color: #198754;
+        font-weight: 700;
+        font-size: 1rem;
+    }
+    /* +/- adet kontrolü — sade pill stil */
+    .extra-qty-control {
+        display: flex;
+        align-items: stretch;
+        justify-content: center;
+        background: #f8f9fa;
+        border-radius: 999px;
+        padding: 2px;
+        margin-top: auto;
+    }
+    .extra-qty-btn {
+        width: 32px;
+        height: 32px;
+        padding: 0;
+        border: 0;
+        background: transparent;
+        color: #495057;
+        font-size: 1.1rem;
+        font-weight: 600;
+        line-height: 1;
+        border-radius: 50%;
+        transition: background .12s;
+    }
+    .extra-qty-btn:hover,
+    .extra-qty-btn:focus {
+        background: #e9ecef;
+        color: #198754;
+    }
+    .extra-qty-btn:active {
+        background: #198754;
+        color: #fff;
+    }
+    .extra-qty {
+        width: 48px;
+        height: 32px;
+        border: 0;
+        background: transparent;
+        text-align: center;
+        font-weight: 600;
+        color: #212529;
+        padding: 0;
+        font-size: 0.95rem;
+        outline: none;
+        box-shadow: none;
+    }
+    .extra-qty::-webkit-outer-spin-button,
+    .extra-qty::-webkit-inner-spin-button {
+        -webkit-appearance: none;
+        margin: 0;
+    }
+    .extra-qty[type="number"] {
+        -moz-appearance: textfield;
     }
     .wizard-summary {
         background: #f8f9fa;
@@ -1347,7 +1421,10 @@
             nextBtn.style.display = isLast ? 'none' : '';
             if (submitBtn) submitBtn.style.display = '';
 
-            if (isLast) renderWizardSummary();
+            // Sipariş Özeti VEYA son step'e (Ekstralar) girdiğinde summary'i yenile
+            const currentEl = wizardSteps[currentStep];
+            const isSummaryStep = currentEl && currentEl.getAttribute('data-step-kind') === 'summary';
+            if (isSummaryStep || isLast) renderWizardSummary();
 
             // Scroll to top of wizard area
             const progress = document.getElementById('wizard-progress');
@@ -1442,24 +1519,33 @@
             ind.style.cursor = 'pointer';
         });
 
-        // Extras step quantity controls
+        // Extras step quantity controls — +/- adet değişiminde card highlight + alt navbar TOPLAM güncelle.
+        // Cart-add gerçek anlamda en sondaki "Sepete Ekle" submit'inde olur (single form,
+        // ana ürün + ekstralar tek POST'ta). +/- buton sadece visual feedback + toplam güncelleme.
+        const triggerPriceUpdate = () => {
+            if (typeof window.updatePrice === 'function') {
+                try { window.updatePrice(); } catch (e) { /* henüz init olmayabilir */ }
+            }
+        };
         document.querySelectorAll('.extra-card').forEach(card => {
             const minus = card.querySelector('.extra-qty-minus');
             const plus = card.querySelector('.extra-qty-plus');
             const input = card.querySelector('.extra-qty');
             if (!input) return;
-            const updateClass = () => {
-                card.classList.toggle('has-quantity', parseInt(input.value || '0', 10) > 0);
+            const sync = () => {
+                const qty = parseInt(input.value || '0', 10);
+                card.classList.toggle('has-quantity', qty > 0);
+                triggerPriceUpdate();
             };
             if (minus) minus.addEventListener('click', () => {
                 input.value = Math.max(0, (parseInt(input.value || '0', 10) || 0) - 1);
-                updateClass();
+                sync();
             });
             if (plus) plus.addEventListener('click', () => {
                 input.value = Math.min(99, (parseInt(input.value || '0', 10) || 0) + 1);
-                updateClass();
+                sync();
             });
-            input.addEventListener('input', updateClass);
+            input.addEventListener('input', sync);
         });
 
         // Build summary on last step
@@ -1815,7 +1901,10 @@
                 return {{ $product->price }};
             }
             
-            // Fiyat güncelleme fonksiyonu
+            // Fiyat güncelleme fonksiyonu — wizard'ın diğer scope'larından da
+            // çağrılabilsin diye window.updatePrice olarak expose ediliyor
+            // (örn. extras +/- buton handler'ı, vanilla JS scope'unda).
+            window.updatePrice = updatePrice;
             function updatePrice() {
                 var basePrice = updateBasePrice();
                 var totalPrice = basePrice;
@@ -1854,6 +1943,14 @@
                     var designPrice = {{ $product->design_service_price ?? 0 }};
                     totalPrice += designPrice;
                 }
+
+                // Ekstralar — son tab'daki extra-card'larda seçili adetleri toplam fiyata ekle
+                $('.extras-grid .extra-card').each(function() {
+                    var qty = parseInt($(this).find('.extra-qty').val() || '0', 10) || 0;
+                    if (qty <= 0) return;
+                    var unitPrice = parseFloat($(this).data('extra-price')) || 0;
+                    totalPrice += unitPrice * qty;
+                });
                 
                 // Yaprak adeti fiyatını hesapla (sadece sayfa seçimi varsa)
                 var $pageCountSelect = $('#page-count-select');
