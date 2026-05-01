@@ -797,11 +797,11 @@
       /* "Sipariş Ver" linki diğer nav öğeleriyle aynı boyut/spacing —
          farklılaşma sadece yazı renginde (vurgu için yeşil). */
       .navigation__item-cta .navigation__link {
-          color: #198754 !important;
+          color: #ea580c !important;
           font-weight: 700;
       }
       .navigation__item-cta .navigation__link:hover {
-          color: #146c43 !important;
+          color: #c2410c !important;
       }
       .opp-cat-list { max-height: 60vh; overflow-y: auto; }
       .opp-cat-item {
@@ -813,7 +813,7 @@
           transition: background .12s, color .12s;
       }
       .opp-cat-item:hover { background: #f8f9fa; }
-      .opp-cat-item.active { background: #198754; color: #fff; font-weight: 600; }
+      .opp-cat-item.active { background: #ea580c; color: #fff; font-weight: 600; }
       .opp-cat-item.active strong { color: #fff; }
       .opp-cat-child {
           padding-left: 28px !important;
@@ -901,7 +901,7 @@
       .opp-card:hover {
           transform: translateY(-2px);
           box-shadow: 0 6px 18px rgba(0,0,0,.08);
-          border-color: #198754;
+          border-color: #ea580c;
           color: #212529;
       }
       .opp-card-img {
