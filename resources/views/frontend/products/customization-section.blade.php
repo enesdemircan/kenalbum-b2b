@@ -82,12 +82,12 @@
 
             @if($showHiddenCategory)
             <div class="col-6 col-md-4 col-lg-3 option-card-wrapper" data-parent-pivot-id="{{ (int)$pivot->customization_params_ust_id }}">
-                <label class="option-card" for="param_{{ $param->id }}">
+                <label class="option-card" for="pivot_{{ $pivot->id }}">
                     <input class="option-card-input customization-radio"
                            type="radio"
                            name="customizations[0][{{ $category->id }}]"
                            value="{{ $pivot->id }}"
-                           id="param_{{ $param->id }}"
+                           id="pivot_{{ $pivot->id }}"
                            data-price="{{ $pivot->price ?: 0 }}"
                            data-title="{{ $param->key }}"
                            data-pivot-id="{{ $pivot->id }}"
@@ -134,12 +134,12 @@
                 $hasImage = $param->option2 == 'true' && !empty($param->value);
             @endphp
             <div class="col-6 col-md-4 col-lg-3">
-                <label class="option-card option-card-multi" for="param_checkbox_{{ $param->id }}">
+                <label class="option-card option-card-multi" for="pivot_checkbox_{{ $pivot->id }}">
                     <input class="option-card-input customization-checkbox"
                            type="checkbox"
                            name="customizations[0][{{ $category->id }}][]"
                            value="{{ $pivot->id }}"
-                           id="param_checkbox_{{ $param->id }}"
+                           id="pivot_checkbox_{{ $pivot->id }}"
                            data-price="{{ $pivot->price ?? 0 }}"
                            data-title="{{ $param->key }}"
                            data-category-id="{{ $category->id }}"

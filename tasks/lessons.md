@@ -61,3 +61,32 @@ Production'da: deploy script'inin sonunda mutlaka bu adım olmalı.
 
 **How to detect:**
 - Kullanıcı "kart tıklıyorum ama seçilmiyor" derse → DevTools'ta o kartın label'ının `for=` attribute'u → karşılık gelen ID'yi `document.querySelectorAll('#paramX').length` ile saysın. > 1 ise duplicate var.
+
+---
+
+## 2026-05-01 — `param->id` ile `pivot->id` farkı: many-to-many durumunda HTML id duplicate olur
+
+**Pattern:** Bir customization param'ı (örn. "Beyaz" rengi) farklı pivot'lar tarafından **birden fazla kez** referans edilebilir (farklı parent context'lerde). Eğer view'de `id="param_{{ $param->id }}"` kullanırsan, aynı param farklı pivot'lar tarafından çağrıldığında HTML'de duplicate id oluşur.
+
+**Why:** Bu projede `customization_pivot_params` tablosu N:N pivot — her satır farklı bir parent altında aynı param'ı temsil edebilir. Render edilirken `$pivot->param->id` kullanmak yanılgı. Kullanılması gereken `$pivot->id` (her satır için unique).
+
+**How to apply:** Pivot tablosu içinden render ederken HTML id'leri için **PIVOT row id'yi** kullan, param FK'sini değil.
+
+```blade
+{{-- YANLIŞ --}}
+<input id="param_{{ $param->id }}" ...>
+<label for="param_{{ $param->id }}" ...>
+
+{{-- DOĞRU --}}
+<input id="pivot_{{ $pivot->id }}" ...>
+<label for="pivot_{{ $pivot->id }}" ...>
+```
+
+**How to verify:** Server-side render testi yaz:
+```php
+preg_match_all('/(?:^|\s)id="([^"]+)"/', $html, $matches);
+$counts = array_count_values($matches[1]);
+$dupes = array_filter($counts, fn($c) => $c > 1);
+// $dupes 0 olmalı
+```
+Regex'te `\bid=` yerine `(?:^|\s)id=` kullan — `data-XYZ-id="..."` attribute'larıyla yanılma.
