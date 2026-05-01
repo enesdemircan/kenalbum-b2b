@@ -58,6 +58,26 @@
     </div>
 </div>
 
+{{-- Tasarım Hizmeti'ne bağlı sub-customization'lar (örn. Çalışma Tipi: Dizgi/Rötüş).
+     "Tasarımı bize yaptır" seçilmedikçe gizli; JS toggle. Validation gizli iken atlanır. --}}
+@isset($designSubCategories)
+    @foreach($designSubCategories as $cat)
+        <div class="wizard-step-section depends-on-design-service"
+             data-show-when-design-service="with_design"
+             style="display:none;">
+            <h5 class="wizard-section-title">{{ $cat['category']->title }}</h5>
+            @if(!empty($cat['category']->description))
+                <p class="wizard-step-desc">{{ $cat['category']->description }}</p>
+            @endif
+            @include('frontend.products.customization-section', [
+                'category'       => $cat['category'],
+                'categoryParams' => $cat['params'],
+                'product'        => $product,
+            ])
+        </div>
+    @endforeach
+@endisset
+
 {{-- Acil Üretim — sadece ürünün urgent_price'ı set edilmişse render edilir. --}}
 @if($product->urgent_price)
     <div class="wizard-step-section">

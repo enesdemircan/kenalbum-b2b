@@ -513,12 +513,12 @@
                                     <h4 class="wizard-step-title">{{ $step['step_label'] }}</h4>
                                     @foreach($step['categories'] as $cat)
                                         @php
-                                            // Çalışma Tipi (Dizgi/Rötüş) sadece Tasarım Hizmeti'nde
-                                            // "Tasarımı bize yaptır" seçilince görünür — JS toggle.
-                                            $isCalismaTipi = stripos($cat['category']->title, 'Çalışma Tipi') !== false;
+                                            // Çalışma Tipi (Dizgi/Rötüş) Diğer tab'ının ana döngüsünde
+                                            // render edilmez — diger-fields partial'da Tasarım Hizmeti'nin
+                                            // hemen ALTINDA conditional olarak render ediliyor.
+                                            if (stripos($cat['category']->title, 'Çalışma Tipi') !== false) continue;
                                         @endphp
-                                        <div class="wizard-step-section{{ $isCalismaTipi ? ' depends-on-design-service' : '' }}"
-                                             @if($isCalismaTipi) data-show-when-design-service="with_design" style="display:none;" @endif>
+                                        <div class="wizard-step-section">
                                             @if($isMulti)
                                                 {{-- Grouped step'te her section'ın kendi başlığı/açıklaması olsun --}}
                                                 <h5 class="wizard-section-title">{{ $cat['category']->title }}</h5>
@@ -543,7 +543,18 @@
                                          Markup partial'da; her sipariş formunda görünmesi gereken,
                                          customization sistemine bağlı olmayan alanlar tek yerden yönetilir. --}}
                                     @if($isDigerStep)
-                                        @include('frontend.orders.partials.diger-fields', ['product' => $product])
+                                        @php
+                                            // Tasarım Hizmeti altına yerleşecek sub-customization'lar
+                                            // (Çalışma Tipi: Dizgi/Rötüş). step_label='Diğer' altındaki
+                                            // categories içinde Çalışma Tipi varsa filtrele.
+                                            $designSubCategories = collect($step['categories'])
+                                                ->filter(fn($c) => stripos($c['category']->title, 'Çalışma Tipi') !== false)
+                                                ->values();
+                                        @endphp
+                                        @include('frontend.orders.partials.diger-fields', [
+                                            'product' => $product,
+                                            'designSubCategories' => $designSubCategories,
+                                        ])
                                     @endif
 
                                     @if($step['is_cascade'])
@@ -1432,6 +1443,12 @@
             const isExtrasStep  = currentEl && currentEl.getAttribute('data-step-kind') === 'extras';
             if (isSummaryStep || isLast) renderWizardSummary();
 
+            // Ekstralar tab'ında alt navbar'daki TOPLAM gözükmesin (ana ürün
+            // commit edildi, ekstralar canlı sepete gidiyor — toplam fiyat
+            // sepete git ekranında zaten gözükecek).
+            const navPriceEl = document.getElementById('wizard-nav-price');
+            if (navPriceEl) navPriceEl.style.visibility = isExtrasStep ? 'hidden' : '';
+
             // Sipariş Özeti'nde nextBtn label "Sepete Ekle ve Devam Et",
             // diğer step'lerde "İleri".
             if (isSummaryStep) {
@@ -1767,7 +1784,7 @@
             });
 
             let html = '<div class="ws-section"><h6>Ürün</h6>';
-            html += '<div class="ws-row"><span>' + productTitle + '</span><span>' + productPrice.toLocaleString('tr-TR', { minimumFractionDigits: 2 }) + ' ₺</span></div>';
+            html += '<div class="ws-row"><span>' + productTitle + '</span></div>';
             html += '</div>';
 
             if (lines.length) {
