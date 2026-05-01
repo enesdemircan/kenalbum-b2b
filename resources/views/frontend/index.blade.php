@@ -66,17 +66,29 @@
           </div>
         </div>
 
-        {{-- Floating mini-album görsel (sağ üst köşe) --}}
-        <div class="b2b-hero-floating">
-          <img src="/images/1758033483_b3GibIqYHN.jpg" alt="Lily Albüm" loading="lazy">
+        {{-- Canlı Destek WhatsApp widget — mesai saatleri 08:00-18:00 --}}
+        @php
+          $hour = now()->hour;
+          $isOnline = $hour >= 8 && $hour < 18;
+          $waPhone = preg_replace('/[^0-9]/', '', $siteSettings->phone ?? '');
+          $waMessage = rawurlencode('Merhaba, destek alabilir miyim?');
+        @endphp
+        <a href="https://wa.me/{{ $waPhone }}?text={{ $waMessage }}"
+           target="_blank"
+           rel="noopener"
+           class="b2b-hero-floating support-widget {{ $isOnline ? 'is-online' : 'is-offline' }}"
+           aria-label="WhatsApp Canlı Destek">
+          <div class="support-widget-icon">
+            <i class="fab fa-whatsapp"></i>
+          </div>
           <div class="b2b-hero-floating-info">
             <span class="b2b-hero-floating-dot"></span>
             <div>
-              <strong>Premium Seri</strong>
-              <em>10+ yıl tecrübe</em>
+              <strong>Canlı Destek</strong>
+              <em>{{ $isOnline ? 'Çevrimiçi · Hemen yanıtlıyoruz' : 'Mesai dışı · 08:00-18:00' }}</em>
             </div>
           </div>
-        </div>
+        </a>
       </div>
     </section>
 
