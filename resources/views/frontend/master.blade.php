@@ -699,7 +699,7 @@
                           </ul>
                       </div>
                       <div class="col-md-9">
-                          <div id="oppGrid" class="row row-cols-2 row-cols-md-3 row-cols-lg-4 g-3">
+                          <div id="oppGrid" class="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-3">
                               <div class="col-12 text-center py-5 text-muted">
                                   <div class="spinner-border text-primary"></div>
                                   <p class="mt-2 mb-0">Ürünler yükleniyor…</p>
@@ -937,7 +937,7 @@
       }
 
       function restoreProductsGridLayout() {
-          grid.className = 'row row-cols-2 row-cols-md-3 row-cols-lg-4 g-3';
+          grid.className = 'row row-cols-1 row-cols-md-2 row-cols-lg-3 g-3';
       }
 
       async function fetchHistory(forceReload = false) {
