@@ -1003,74 +1003,100 @@
     .gallery-thumb.active { opacity: 1; border-color: #0d6efd; }
     .gallery-thumb img { width: 100%; height: 100%; object-fit: cover; display: block; }
 
-    /* Step indicator — compact horizontal */
+    /* Step indicator — modern pill, turuncu graniti tema */
     .wizard-progress {
         display: flex;
-        gap: 4px;
+        gap: 6px;
         flex-wrap: wrap;
-        padding: 10px 0;
-        border-bottom: 1px solid #e9ecef;
-        margin-bottom: 16px;
+        padding: 14px 0 18px;
+        border-bottom: 1px solid #f1f1f1;
+        margin-bottom: 20px;
         justify-content: center;
     }
     .wizard-step-indicator {
-        display: flex;
+        display: inline-flex;
         align-items: center;
-        gap: 6px;
-        padding: 4px 10px;
-        border-radius: 14px;
-        background: #f1f3f5;
-        color: #868e96;
+        gap: 8px;
+        padding: 6px 14px 6px 6px;
+        border-radius: 999px;
+        background: #fafafa;
+        color: #737373;
         font-size: 12px;
-        cursor: default;
-        transition: background .15s, color .15s;
+        font-weight: 500;
+        cursor: pointer;
+        transition: background .18s ease, color .18s ease, transform .15s ease;
+        border: 1px solid #f1f1f1;
+        letter-spacing: .005em;
+    }
+    .wizard-step-indicator:hover {
+        background: #fff7ed;
+        color: #9a3412;
+        border-color: rgba(234,88,12,.25);
     }
     .wizard-step-indicator .wsi-num {
         display: inline-flex;
-        width: 20px; height: 20px;
+        width: 22px; height: 22px;
         align-items: center; justify-content: center;
-        background: #dee2e6;
-        color: #495057;
+        background: #e5e5e5;
+        color: #525252;
         border-radius: 50%;
         font-weight: 700;
         font-size: 11px;
+        transition: background .18s, color .18s, transform .18s;
     }
     .wizard-step-indicator.active {
-        background: #0d6efd;
+        background: #0a0a0a;
         color: #fff;
+        border-color: #0a0a0a;
+        transform: scale(1.04);
     }
     .wizard-step-indicator.active .wsi-num {
-        background: #fff;
-        color: #0d6efd;
+        background: linear-gradient(135deg, #fb923c, #ea580c);
+        color: #fff;
+        box-shadow: 0 2px 6px rgba(234,88,12,.4);
     }
     .wizard-step-indicator.completed {
-        background: #d1e7dd;
-        color: #0a3622;
+        background: #fff7ed;
+        color: #9a3412;
+        border-color: rgba(234,88,12,.18);
     }
     .wizard-step-indicator.completed .wsi-num {
         background: #ea580c;
         color: #fff;
     }
+    .wizard-step-indicator.completed::before {
+        content: '';
+        display: inline-block;
+        width: 10px;
+        height: 10px;
+        border-radius: 50%;
+        background: #ea580c;
+        margin-left: -4px;
+        opacity: 0;
+        transition: opacity .18s;
+    }
     .wizard-step { display: none; }
     .wizard-step.active {
         display: block;
-        animation: wizardFadeIn .2s ease;
+        animation: wizardFadeIn .25s cubic-bezier(.16,1,.3,1);
     }
     @keyframes wizardFadeIn {
-        from { opacity: 0; transform: translateY(6px); }
+        from { opacity: 0; transform: translateY(8px); }
         to   { opacity: 1; transform: translateY(0); }
     }
     .wizard-step-title {
-        font-size: 1.1rem;
-        margin-bottom: 4px;
-        color: #212529;
-        font-weight: 600;
+        font-size: 1.4rem;
+        margin-bottom: 6px;
+        color: #0a0a0a;
+        font-weight: 700;
+        letter-spacing: -.018em;
+        line-height: 1.2;
     }
     .wizard-step-desc {
-        font-size: 0.85rem;
-        color: #6c757d;
-        margin-bottom: 14px;
-        line-height: 1.4;
+        font-size: 0.92rem;
+        color: #525252;
+        margin-bottom: 18px;
+        line-height: 1.55;
     }
 
     /* Wizard step zaten kategori başlığını .wizard-step-title olarak gösteriyor —
@@ -1129,39 +1155,96 @@
         cursor: pointer;
     }
 
-    /* Wizard nav (sticky bottom + price center, compact) */
+    /* Wizard nav — sticky bottom, belirgin butonlar + büyük fiyat */
     .wizard-nav {
         position: sticky;
         bottom: 0;
         background: #fff;
-        padding: 8px 0;
-        margin-top: 14px;
-        border-top: 1px solid #e9ecef;
+        padding: 16px 20px;
+        margin-top: 24px;
+        border-top: 1.5px solid #e5e5e5;
+        border-radius: 14px 14px 0 0;
         display: flex;
         align-items: center;
-        gap: 10px;
+        gap: 16px;
         z-index: 10;
+        box-shadow: 0 -8px 24px rgba(15,23,42,.06);
     }
+    /* Butonlar büyük + belirgin (anasayfa pill stiliyle hizalı) */
+    .wizard-nav .btn,
     .wizard-nav .btn-sm {
-        padding: 4px 12px;
-        font-size: 0.82rem;
+        padding: 12px 24px !important;
+        font-size: .88rem !important;
+        font-weight: 600;
+        border-radius: 999px;
+        letter-spacing: .015em;
+        text-transform: uppercase;
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        transition: transform .15s, box-shadow .2s, background .15s, border-color .15s, color .15s;
+        border-width: 1.5px;
     }
+    .wizard-nav .btn:hover { transform: translateY(-1px); }
+    /* Geri buton — sade outline */
+    #wizardPrevBtn {
+        background: #fff !important;
+        color: #404040 !important;
+        border-color: #e5e5e5 !important;
+        min-width: 110px;
+        justify-content: center;
+    }
+    #wizardPrevBtn:hover {
+        background: #fafafa !important;
+        color: #0a0a0a !important;
+        border-color: #d4d4d4 !important;
+        box-shadow: 0 6px 14px rgba(15,23,42,.06);
+    }
+    #wizardPrevBtn i { font-size: .75rem; }
+    /* İleri buton — turuncu gradient pill */
+    #wizardNextBtn {
+        background: linear-gradient(135deg, #fb923c, #ea580c) !important;
+        color: #fff !important;
+        border-color: transparent !important;
+        min-width: 140px;
+        justify-content: center;
+        box-shadow: 0 4px 14px rgba(234,88,12,.30);
+    }
+    #wizardNextBtn:hover {
+        background: linear-gradient(135deg, #ea580c, #c2410c) !important;
+        box-shadow: 0 8px 22px rgba(234,88,12,.45);
+        color: #fff !important;
+    }
+    #wizardNextBtn i { font-size: .8rem; transition: transform .2s; }
+    #wizardNextBtn:hover i { transform: translateX(3px); }
+
+    /* Fiyat alanı — büyük + belirgin, ortada */
     .wizard-nav-price {
         flex: 1;
         text-align: center;
-        font-size: 1rem;
-        font-weight: 700;
-        color: #ea580c;
-        line-height: 1;
+        line-height: 1.1;
     }
     .wizard-nav-price .label {
         display: block;
-        font-size: 0.65rem;
-        color: #6c757d;
-        font-weight: 500;
-        margin-bottom: 1px;
-        letter-spacing: .4px;
+        font-size: .68rem;
+        color: #737373;
+        font-weight: 600;
+        letter-spacing: .14em;
         text-transform: uppercase;
+        margin-bottom: 4px;
+    }
+    #wizard-bottom-price {
+        font-size: 1.55rem;
+        font-weight: 800;
+        color: #0a0a0a;
+        letter-spacing: -.022em;
+        font-feature-settings: "tnum";
+    }
+
+    @media (max-width: 575px) {
+        .wizard-nav { padding: 12px; gap: 8px; }
+        .wizard-nav .btn { padding: 10px 16px !important; font-size: .8rem !important; min-width: auto !important; }
+        #wizard-bottom-price { font-size: 1.2rem; }
     }
     /* Ekstralar adımında 2-kolon (galeri+wizard) yerine TEK KOLON tam genişlik —
        galeri gizlenir, sağdaki container 12 kolon olur. Diğer adımlarda
