@@ -339,6 +339,7 @@ Route::prefix('admin')->name('admin.')->middleware(['check.route.permission'])->
     Route::delete('orders/status-history/{historyId}', [\App\Http\Controllers\Admin\OrderController::class, 'deleteStatusHistory'])->name('orders.delete-status-history');
     Route::get('orders/{order}/cart/{cart}/zpl-pdf', [\App\Http\Controllers\Admin\OrderController::class, 'generateZplPdf'])->name('orders.zpl-pdf');
     Route::get('orders/{order}/cart/{cart}/download-files', [\App\Http\Controllers\Admin\OrderController::class, 'downloadCartFiles'])->name('orders.download-cart-files');
+    Route::get('orders/{order}/download-zip', [\App\Http\Controllers\Admin\OrderController::class, 'downloadOrderZip'])->name('orders.download-zip');
     Route::get('orders/{order}/cart/{cart}/cargo-pdf', [\App\Http\Controllers\Admin\OrderController::class, 'generateCargoPdf'])->name('orders.cargo-pdf');
 
 

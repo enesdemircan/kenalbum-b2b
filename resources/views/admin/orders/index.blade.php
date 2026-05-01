@@ -126,6 +126,15 @@
                             <a class="btn-material-icon btn-material-icon-info" title="Detay (yeni sekmede)" href="{{ route('admin.orders.show', $order->id) }}" target="_blank" rel="noopener">
                                 <span class="material-icons">visibility</span>
                             </a>
+                            @if(!empty($order->s3_zip))
+                                <a class="btn-material-icon btn-material-icon-primary" title="Sipariş ZIP'ini indir" href="{{ route('admin.orders.download-zip', $order->id) }}" target="_blank" rel="noopener">
+                                    <span class="material-icons">cloud_download</span>
+                                </a>
+                            @else
+                                <span class="btn-material-icon btn-material-icon-disabled" title="Yüklenmiş dosya yok" style="opacity:.4; cursor:not-allowed;">
+                                    <span class="material-icons">cloud_off</span>
+                                </span>
+                            @endif
                             <button class="btn-material-icon btn-material-icon-success" title="Yazdır" onclick="window.open('{{ route('admin.orders.print', $order->id) }}', '_blank')">
                                 <span class="material-icons">print</span>
                             </button>

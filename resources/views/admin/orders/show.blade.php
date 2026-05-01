@@ -100,6 +100,25 @@
         </div>
     </div>
 
+    <!-- Sipariş Dosyası (Order-level R2 ZIP) -->
+    @if(!empty($order->s3_zip))
+        <div class="material-card-elevated mb-4" style="border-left:4px solid var(--md-primary);">
+            <div class="material-card-body" style="display:flex; align-items:center; justify-content:space-between; gap:14px; flex-wrap:wrap;">
+                <div style="display:flex; align-items:center; gap:14px;">
+                    <span class="material-icons" style="font-size:2.2rem; color: var(--md-primary)">cloud_download</span>
+                    <div>
+                        <strong style="display:block; color: var(--md-text-primary)">Sipariş Dosyası (ZIP)</strong>
+                        <small class="text-muted">Bu siparişe ait tüm görseller tek bir ZIP olarak yüklendi.</small>
+                    </div>
+                </div>
+                <a href="{{ route('admin.orders.download-zip', $order->id) }}" class="btn-material btn-material-primary" target="_blank" rel="noopener">
+                    <span class="material-icons">download</span>
+                    ZIP'i İndir
+                </a>
+            </div>
+        </div>
+    @endif
+
     <!-- Alt Sipariş Ürünler -->
     <div class="material-card-elevated">
         <div class="material-card-header">

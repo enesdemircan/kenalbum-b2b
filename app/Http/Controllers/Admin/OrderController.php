@@ -658,7 +658,7 @@ class OrderController extends Controller
             if (empty($cart->s3_zip)) {
                 abort(404, 'No files found for this cart item');
             }
-            
+
             // Dosya public olduğu için direkt yönlendir (bellek/timeout sorunu olmaz)
             return redirect()->away($cart->s3_zip);
 
@@ -671,5 +671,20 @@ class OrderController extends Controller
 
             abort(500, 'Dosya indirilemedi: ' . $e->getMessage());
         }
+    }
+
+    /**
+     * Order seviyesinde yüklenmiş ZIP'i indir.
+     * Yeni akışta (Faz V3) checkout'ta tek ZIP order'a kaydediliyor: orders.s3_zip
+     */
+    public function downloadOrderZip($orderId)
+    {
+        $order = Order::findOrFail($orderId);
+
+        if (empty($order->s3_zip)) {
+            return back()->with('error', 'Bu sipariş için yüklenmiş dosya bulunamadı.');
+        }
+
+        return redirect()->away($order->s3_zip);
     }
 }
