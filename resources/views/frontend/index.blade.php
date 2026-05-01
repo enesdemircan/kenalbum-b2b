@@ -26,6 +26,209 @@
     color: #fff !important;
 }
 .brand-icon { color: #198754; }
+
+/* B2B intro asimetrik kolaj */
+.b2b-collage {
+    position: relative;
+    display: grid;
+    grid-template-columns: 1.4fr 1fr;
+    gap: 14px;
+    height: 460px;
+}
+.b2b-collage-main {
+    position: relative;
+    border-radius: 16px;
+    overflow: hidden;
+    box-shadow: 0 12px 28px rgba(15,23,42,.10);
+    transition: transform .3s ease;
+}
+.b2b-collage-main:hover { transform: translateY(-4px); }
+.b2b-collage-main img {
+    width: 100%; height: 100%;
+    object-fit: cover;
+    display: block;
+}
+.b2b-collage-tag {
+    position: absolute;
+    top: 16px; left: 16px;
+    background: rgba(255,255,255,.95);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    padding: 6px 12px;
+    border-radius: 999px;
+    font-size: .72rem;
+    font-weight: 600;
+    color: #171717;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    letter-spacing: .03em;
+    box-shadow: 0 4px 12px rgba(15,23,42,.08);
+}
+.b2b-collage-tag-dot {
+    width: 6px; height: 6px;
+    border-radius: 50%;
+    background: #7c3aed;
+    box-shadow: 0 0 0 3px rgba(124,58,237,.20);
+    animation: pulse 2s infinite;
+}
+@keyframes pulse {
+    0%,100% { box-shadow: 0 0 0 3px rgba(124,58,237,.20); }
+    50% { box-shadow: 0 0 0 6px rgba(124,58,237,.10); }
+}
+.b2b-collage-side {
+    display: grid;
+    grid-template-rows: 1fr 1fr 0.85fr;
+    gap: 14px;
+}
+.b2b-collage-thumb {
+    border-radius: 14px;
+    overflow: hidden;
+    box-shadow: 0 6px 16px rgba(15,23,42,.08);
+    transition: transform .3s ease;
+    background: #f5f5f5;
+}
+.b2b-collage-thumb:hover { transform: translateY(-3px); }
+.b2b-collage-thumb img {
+    width: 100%; height: 100%;
+    object-fit: cover;
+    display: block;
+}
+.b2b-collage-mini-stat {
+    background: #0a0a0a;
+    background-image: linear-gradient(135deg, #312e81 0%, #1e1b4b 50%, #0a0a0a 100%);
+    color: #fff;
+    border-radius: 14px;
+    padding: 16px 18px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    box-shadow: 0 8px 20px rgba(15,23,42,.18);
+}
+.b2b-collage-stat-number {
+    font-size: 1.65rem;
+    font-weight: 800;
+    line-height: 1;
+    letter-spacing: -.02em;
+    background: linear-gradient(135deg, #c4b5fd, #a855f7);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+    margin-bottom: 4px;
+}
+.b2b-collage-stat-label {
+    font-size: .68rem;
+    text-transform: uppercase;
+    letter-spacing: .12em;
+    line-height: 1.3;
+    color: rgba(255,255,255,.7);
+    font-weight: 500;
+}
+@media (max-width: 768px) {
+    .b2b-collage { height: 340px; }
+}
+
+/* Numune Albümler — fotograf galeri (mosaic) */
+.showcase-grid {
+    display: grid;
+    grid-template-columns: repeat(6, 1fr);
+    grid-auto-rows: 140px;
+    gap: 12px;
+}
+.showcase-grid .show-tile {
+    border-radius: 12px;
+    overflow: hidden;
+    background: #f5f5f5;
+    position: relative;
+    box-shadow: 0 4px 12px rgba(15,23,42,.06);
+    transition: transform .3s ease, box-shadow .3s ease;
+}
+.showcase-grid .show-tile:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 12px 24px rgba(15,23,42,.10);
+}
+.showcase-grid .show-tile img {
+    width: 100%; height: 100%;
+    object-fit: cover;
+    transition: transform .5s ease;
+}
+.showcase-grid .show-tile:hover img { transform: scale(1.06); }
+.showcase-grid .show-tile-overlay {
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(180deg, transparent 50%, rgba(10,10,10,.65));
+    display: flex;
+    align-items: flex-end;
+    padding: 14px;
+    opacity: 0;
+    transition: opacity .25s ease;
+}
+.showcase-grid .show-tile:hover .show-tile-overlay { opacity: 1; }
+.showcase-grid .show-tile-title {
+    color: #fff;
+    font-weight: 600;
+    font-size: .85rem;
+    letter-spacing: -.005em;
+}
+.showcase-tile-1 { grid-column: span 3; grid-row: span 2; }
+.showcase-tile-2 { grid-column: span 3; grid-row: span 2; }
+.showcase-tile-3 { grid-column: span 2; grid-row: span 2; }
+.showcase-tile-4 { grid-column: span 2; grid-row: span 2; }
+.showcase-tile-5 { grid-column: span 2; grid-row: span 2; }
+
+@media (max-width: 991px) {
+    .showcase-grid { grid-template-columns: repeat(4, 1fr); grid-auto-rows: 120px; }
+    .showcase-tile-1, .showcase-tile-2 { grid-column: span 4; }
+    .showcase-tile-3, .showcase-tile-4, .showcase-tile-5 { grid-column: span 2; grid-row: span 2; }
+}
+@media (max-width: 575px) {
+    .showcase-grid { grid-template-columns: repeat(2, 1fr); grid-auto-rows: 140px; }
+    .showcase-tile-1, .showcase-tile-2, .showcase-tile-3, .showcase-tile-4, .showcase-tile-5 {
+        grid-column: span 2; grid-row: span 1;
+    }
+}
+
+/* Featured highlight — tek vurgulu görsel kartı */
+.feature-highlight {
+    position: relative;
+    border-radius: 20px;
+    overflow: hidden;
+    min-height: 360px;
+    background: #0a0a0a;
+}
+.feature-highlight img {
+    position: absolute;
+    inset: 0;
+    width: 100%; height: 100%;
+    object-fit: cover;
+    opacity: .55;
+}
+.feature-highlight-content {
+    position: relative;
+    z-index: 2;
+    padding: 48px;
+    color: #fff;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+}
+.feature-highlight-content h3 {
+    color: #fff;
+    font-weight: 800;
+    font-size: 2rem;
+    letter-spacing: -.025em;
+    margin-bottom: 14px;
+}
+.feature-highlight-content p {
+    color: rgba(255,255,255,.85);
+    max-width: 460px;
+    margin-bottom: 24px;
+}
+@media (max-width: 768px) {
+    .feature-highlight-content { padding: 32px; }
+    .feature-highlight-content h3 { font-size: 1.5rem; }
+}
 </style>
 
 <main>
@@ -115,29 +318,25 @@
           @endauth
         </div>
         <div class="col-lg-6">
-          <div class="row g-3">
-            <div class="col-6">
-              <div class="bg-light p-4 h-100 text-center">
-                <div class="fs-25 brand-stat">10+</div>
-                <small class="text-uppercase text-secondary">Yıllık Tecrübe</small>
+          {{-- Asimetrik foto kolaj — gerçek ürün görsellerinden, hover micro-interaction'lı --}}
+          <div class="b2b-collage">
+            <div class="b2b-collage-main">
+              <img src="/images/1758033483_b3GibIqYHN.jpg" alt="Premium Albüm" loading="lazy">
+              <div class="b2b-collage-tag">
+                <span class="b2b-collage-tag-dot"></span>
+                <span>Premium Seri</span>
               </div>
             </div>
-            <div class="col-6">
-              <div class="bg-light p-4 h-100 text-center">
-                <div class="fs-25 brand-stat">500+</div>
-                <small class="text-uppercase text-secondary">Aktif Bayi</small>
+            <div class="b2b-collage-side">
+              <div class="b2b-collage-thumb">
+                <img src="/images/1758112544_0mgV9mENTd.jpg" alt="Velvet Albüm" loading="lazy">
               </div>
-            </div>
-            <div class="col-6">
-              <div class="bg-light p-4 h-100 text-center">
-                <div class="fs-25 brand-stat">100K+</div>
-                <small class="text-uppercase text-secondary">Tamamlanan Albüm</small>
+              <div class="b2b-collage-thumb">
+                <img src="/images/1758116669_2whgYKwame.JPG" alt="Leaf Albüm" loading="lazy">
               </div>
-            </div>
-            <div class="col-6">
-              <div class="bg-light p-4 h-100 text-center">
-                <div class="fs-25 brand-stat">2-5</div>
-                <small class="text-uppercase text-secondary">İş Günü Üretim</small>
+              <div class="b2b-collage-mini-stat">
+                <div class="b2b-collage-stat-number">100K+</div>
+                <div class="b2b-collage-stat-label">Tamamlanan<br>Albüm</div>
               </div>
             </div>
           </div>
@@ -180,6 +379,65 @@
               <h6 class="fw-medium text-uppercase mb-2">Türkiye Geneli Kargo</h6>
               <p class="text-secondary small mb-0">Anlaşmalı kargo firmalarımızla siparişiniz hızlıca yola çıkar. Dilerseniz nihai müşterinizin adresine gönderilebilir.</p>
             </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    {{-- ======== Numune Albümlerimizden — görsel galeri (mosaic) ======== --}}
+    <section class="container py-5">
+      <div class="d-flex justify-content-between align-items-end flex-wrap gap-3 mb-4">
+        <div>
+          <small class="text-uppercase brand-divider fw-bold d-block mb-2">— Galeri</small>
+          <h2 class="section-title text-uppercase fs-25 fw-medium mb-0">Numune Albümlerimizden</h2>
+        </div>
+        <p class="text-secondary mb-0" style="max-width:420px;">
+          Bayi siparişlerinden derlenmiş, baskı kalitemizi yansıtan örnekler. Üzerine tıklayarak her ürünün siparişine başlayabilirsiniz.
+        </p>
+      </div>
+
+      <div class="showcase-grid">
+        <a href="@auth#@else{{ route('register') }}@endauth" class="show-tile showcase-tile-1" @auth data-bs-toggle="modal" data-bs-target="#orderProductPickerModal" @endauth>
+          <img src="/images/1758033483_b3GibIqYHN.jpg" alt="Lily Albüm" loading="lazy">
+          <div class="show-tile-overlay"><span class="show-tile-title">Lily Albüm — Premium</span></div>
+        </a>
+        <a href="@auth#@else{{ route('register') }}@endauth" class="show-tile showcase-tile-2" @auth data-bs-toggle="modal" data-bs-target="#orderProductPickerModal" @endauth>
+          <img src="/images/1758112544_0mgV9mENTd.jpg" alt="Velvet Albüm" loading="lazy">
+          <div class="show-tile-overlay"><span class="show-tile-title">Velvet Albüm</span></div>
+        </a>
+        <a href="@auth#@else{{ route('register') }}@endauth" class="show-tile showcase-tile-3" @auth data-bs-toggle="modal" data-bs-target="#orderProductPickerModal" @endauth>
+          <img src="/images/1758033299_WtuZuwrySN.jpg" alt="Daisy Albüm" loading="lazy">
+          <div class="show-tile-overlay"><span class="show-tile-title">Daisy Albüm</span></div>
+        </a>
+        <a href="@auth#@else{{ route('register') }}@endauth" class="show-tile showcase-tile-4" @auth data-bs-toggle="modal" data-bs-target="#orderProductPickerModal" @endauth>
+          <img src="/images/1758116669_2whgYKwame.JPG" alt="Leaf Albüm" loading="lazy">
+          <div class="show-tile-overlay"><span class="show-tile-title">Leaf Albüm</span></div>
+        </a>
+        <a href="@auth#@else{{ route('register') }}@endauth" class="show-tile showcase-tile-5" @auth data-bs-toggle="modal" data-bs-target="#orderProductPickerModal" @endauth>
+          <img src="/images/1758033733_e0uWnodq4t.jpg" alt="Lotus Albüm" loading="lazy">
+          <div class="show-tile-overlay"><span class="show-tile-title">Lotus Albüm</span></div>
+        </a>
+      </div>
+    </section>
+
+    {{-- ======== Feature highlight — tam genişlik koyu görsel CTA ======== --}}
+    <section class="container py-3">
+      <div class="feature-highlight">
+        <img src="/images/1758117104_ORFb8xojb0.JPG" alt="Premium baskı" loading="lazy">
+        <div class="feature-highlight-content">
+          <small class="text-uppercase fw-bold d-block mb-2" style="color:#c4b5fd; letter-spacing:.18em; font-size:.72rem;">— Yeni nesil baskı</small>
+          <h3>Müşterilerinizi etkileyecek<br>premium kalite</h3>
+          <p>Düğün, nişan, doğum ve özel anlar için profesyonel kalitede albüm üretimi. Yıllarca koruma sağlayan dayanıklı malzemeler, modern bağlama teknikleri ve renk derinliği yüksek baskı.</p>
+          <div>
+            @auth
+              <a href="#" class="btn btn-outline-secondary fs-base text-uppercase fw-normal" data-bs-toggle="modal" data-bs-target="#orderProductPickerModal" style="background:#fff; color:#0a0a0a; border-color:#fff;">
+                <span>Hemen Sipariş Ver</span>
+              </a>
+            @else
+              <a href="{{ route('register') }}" class="btn btn-outline-secondary fs-base text-uppercase fw-normal" style="background:#fff; color:#0a0a0a; border-color:#fff;">
+                <span>Bayi Başvurusu</span>
+              </a>
+            @endauth
           </div>
         </div>
       </div>

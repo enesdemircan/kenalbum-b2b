@@ -19,6 +19,49 @@
 
   <link rel="stylesheet" href="{{ asset('css/style.css') }}" type="text/css">
 
+  {{-- Hedefli düzeltmeler — sadece header dropdown ve mega-menu kompaktlığı --}}
+  <style>
+  .navigation__item .box-menu {
+      width: auto !important;
+      min-width: 240px;
+      max-width: 320px;
+      padding: 8px !important;
+      box-shadow: 0 12px 28px rgba(15,23,42,.10);
+      border-radius: 10px !important;
+      border: 1px solid #f1f1f1 !important;
+      background: #fff !important;
+  }
+  .navigation__item .box-menu .col,
+  .navigation__item .box-menu > div {
+      padding: 0 !important;
+  }
+  .navigation__item .box-menu .sub-menu__list { margin: 0; padding: 0; }
+  .navigation__item .box-menu .sub-menu__item {
+      list-style: none;
+      margin: 0 !important;
+      padding: 0 !important;
+      border: 0 !important;
+  }
+  .navigation__item .box-menu .sub-menu__item a,
+  .navigation__item .box-menu .sub-menu__item .menu-link {
+      display: block;
+      padding: 8px 12px !important;
+      font-size: 0.82rem !important;
+      font-weight: 500 !important;
+      text-transform: none !important;
+      letter-spacing: 0 !important;
+      line-height: 1.4 !important;
+      border-radius: 6px;
+      color: #171717 !important;
+      transition: background 0.12s ease, color 0.12s ease;
+  }
+  .navigation__item .box-menu .sub-menu__item a:hover,
+  .navigation__item .box-menu .sub-menu__item .menu-link:hover {
+      background: #f5f3ff;
+      color: #6d28d9 !important;
+  }
+  </style>
+
   <!-- FontAwesome -->
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" integrity="sha512-iecdLmaskl7CVkqkXNQ/ZH/XLlvWZOJyj7Yy7tcenmpD1ypASozpmT/E0iPtmFIB46ZmdtAc9eNBvH0H/ZpiBw==" crossorigin="anonymous" referrerpolicy="no-referrer" />
   
