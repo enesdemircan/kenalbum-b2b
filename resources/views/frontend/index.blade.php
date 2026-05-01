@@ -745,7 +745,7 @@
          Yerine doğrudan B2B editorial hero ile başlıyoruz. --}}
 
     {{-- ======== B2B Hero — editorial dark hero (yatay) ======== --}}
-    <section class="container pt-4 pt-lg-5">
+    <section class="container pt-1">
       <div class="b2b-hero">
         <div class="b2b-hero-bg">
           <img src="/images/1758117104_ORFb8xojb0.JPG" alt="" loading="lazy">
@@ -821,7 +821,7 @@
     {{-- ======== Nasıl Çalışır — hero ile feature highlight arasında ======== --}}
     <section class="container py-5">
       <div class="section-head section-head--center">
-        <h2 class="section-h2">Sipariş vermek<br>yalnızca 4 adım</h2>
+        <h2 class="section-h2">Kolay Sipariş Adımları</h2>
         <p class="section-lead">
           Birkaç tıklamayla siparişinizi oluşturun: ürünü seçin, yapılandırın, dosyalarınızı yükleyin — gerisini bize bırakın.
         </p>

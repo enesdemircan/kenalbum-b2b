@@ -60,3 +60,10 @@ desktop.ini
 *.bak
 *.backup
 tasks/debug_*.php
+
+# Büyük yedek arşivleri — repo'da olmamalı (yanlışlıkla commit edilmişti)
+*.zip
+*.rar
+*.tar
+*.tar.gz
+*.7z
