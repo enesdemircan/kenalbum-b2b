@@ -1210,3 +1210,268 @@
     .feature-highlight-content { padding: 32px; }
     .feature-highlight-content h3 { font-size: 1.5rem; }
 }
+
+/* ============================================================
+   CART SAYFASI — turuncu graniti tema, modern revamp
+   ============================================================ */
+.shop-checkout.container { padding-top: 32px; padding-bottom: 60px; }
+.shop-checkout .page-title {
+    font-weight: 800;
+    font-size: clamp(1.55rem, 2.6vw, 2.1rem);
+    letter-spacing: -.022em;
+    color: #0a0a0a;
+    margin-bottom: 6px;
+}
+
+.checkout-steps {
+    margin: 14px 0 32px;
+    padding: 16px 0;
+    border-top: 1px solid #f1f1f1;
+    border-bottom: 1px solid #f1f1f1;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    align-items: center;
+}
+.checkout-steps__item {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    padding: 8px 16px 8px 8px;
+    border-radius: 999px;
+    background: #fafafa;
+    color: #737373;
+    font-size: .82rem;
+    border: 1px solid #f1f1f1;
+    text-decoration: none !important;
+    transition: background .15s, color .15s;
+}
+.checkout-steps__item-number {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 26px; height: 26px;
+    border-radius: 50%;
+    background: #e5e5e5;
+    color: #525252;
+    font-weight: 700;
+    font-size: .76rem;
+    flex-shrink: 0;
+}
+.checkout-steps__item-title { display: flex; flex-direction: column; line-height: 1.2; }
+.checkout-steps__item-title span { font-weight: 600; color: #0a0a0a; font-size: .8rem; }
+.checkout-steps__item-title em { font-style: normal; color: #737373; font-size: .68rem; letter-spacing: .04em; text-transform: uppercase; }
+.checkout-steps__item.active { background: #0a0a0a; border-color: #0a0a0a; color: #fff; }
+.checkout-steps__item.active .checkout-steps__item-number {
+    background: linear-gradient(135deg, #fb923c, #ea580c);
+    color: #fff;
+    box-shadow: 0 2px 6px rgba(234,88,12,.45);
+}
+.checkout-steps__item.active .checkout-steps__item-title span { color: #fff; }
+.checkout-steps__item.active .checkout-steps__item-title em { color: rgba(255,255,255,.7); }
+
+.cart-table__wrapper {
+    background: #fff;
+    border: 1px solid #f1f1f1;
+    border-radius: 16px;
+    overflow: hidden;
+    box-shadow: 0 2px 8px rgba(15,23,42,.04);
+}
+.cart-table {
+    width: 100%;
+    margin: 0 !important;
+    border-collapse: separate;
+    border-spacing: 0;
+}
+.cart-table thead { background: #fafafa; }
+.cart-table thead th {
+    padding: 16px 14px;
+    color: #404040;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: .06em;
+    font-size: .72rem;
+    border-bottom: 1px solid #f1f1f1;
+    text-align: left;
+}
+.cart-table tbody td {
+    padding: 18px 14px;
+    border-bottom: 1px solid #f5f5f5;
+    vertical-align: middle;
+    font-size: .9rem;
+    color: #171717;
+}
+.cart-table tbody tr:last-child td { border-bottom: 0; }
+.shopping-cart__product-item img {
+    border-radius: 10px;
+    border: 1px solid #f1f1f1;
+    width: 100px !important;
+    height: 100px !important;
+    object-fit: cover;
+}
+.shopping-cart__product-item__detail h4 a {
+    color: #0a0a0a;
+    font-weight: 700;
+    font-size: 1rem;
+    letter-spacing: -.01em;
+    transition: color .12s;
+}
+.shopping-cart__product-item__detail h4 a:hover { color: #ea580c; }
+.shopping-cart__product-item__options {
+    list-style: none;
+    margin: 8px 0 0;
+    padding: 0;
+    overflow: visible !important;
+}
+.shopping-cart__product-item__options li {
+    padding: 2px 0;
+    line-height: 1.45;
+}
+.shopping-cart__product-item__options small.text-primary { color: #525252 !important; font-weight: 500; }
+.shopping-cart__product-item__options small.text-muted { color: #737373 !important; }
+.shopping-cart__product-item__options small.text-success-2,
+.shopping-cart__product-item__options small.fw-bold { color: #c2410c !important; }
+
+.qty-control {
+    display: inline-flex !important;
+    align-items: center;
+    border: 1.5px solid #e5e5e5;
+    border-radius: 999px;
+    background: #fff;
+    overflow: hidden;
+    transition: border-color .15s;
+    width: auto !important;
+}
+.qty-control:hover { border-color: #ea580c; }
+.qty-control__number {
+    border: 0 !important;
+    background: transparent !important;
+    width: 44px !important;
+    height: 36px;
+    text-align: center;
+    font-weight: 700;
+    color: #0a0a0a;
+    padding: 0 !important;
+    font-size: .9rem;
+}
+.qty-control__reduce,
+.qty-control__increase {
+    cursor: pointer;
+    user-select: none;
+    color: #525252;
+    font-weight: 800;
+    padding: 6px 14px;
+    transition: color .12s, background .12s;
+    line-height: 1;
+    font-size: 1.05rem;
+}
+.qty-control__reduce:hover,
+.qty-control__increase:hover {
+    color: #ea580c;
+    background: #fff7ed;
+}
+
+.remove-cart {
+    color: #a3a3a3;
+    transition: color .12s;
+    display: inline-flex;
+    width: 28px; height: 28px;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+}
+.remove-cart:hover { color: #f43f5e; background: #fef2f2; }
+
+.shopping-cart__totals-wrapper { padding-left: 24px; }
+.shopping-cart__totals {
+    background: #fff;
+    border: 1px solid #f1f1f1;
+    border-radius: 16px;
+    padding: 24px;
+    box-shadow: 0 4px 14px rgba(15,23,42,.05);
+}
+.shopping-cart__totals h3 {
+    font-size: 1.05rem;
+    font-weight: 700;
+    color: #0a0a0a;
+    margin: 0 0 16px;
+    letter-spacing: -.01em;
+}
+.cart-totals { width: 100%; }
+.cart-totals tr {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px 0;
+    border-bottom: 1px dashed #f1f1f1;
+}
+.cart-totals tr:last-child { border-bottom: 0; padding-top: 14px; }
+.cart-totals th { font-weight: 600; color: #525252; font-size: .9rem; }
+.cart-totals td { font-weight: 700; color: #0a0a0a; font-size: 1rem; }
+.cart-totals tr.border-top { border-top: 1.5px solid #e5e5e5 !important; margin-top: 10px; padding-top: 14px; }
+.cart-totals tr.border-top th { color: #0a0a0a; font-size: 1rem; }
+.cart-totals tr.border-top td {
+    color: #ea580c;
+    font-weight: 800;
+    font-size: 1.45rem;
+    letter-spacing: -.02em;
+    font-feature-settings: "tnum";
+}
+
+.button-wrapper { padding: 18px 0 0; margin-top: 14px; border-top: 1px solid #f5f5f5; }
+.button-wrapper .btn-primary {
+    background: linear-gradient(135deg, #fb923c, #ea580c) !important;
+    border: 0 !important;
+    border-radius: 999px !important;
+    padding: 14px 28px !important;
+    font-weight: 700 !important;
+    text-transform: uppercase;
+    letter-spacing: .04em;
+    font-size: .88rem !important;
+    box-shadow: 0 8px 24px rgba(234,88,12,.30);
+    transition: transform .15s, box-shadow .2s, background .15s;
+    display: inline-flex !important;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    color: #fff !important;
+}
+.button-wrapper .btn-primary:hover {
+    background: linear-gradient(135deg, #ea580c, #c2410c) !important;
+    transform: translateY(-2px);
+    box-shadow: 0 12px 28px rgba(234,88,12,.45);
+    color: #fff !important;
+}
+
+.empty-cart {
+    background: #fff;
+    border: 1px dashed #e5e5e5;
+    border-radius: 20px;
+    padding: 60px 24px !important;
+    margin-top: 24px;
+}
+.empty-cart__icon svg { fill: #fed7aa !important; }
+.empty-cart__title { font-weight: 800; color: #0a0a0a; font-size: 1.4rem; }
+.empty-cart__description { color: #525252; max-width: 380px; margin: 0 auto 24px; }
+.empty-cart .btn-primary {
+    background: linear-gradient(135deg, #fb923c, #ea580c) !important;
+    color: #fff !important;
+    border: 0 !important;
+    border-radius: 999px !important;
+    padding: 12px 26px !important;
+    font-weight: 700 !important;
+    text-transform: uppercase;
+    letter-spacing: .04em;
+}
+
+@media (max-width: 991px) {
+    .shopping-cart__totals-wrapper { padding-left: 0; padding-top: 24px; }
+}
+@media (max-width: 767px) {
+    .cart-table thead { display: none; }
+    .cart-table, .cart-table tbody, .cart-table tr, .cart-table td { display: block; width: 100%; }
+    .cart-table tr { padding: 14px 0; border-bottom: 1px solid #f1f1f1; }
+    .cart-table tr:last-child { border-bottom: 0; }
+    .cart-table td { border: 0 !important; padding: 6px 14px !important; }
+    .cart-table tr td:first-child { padding-top: 14px !important; }
+}

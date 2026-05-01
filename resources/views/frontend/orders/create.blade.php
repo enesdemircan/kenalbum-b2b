@@ -1246,6 +1246,30 @@
         .wizard-nav .btn { padding: 10px 16px !important; font-size: .8rem !important; min-width: auto !important; }
         #wizard-bottom-price { font-size: 1.2rem; }
     }
+
+    /* Ekstralar 'Sepete Git' butonu — turuncu gradient pill */
+    .wizard-cta-orange {
+        background: linear-gradient(135deg, #fb923c, #ea580c) !important;
+        color: #fff !important;
+        border: 0 !important;
+        border-radius: 999px !important;
+        font-weight: 700 !important;
+        text-transform: uppercase;
+        letter-spacing: .04em;
+        padding: 14px 28px !important;
+        box-shadow: 0 6px 18px rgba(234,88,12,.30);
+        transition: transform .15s, box-shadow .2s, background .15s;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 10px;
+    }
+    .wizard-cta-orange:hover {
+        background: linear-gradient(135deg, #ea580c, #c2410c) !important;
+        color: #fff !important;
+        transform: translateY(-2px);
+        box-shadow: 0 12px 28px rgba(234,88,12,.45);
+    }
     /* Ekstralar adımında 2-kolon (galeri+wizard) yerine TEK KOLON tam genişlik —
        galeri gizlenir, sağdaki container 12 kolon olur. Diğer adımlarda
        eski 5/7 split korunur. */
