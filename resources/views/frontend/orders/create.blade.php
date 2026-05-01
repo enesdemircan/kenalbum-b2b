@@ -2067,12 +2067,12 @@
                 selectedExtras.push({ title, qty, priceText });
             });
 
-            let html = '<div class="ws-section"><h6>Ürün</h6>';
+            let html = '<div class="ws-section">';
             html += '<div class="ws-row"><span>' + productTitle + '</span></div>';
             html += '</div>';
 
             if (lines.length) {
-                html += '<div class="ws-section"><h6>Seçimler</h6>';
+                html += '<div class="ws-section">';
                 lines.forEach(l => {
                     html += '<div class="ws-row"><span>' + escapeHtml(l.label) + '</span><span>' + escapeHtml(l.value) + '</span></div>';
                 });
