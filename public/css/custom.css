@@ -140,12 +140,12 @@
   }
   .navigation__link {
       display: inline-block !important;
-      padding: 16px 18px !important;
+      padding: 7px 18px !important;
       color: #0a0a0a !important;
       font-weight: 500 !important;
       text-transform: uppercase !important;
       letter-spacing: .045em !important;
-      font-size: .76rem !important;
+      font-size: 13px !important;
       transition: color .15s ease !important;
       position: relative;
       background: transparent !important;
@@ -692,7 +692,7 @@
 .accordion-body {
     color: #525252 !important;
     line-height: 1.7;
-    padding: 4px 20px 20px !important;
+    padding: 16px 20px 20px !important;
     background: #fff !important;
 }
 
