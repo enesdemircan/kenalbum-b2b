@@ -416,7 +416,7 @@
                                 @php $idx = $firstCustomIdx + $i; @endphp
                                 <div class="wizard-step-indicator{{ $idx === 0 ? ' active' : '' }}" data-step-index="{{ $idx }}">
                                     <span class="wsi-num">{{ $idx + 1 }}</span>
-                                    <span class="wsi-label">{{ $step['category']->title }}</span>
+                                    <span class="wsi-label">{{ $step['step_label'] }}</span>
                                 </div>
                             @endforeach
                             @if($hasExtras)
@@ -499,25 +499,37 @@
                                 </div>
                             @endif
 
-                            {{-- Customization step'leri (HER category = AYRI step) --}}
+                            {{-- Customization step'leri (step_label'a göre gruplanmış).
+                                 Bir step birden çok customization-section içerebilir. --}}
                             @foreach($customizationSteps as $i => $step)
                                 @php $idx = $firstCustomIdx + $i; @endphp
-                                <div class="wizard-step{{ $idx === 0 ? ' active' : '' }}"
+                                @php $isMulti = count($step['categories']) > 1; @endphp
+                                <div class="wizard-step{{ $idx === 0 ? ' active' : '' }}{{ $isMulti ? ' wizard-step-grouped' : '' }}"
                                      data-step-index="{{ $idx }}"
                                      data-step-kind="customization"
-                                     data-step-category-id="{{ $step['category_id'] }}"
-                                     @if($step['is_cascade']) data-step-cascade="true" data-step-parent-cat="{{ $step['parent_category_id'] }}" @endif>
-                                    <h4 class="wizard-step-title">{{ $step['category']->title }}</h4>
-                                    @if(!empty($step['category']->description))
-                                        <p class="wizard-step-desc">{{ $step['category']->description }}</p>
-                                    @endif
-                                    {{-- Cascade step de aynı render — tüm pivot'lar pre-render edilir,
-                                         JS parent_pivot_id'ye göre görünür/gizli yapar --}}
-                                    @include('frontend.products.customization-section', [
-                                        'category' => $step['category'],
-                                        'categoryParams' => $step['params'],
-                                        'product' => $product,
-                                    ])
+                                     @if($step['is_cascade']) data-step-cascade="true" @endif>
+                                    <h4 class="wizard-step-title">{{ $step['step_label'] }}</h4>
+                                    @foreach($step['categories'] as $cat)
+                                        <div class="wizard-step-section">
+                                            @if($isMulti)
+                                                {{-- Grouped step'te her section'ın kendi başlığı/açıklaması olsun --}}
+                                                <h5 class="wizard-section-title">{{ $cat['category']->title }}</h5>
+                                                @if(!empty($cat['category']->description))
+                                                    <p class="wizard-step-desc">{{ $cat['category']->description }}</p>
+                                                @endif
+                                            @else
+                                                {{-- Tek section'lı step: section başlığı yerine description --}}
+                                                @if(!empty($cat['category']->description))
+                                                    <p class="wizard-step-desc">{{ $cat['category']->description }}</p>
+                                                @endif
+                                            @endif
+                                            @include('frontend.products.customization-section', [
+                                                'category' => $cat['category'],
+                                                'categoryParams' => $cat['params'],
+                                                'product' => $product,
+                                            ])
+                                        </div>
+                                    @endforeach
                                     @if($step['is_cascade'])
                                         <div class="cascade-empty-state text-center py-4 text-muted" style="display:none;">
                                             <i class="fas fa-arrow-up fa-2x mb-2"></i>
@@ -1048,6 +1060,30 @@
         display: none;
     }
 
+    /* Grouped step: birden fazla customization section bir tab'da
+       Form-benzeri vertical stack, section'lar arasında sade ayraç */
+    .wizard-step-section {
+        margin-bottom: 18px;
+        padding-bottom: 14px;
+        border-bottom: 1px solid #f1f3f5;
+    }
+    .wizard-step-section:last-child {
+        margin-bottom: 0;
+        padding-bottom: 0;
+        border-bottom: none;
+    }
+    .wizard-section-title {
+        font-size: 0.95rem;
+        font-weight: 600;
+        color: #495057;
+        margin: 0 0 8px 0;
+    }
+    /* Grouped step'lerde input/text alanları daha kompakt */
+    .wizard-step-grouped .form-control,
+    .wizard-step-grouped textarea {
+        max-width: 100%;
+    }
+
     /* Wizard nav (sticky bottom + price center, compact) */
     .wizard-nav {
         position: sticky;
@@ -1327,19 +1363,16 @@
                 }
             }
 
-            // Customization sections — type-aware validation
-            // Sadece data-required="1" olan section'lar zorunlu.
-            // Step başına SADECE step'in kendi category'sine ait section'ı doğrula
-            // (cascade child loaded içerikleri etkilemesin diye step'in :scope > kullan).
-            const stepCatId = step.getAttribute('data-step-category-id');
+            // Customization sections — type-aware validation.
+            // Bir step birden çok customization-section içerebilir (grouped tab).
+            // Tüm data-required="1" olan section'ları doğrula.
             const sections = step.querySelectorAll('.customization-section[data-required="1"]');
 
             for (const section of sections) {
-                // Sadece step'in kendi kategorisi için validation (nested cascade-loaded skip)
-                if (stepCatId && section.getAttribute('data-category') !== stepCatId) continue;
-
                 const sectionType = section.getAttribute('data-type') || '';
-                const sectionTitle = section.querySelector('h4')?.textContent?.trim()
+                // Section başlığı: önce wizard-section-title (grouped step), sonra h4, sonra step title
+                const sectionTitle = section.closest('.wizard-step-section')?.querySelector('.wizard-section-title')?.textContent?.trim()
+                    || section.querySelector('h4')?.textContent?.trim()
                     || step.querySelector('.wizard-step-title')?.textContent?.trim()
                     || 'seçim';
 
@@ -1442,7 +1475,11 @@
                 if (step.querySelector('.extras-grid')) return; // skip extras
                 if (step.id === 'wizard-summary') return;
                 step.querySelectorAll('.customization-section').forEach(section => {
-                    const title = section.querySelector('h4')?.textContent?.trim();
+                    // Section başlığı: önce wizard-section-title (grouped), sonra h4 (kategori),
+                    // sonra step başlığı (tek section'lı step için)
+                    const title = section.closest('.wizard-step-section')?.querySelector('.wizard-section-title')?.textContent?.trim()
+                        || section.querySelector('h4')?.textContent?.trim()
+                        || step.querySelector('.wizard-step-title')?.textContent?.trim();
                     if (!title) return;
 
                     const checkedRadio = section.querySelector('input[type="radio"]:checked');

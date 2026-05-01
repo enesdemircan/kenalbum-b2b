@@ -62,11 +62,11 @@ class OrderController extends Controller
             })
             ->groupBy('param.customization_category_id');
 
-        // Yeni cascade tespiti: ürün'de pivot'u olan TÜM customization kategorileri
-        // step olarak gösterilir. Bir kategorinin tüm pivot'ları cascade ise
-        // (ust_id != 0) cascade step olarak işaretlenir; aksi top-level.
-        // JS chain filter ANY checked radio'ya göre filtreliyor — tek lineer
-        // chain varsayımı (eski kod) yerine multi-branch hierarchy desteği.
+        // Wizard step'leri customization_categories.step_label'a göre GRUPLANIR.
+        // Aynı step_label'a sahip kategoriler tek bir wizard tab'ında görünür
+        // (admin "Özel" gibi bir grup yapabilir). Farklı label = ayrı tab.
+        // JS chain filter (refreshCascadeChain) ANY checked radio'ya göre çalışır,
+        // multi-branch hierarchy + grup yapısı destekli.
         $customizationSteps = collect();
         $authUser = auth()->user();
 
@@ -89,6 +89,8 @@ class OrderController extends Controller
             return (int) $p->param->customization_category_id;
         });
 
+        // Önce her kategori için step bilgisi toplayıp, sonra step_label'a göre grupla.
+        $perCategory = [];
         foreach ($allCatPivots as $categoryId => $catPivots) {
             $category = $catPivots->first()->param->category;
             if (!$category) continue;
@@ -96,31 +98,42 @@ class OrderController extends Controller
             if (in_array($category->type, ['file', 'files'])) continue;
             if (!$shouldShowHidden($category, $catPivots)) continue;
 
-            // Cascade mi? Eğer hiç top-level (ust_id=0) pivot'u yoksa → cascade
             $topLevelPivots = $catPivots->where('customization_params_ust_id', 0)->values();
             $isCascade = $topLevelPivots->isEmpty();
-
-            // Cascade step'lerde TÜM pivot'ları (parent_pivot_id'leriyle) ön-render et;
-            // top-level step'lerde sadece top-level pivot'ları
             $params = $isCascade ? $catPivots->values() : $topLevelPivots;
 
-            $customizationSteps->push([
+            $perCategory[] = [
                 'category' => $category,
                 'category_id' => (int) $categoryId,
                 'params' => $params,
                 'is_cascade' => $isCascade,
-                // parent_category_id artık kullanılmıyor (JS chain filter ANY checked radio'ya bakıyor)
-                'parent_category_id' => null,
-                'step_label' => $category->step_label ?? 'Sipariş Detayı',
+                'step_label' => $category->step_label ?: ('Kategori ' . $categoryId),
                 'order' => (int) ($category->order ?? 9999),
-                'category_id_for_sort' => (int) $categoryId,
-            ]);
+            ];
         }
 
-        // Sıra: önce category->order, sonra category id (hiyerarşi: Ebat<Kumaş<Renk<Paket<...)
-        $customizationSteps = $customizationSteps->sortBy([
-            ['order', 'asc'],
-            ['category_id_for_sort', 'asc'],
+        // step_label'a göre grupla — aynı label = aynı wizard step (tek tab, birden fazla section)
+        $byLabel = [];
+        foreach ($perCategory as $catInfo) {
+            $label = $catInfo['step_label'];
+            if (!isset($byLabel[$label])) {
+                $byLabel[$label] = [
+                    'step_label' => $label,
+                    'categories' => [],
+                    'is_cascade' => false,
+                    'min_order' => 99999,
+                    'min_cat_id' => 99999,
+                ];
+            }
+            $byLabel[$label]['categories'][] = $catInfo;
+            if ($catInfo['is_cascade']) $byLabel[$label]['is_cascade'] = true;
+            $byLabel[$label]['min_order'] = min($byLabel[$label]['min_order'], $catInfo['order']);
+            $byLabel[$label]['min_cat_id'] = min($byLabel[$label]['min_cat_id'], $catInfo['category_id']);
+        }
+
+        $customizationSteps = collect(array_values($byLabel))->sortBy([
+            ['min_order', 'asc'],
+            ['min_cat_id', 'asc'],
         ])->values();
 
         // Ekstra ürünler (wizard'ın "Ekstralar" step'i için — eski popup'ın yerine)
