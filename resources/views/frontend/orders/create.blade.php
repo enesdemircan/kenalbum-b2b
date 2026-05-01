@@ -586,10 +586,10 @@
                                 <div class="wizard-step" data-step-index="{{ $extrasIdx }}" data-step-kind="extras">
                                     <h3 class="wizard-step-title">Ekstralar</h3>
                                     <p class="wizard-step-desc">Siparişinize ek ürünler ekleyebilirsiniz. İstemiyorsanız doğrudan "Sepete Ekle" diyebilirsiniz.</p>
-                                    <div class="row g-3 extras-grid">
+                                    <div class="row row-cols-2 row-cols-md-3 row-cols-lg-5 g-3 extras-grid">
                                         @foreach($extraSales as $extra)
                                             @php $hasCustomization = !empty($extra['has_customization']); @endphp
-                                            <div class="col-md-4 col-sm-6">
+                                            <div class="col">
                                                 <div class="card h-100 extra-card"
                                                      data-extra-product-id="{{ $extra['id'] }}"
                                                      data-extra-price="{{ (float) $extra['price'] }}"
