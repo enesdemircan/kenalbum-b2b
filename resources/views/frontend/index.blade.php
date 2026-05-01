@@ -27,6 +27,154 @@
 }
 .brand-icon { color: #198754; }
 
+/* ============ Section başlık standartı ============ */
+.section-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-end;
+    flex-wrap: wrap;
+    gap: 24px;
+    margin-bottom: 40px;
+}
+.section-eyebrow {
+    display: inline-block;
+    color: #6d28d9;
+    text-transform: uppercase;
+    letter-spacing: .22em;
+    font-size: .7rem;
+    font-weight: 700;
+    padding: 4px 12px;
+    border: 1px solid rgba(124,58,237,.30);
+    border-radius: 999px;
+    background: rgba(124,58,237,.06);
+    margin-bottom: 14px;
+}
+.section-h2 {
+    font-weight: 800;
+    font-size: clamp(1.6rem, 3vw, 2.4rem);
+    line-height: 1.1;
+    letter-spacing: -.025em;
+    color: #0a0a0a;
+    margin: 0;
+    text-transform: none;
+}
+.section-lead {
+    color: #525252;
+    max-width: 460px;
+    margin: 0;
+    font-size: .94rem;
+    line-height: 1.65;
+}
+.section-lead-tight {
+    color: #525252;
+    font-size: .92rem;
+    line-height: 1.6;
+}
+
+/* ============ Nasıl Çalışır — yatay editorial akış ============ */
+.flow-steps {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 0;
+    border-top: 1px solid #e5e5e5;
+    border-bottom: 1px solid #e5e5e5;
+}
+.flow-step {
+    padding: 28px 24px;
+    border-right: 1px solid #f1f1f1;
+    position: relative;
+    transition: background .2s ease;
+}
+.flow-step:last-child { border-right: 0; }
+.flow-step:hover { background: #fafafa; }
+.flow-step-num {
+    color: #c4b5fd;
+    font-weight: 800;
+    font-size: 2rem;
+    line-height: 1;
+    letter-spacing: -.04em;
+    margin-bottom: 16px;
+    font-feature-settings: "tnum";
+}
+.flow-step-title {
+    color: #0a0a0a;
+    font-weight: 700;
+    font-size: 1rem;
+    margin-bottom: 8px;
+    text-transform: none;
+    letter-spacing: -.01em;
+}
+.flow-step p {
+    color: #525252;
+    font-size: .85rem;
+    line-height: 1.6;
+    margin: 0;
+}
+.flow-step:hover .flow-step-num { color: #7c3aed; }
+
+@media (max-width: 991px) {
+    .flow-steps { grid-template-columns: 1fr 1fr; }
+    .flow-step:nth-child(2) { border-right: 0; }
+    .flow-step:nth-child(odd) { border-right: 1px solid #f1f1f1; }
+    .flow-step:nth-child(1), .flow-step:nth-child(2) { border-bottom: 1px solid #f1f1f1; }
+}
+@media (max-width: 575px) {
+    .flow-steps { grid-template-columns: 1fr; }
+    .flow-step { border-right: 0 !important; border-bottom: 1px solid #f1f1f1 !important; }
+    .flow-step:last-child { border-bottom: 0 !important; }
+}
+
+/* ============ Final CTA bant ============ */
+.cta-band {
+    background: #0a0a0a;
+    background-image: linear-gradient(135deg, #0a0a0a 0%, #1e1b4b 60%, #0a0a0a 100%);
+    border-radius: 20px;
+    padding: 44px 48px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 28px;
+    color: #fff;
+    position: relative;
+    overflow: hidden;
+}
+.cta-band::before {
+    content: '';
+    position: absolute;
+    top: -40%; right: -10%;
+    width: 360px; height: 360px;
+    background: radial-gradient(circle, rgba(124,58,237,.30), transparent 65%);
+    pointer-events: none;
+}
+.cta-band-text { position: relative; z-index: 1; max-width: 560px; }
+.cta-band-title {
+    color: #fff;
+    font-weight: 800;
+    font-size: clamp(1.4rem, 2.6vw, 1.9rem);
+    line-height: 1.15;
+    letter-spacing: -.025em;
+    margin-bottom: 10px;
+}
+.cta-band-text p {
+    color: rgba(255,255,255,.78);
+    margin: 0;
+    font-size: .92rem;
+    line-height: 1.6;
+}
+.cta-band-text a {
+    color: #c4b5fd;
+    text-decoration: none;
+    border-bottom: 1px solid rgba(196,181,253,.30);
+    font-weight: 600;
+}
+.cta-band-text a:hover { color: #fff; border-color: #fff; }
+.cta-band-action { position: relative; z-index: 1; }
+
+@media (max-width: 768px) {
+    .cta-band { padding: 32px 28px; }
+}
+
 /* ============ B2B Hero — editorial dark card ============ */
 .b2b-hero {
     position: relative;
@@ -572,54 +720,18 @@
       </div>
     </section>
 
-    {{-- ======== Bayi Avantajları ======== --}}
-    <section class="bg-light py-5">
-      <div class="container">
-        <div class="text-center mb-4">
-          <small class="text-uppercase brand-divider fw-bold d-block mb-2">— Neden KenAlbüm?</small>
-          <h2 class="section-title text-uppercase fs-25 fw-medium">Bayi Olmanın Avantajları</h2>
-        </div>
-        <div class="row g-4">
-          <div class="col-md-6 col-lg-3">
-            <div class="text-center p-3 h-100">
-              <i class="fas fa-percentage brand-icon fs-25 mb-3 d-block"></i>{{-- mor --}}
-              <h6 class="fw-medium text-uppercase mb-2">Bayiye Özel Fiyat</h6>
-              <p class="text-secondary small mb-0">Sipariş hacminize göre otomatik uygulanan kademeli indirim grupları. Listede gördüğünüz fiyat, sizin net bayi fiyatınızdır.</p>
-            </div>
-          </div>
-          <div class="col-md-6 col-lg-3">
-            <div class="text-center p-3 h-100">
-              <i class="fas fa-bolt brand-icon icon-orange fs-25 mb-3 d-block"></i>
-              <h6 class="fw-medium text-uppercase mb-2">Acil Üretim</h6>
-              <p class="text-secondary small mb-0">Düğün tarihi yaklaşan müşteriniz mi var? Acil üretim seçeneğiyle siparişinizi öne alıyor, gününde teslim ediyoruz.</p>
-            </div>
-          </div>
-          <div class="col-md-6 col-lg-3">
-            <div class="text-center p-3 h-100">
-              <i class="fas fa-pen-fancy brand-icon icon-pink fs-25 mb-3 d-block"></i>
-              <h6 class="fw-medium text-uppercase mb-2">Tasarım Hizmeti</h6>
-              <p class="text-secondary small mb-0">Tasarımı kendiniz yapabilir veya bizim ekibimize bırakabilirsiniz. Dizgi ve rötüş hizmetleri de mevcuttur.</p>
-            </div>
-          </div>
-          <div class="col-md-6 col-lg-3">
-            <div class="text-center p-3 h-100">
-              <i class="fas fa-shipping-fast brand-icon icon-teal fs-25 mb-3 d-block"></i>
-              <h6 class="fw-medium text-uppercase mb-2">Türkiye Geneli Kargo</h6>
-              <p class="text-secondary small mb-0">Anlaşmalı kargo firmalarımızla siparişiniz hızlıca yola çıkar. Dilerseniz nihai müşterinizin adresine gönderilebilir.</p>
-            </div>
-          </div>
-        </div>
-      </div>
-    </section>
+    {{-- 'Bayi Avantajları' kaldırıldı — yeni hero'nun sağındaki 4 feature tag
+         (bayi indirim / acil üretim / tasarım / kargo) zaten aynı bilgiyi
+         daha kompakt veriyordu. --}}
 
-    {{-- ======== Numune Albümlerimizden — görsel galeri (mosaic) ======== --}}
+    {{-- ======== Numune Albümlerimizden — galeri ======== --}}
     <section class="container py-5">
-      <div class="d-flex justify-content-between align-items-end flex-wrap gap-3 mb-4">
+      <div class="section-head">
         <div>
-          <small class="text-uppercase brand-divider fw-bold d-block mb-2">— Galeri</small>
-          <h2 class="section-title text-uppercase fs-25 fw-medium mb-0">Numune Albümlerimizden</h2>
+          <span class="section-eyebrow">Galeri</span>
+          <h2 class="section-h2">Numune albümlerimizden<br>özenle seçtiklerimiz</h2>
         </div>
-        <p class="text-secondary mb-0" style="max-width:420px;">
+        <p class="section-lead">
           Bayi siparişlerinden derlenmiş, baskı kalitemizi yansıtan örnekler. Üzerine tıklayarak her ürünün siparişine başlayabilirsiniz.
         </p>
       </div>
@@ -671,49 +783,53 @@
       </div>
     </section>
 
-    {{-- ======== Nasıl Çalışır? ======== --}}
+    {{-- ======== Nasıl Çalışır? — yatay editorial akış ======== --}}
     <section class="container py-5">
-      <div class="text-center mb-4">
-        <small class="text-uppercase brand-divider fw-bold d-block mb-2">— Sipariş Süreci</small>
-        <h2 class="section-title text-uppercase fs-25 fw-medium">Sadece 4 Adımda Sipariş</h2>
+      <div class="section-head">
+        <div>
+          <span class="section-eyebrow">Sipariş Süreci</span>
+          <h2 class="section-h2">Sipariş vermek<br>yalnızca 4 adım</h2>
+        </div>
+        <p class="section-lead">
+          Header'daki <strong>Sipariş Ver</strong> menüsüyle başlayın, yapılandırın, dosyalarınızı yükleyin — gerisini bize bırakın.
+        </p>
       </div>
-      <div class="row g-4">
-        <div class="col-md-6 col-lg-3">
-          <div class="text-center p-3 h-100">
-            <div class="brand-step-num fs-25 mb-2">01</div>
-            <h6 class="fw-medium text-uppercase mb-2">Ürünü Seçin</h6>
-            <p class="text-secondary small mb-0">Header'daki <strong>Sipariş Ver</strong> menüsünden veya kategorilerden ürününüzü seçin. Aynı siparişten yeniden vermek için <em>Geçmişim</em> sekmesini kullanın.</p>
-          </div>
+
+      <div class="flow-steps">
+        <div class="flow-step">
+          <div class="flow-step-num">01</div>
+          <h6 class="flow-step-title">Ürünü seçin</h6>
+          <p>Sipariş Ver menüsünden veya kategorilerden ürünü seçin. Aynı siparişten yeniden vermek için <em>Geçmişim</em> sekmesini kullanın.</p>
         </div>
-        <div class="col-md-6 col-lg-3">
-          <div class="text-center p-3 h-100">
-            <div class="brand-step-num fs-25 mb-2">02</div>
-            <h6 class="fw-medium text-uppercase mb-2">Özelleştirin</h6>
-            <p class="text-secondary small mb-0">Ebat, kumaş, renk, paket ve diğer detayları adım adım wizard'dan seçin. Her seçimde toplam fiyatınız anlık güncellenir.</p>
-          </div>
+        <div class="flow-step">
+          <div class="flow-step-num">02</div>
+          <h6 class="flow-step-title">Özelleştirin</h6>
+          <p>Ebat, kumaş, renk, paket ve diğer detayları adım adım seçin. Toplam fiyatınız anlık güncellenir.</p>
         </div>
-        <div class="col-md-6 col-lg-3">
-          <div class="text-center p-3 h-100">
-            <div class="brand-step-num fs-25 mb-2">03</div>
-            <h6 class="fw-medium text-uppercase mb-2">Dosyaları Yükleyin</h6>
-            <p class="text-secondary small mb-0">Kapak ve iç sayfa tasarımlarınızı sipariş özetinde tek bir ZIP olarak yükleyin. Hatalı dosyalar tarafımızdan kontrol edilir.</p>
-          </div>
+        <div class="flow-step">
+          <div class="flow-step-num">03</div>
+          <h6 class="flow-step-title">Dosyaları yükleyin</h6>
+          <p>Kapak ve iç sayfa tasarımlarınızı tek bir ZIP olarak yükleyin. Hatalı dosyalar tarafımızdan kontrol edilir.</p>
         </div>
-        <div class="col-md-6 col-lg-3">
-          <div class="text-center p-3 h-100">
-            <div class="brand-step-num fs-25 mb-2">04</div>
-            <h6 class="fw-medium text-uppercase mb-2">Üretim &amp; Kargo</h6>
-            <p class="text-secondary small mb-0">Siparişiniz onaylandıktan sonra üretim sürecine girer. Durum takibini panelinizden anlık görebilir, kargo takibinizi yapabilirsiniz.</p>
-          </div>
+        <div class="flow-step">
+          <div class="flow-step-num">04</div>
+          <h6 class="flow-step-title">Üretim &amp; kargo</h6>
+          <p>Onay sonrası üretim başlar. Durum takibini panelden anlık görür, kargo takibinizi yaparsınız.</p>
         </div>
       </div>
     </section>
 
     {{-- ======== Kategoriler intro ======== --}}
-    <section class="container text-center pt-3">
-      <small class="text-uppercase brand-divider fw-bold d-block mb-2">— Ürünlerimiz</small>
-      <h2 class="section-title text-uppercase fs-25 fw-medium mb-2">Kategorilere Göz Atın</h2>
-      <p class="text-secondary col-lg-7 mx-auto mb-0">Albümler, fotokitaplar, duvar çerçeveleri ve daha fazlası — tüm ürün kategorilerimizden bayi fiyatıyla hızlıca sipariş verebilirsiniz.</p>
+    <section class="container py-3">
+      <div class="section-head">
+        <div>
+          <span class="section-eyebrow">Ürünlerimiz</span>
+          <h2 class="section-h2">Tüm kategoriler<br>tek panelden erişim</h2>
+        </div>
+        <p class="section-lead">
+          Albümler, fotokitaplar, duvar çerçeveleri ve daha fazlası. Bayi fiyatıyla hızlıca sipariş verebilirsiniz.
+        </p>
+      </div>
     </section>
 
         @foreach($homepageCategories as $category)
@@ -775,9 +891,9 @@
       <div class="container">
         <div class="row">
           <div class="col-lg-4 mb-4 mb-lg-0">
-            <small class="text-uppercase brand-divider fw-bold d-block mb-2">— SSS</small>
-            <h2 class="section-title text-uppercase fs-25 fw-medium">Sık Sorulan Sorular</h2>
-            <p class="text-secondary mt-3">Bayi sürecimizle ilgili merak ettikleriniz için cevapları derledik. Aklınıza takılan başka bir konu olursa bize ulaşın.</p>
+            <span class="section-eyebrow">SSS</span>
+            <h2 class="section-h2 mt-2">Aklınızda<br>soru var mı?</h2>
+            <p class="section-lead-tight mt-3">Bayi sürecimizle ilgili sıkça sorulan sorulara verdiğimiz cevaplar — başka bir konu olursa bize ulaşın.</p>
           </div>
           <div class="col-lg-8">
             <div class="accordion" id="homeFaqAccordion">
@@ -847,28 +963,28 @@
       </div>
     </section>
 
-    {{-- ======== Final CTA ======== --}}
+    {{-- ======== Final CTA — koyu kompakt bant ======== --}}
     <section class="container py-5">
-      <div class="row align-items-center justify-content-center text-center text-lg-start">
-        <div class="col-lg-8">
-          <h2 class="section-title text-uppercase fs-25 fw-medium mb-2">
-            Bayi olun, baskıyı bize bırakın.
-          </h2>
-          <p class="text-secondary mb-3 mb-lg-0">
-            Stüdyonuza, atölyenize özel bayi indirimleri ve öncelikli üretim avantajları için hemen başvurun.
+      <div class="cta-band">
+        <div class="cta-band-text">
+          <h3 class="cta-band-title">Bayi olun,<br>baskıyı bize bırakın.</h3>
+          <p>
+            Stüdyonuza özel bayi indirimleri ve öncelikli üretim avantajları için başvurun.
             @if($siteSettings->phone)
-              Sorularınız için <a href="tel:{{ preg_replace('/[^0-9+]/','',$siteSettings->phone) }}" class="brand-text-dark fw-medium text-decoration-none">{{ $siteSettings->phone }}</a> numarasından bize ulaşabilirsiniz.
+              Sorularınız için <a href="tel:{{ preg_replace('/[^0-9+]/','',$siteSettings->phone) }}">{{ $siteSettings->phone }}</a>
             @endif
           </p>
         </div>
-        <div class="col-lg-4 text-center text-lg-end mt-3 mt-lg-0">
+        <div class="cta-band-action">
           @auth
-            <a href="#" class="btn btn-primary border-0 fs-base text-uppercase fw-normal btn-50" data-bs-toggle="modal" data-bs-target="#orderProductPickerModal">
-              <span>SİPARİŞ VER</span>
+            <a href="#" class="b2b-hero-cta" data-bs-toggle="modal" data-bs-target="#orderProductPickerModal">
+              <span>Sipariş Ver</span>
+              <i class="fas fa-arrow-right"></i>
             </a>
           @else
-            <a href="{{ route('register') }}" class="btn btn-primary border-0 fs-base text-uppercase fw-normal btn-50">
-              <span>BAYİ BAŞVURUSU YAP</span>
+            <a href="{{ route('register') }}" class="b2b-hero-cta">
+              <span>Bayi Başvurusu</span>
+              <i class="fas fa-arrow-right"></i>
             </a>
           @endauth
         </div>
