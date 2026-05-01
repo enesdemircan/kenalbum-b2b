@@ -22,7 +22,7 @@ return new class extends Migration
             ['title_like' => 'Renk',       'label' => 'Renk'],
             ['title_like' => 'Model',      'label' => 'Model'],
             ['title_like' => 'Boyut',      'label' => 'Ebat'],
-            ['title_like' => 'Pvc Kalın',  'label' => 'Pvc Kalınlığı'],
+            ['title_like' => 'Pvc Kalın',  'label' => 'Diğer'],
             // "Diğer" tab — birden fazla kategori bu label ile gruplanır
             ['title_like' => 'Albüm Üzerine', 'label' => 'Diğer'],
             ['title_like' => 'Yazılacak Yazı','label' => 'Diğer'],
