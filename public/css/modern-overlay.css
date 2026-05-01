@@ -1,0 +1,448 @@
+/* =========================================================================
+   KenAlbüm — Modern Tema Overlay
+   Mevcut style.css ÜZERİNE binen, modernize eden kuralı içerir.
+   Geri almak için master.blade.php'den <link>'i kaldırmak yeterli.
+   ========================================================================= */
+
+:root {
+    /* Marka palette — Bootstrap success'i sade pastel olduğu için kendi tonlarımızı veriyoruz */
+    --brand-primary: #16a34a;
+    --brand-primary-dark: #15803d;
+    --brand-primary-soft: #ecfdf5;
+    --brand-accent: #0f172a;       /* slate-900: koyu vurgu */
+    --brand-text: #0f172a;
+    --brand-text-muted: #475569;   /* slate-600 */
+    --brand-border: #e2e8f0;       /* slate-200 */
+    --brand-bg-soft: #f8fafc;      /* slate-50 */
+    --shadow-sm: 0 1px 2px rgba(15,23,42,.06);
+    --shadow-md: 0 4px 12px rgba(15,23,42,.06);
+    --shadow-lg: 0 10px 30px rgba(15,23,42,.08);
+    --radius: 10px;
+    --radius-sm: 6px;
+    --radius-lg: 14px;
+}
+
+/* Global typography — daha okunaklı line-height, slate-900 yerine pure black */
+body {
+    color: var(--brand-text);
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    line-height: 1.6;
+}
+
+p, li {
+    line-height: 1.7;
+}
+
+.text-secondary {
+    color: var(--brand-text-muted) !important;
+}
+
+/* ============ Buttons ============ */
+.btn {
+    border-radius: var(--radius-sm);
+    transition: transform .15s ease, box-shadow .15s ease, background-color .15s ease, border-color .15s ease;
+    font-weight: 500;
+    letter-spacing: .015em;
+}
+.btn:hover {
+    transform: translateY(-1px);
+    box-shadow: var(--shadow-md);
+}
+.btn:active {
+    transform: translateY(0);
+}
+
+.btn-primary {
+    background-color: var(--brand-primary);
+    border-color: var(--brand-primary);
+    color: #fff;
+}
+.btn-primary:hover, .btn-primary:focus {
+    background-color: var(--brand-primary-dark);
+    border-color: var(--brand-primary-dark);
+    color: #fff;
+}
+
+.btn-success {
+    background-color: var(--brand-primary);
+    border-color: var(--brand-primary);
+}
+.btn-success:hover, .btn-success:focus {
+    background-color: var(--brand-primary-dark);
+    border-color: var(--brand-primary-dark);
+}
+
+.btn-outline-primary {
+    color: var(--brand-primary);
+    border-color: var(--brand-primary);
+}
+.btn-outline-primary:hover {
+    background-color: var(--brand-primary);
+    border-color: var(--brand-primary);
+    color: #fff;
+}
+
+.btn-outline-secondary {
+    color: var(--brand-text-muted);
+    border-color: var(--brand-border);
+}
+.btn-outline-secondary:hover {
+    background-color: var(--brand-bg-soft);
+    border-color: var(--brand-border);
+    color: var(--brand-text);
+}
+
+.btn-50 {
+    border-radius: var(--radius-sm);
+}
+
+/* ============ Cards ============ */
+.card {
+    border: 1px solid var(--brand-border);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow-sm);
+    transition: box-shadow .2s ease, transform .15s ease, border-color .15s ease;
+}
+.card:hover {
+    box-shadow: var(--shadow-md);
+}
+
+/* ============ Form controls ============ */
+.form-control,
+.form-select {
+    border-radius: var(--radius-sm);
+    border: 1px solid var(--brand-border);
+    transition: border-color .12s ease, box-shadow .12s ease;
+    padding: .55rem .85rem;
+}
+.form-control:focus,
+.form-select:focus {
+    border-color: var(--brand-primary);
+    box-shadow: 0 0 0 3px rgba(22,163,74,.12);
+}
+
+/* ============ Header — modern simplification ============ */
+.header {
+    background: #fff;
+    box-shadow: 0 1px 0 var(--brand-border);
+}
+.header-top {
+    background: var(--brand-bg-soft) !important;
+    color: var(--brand-text-muted);
+    border-bottom: 1px solid var(--brand-border);
+}
+.header-top, .header-top * {
+    color: var(--brand-text-muted) !important;
+}
+.header-top a:hover { color: var(--brand-primary) !important; }
+
+.navigation__link {
+    font-weight: 500;
+    color: var(--brand-text);
+    padding: 12px 14px;
+    transition: color .15s ease;
+    text-transform: uppercase;
+    letter-spacing: .04em;
+    font-size: .82rem;
+}
+.navigation__link:hover {
+    color: var(--brand-primary);
+}
+.navigation__item-cta .navigation__link {
+    color: var(--brand-primary) !important;
+    font-weight: 700;
+}
+
+.header-tools__item {
+    transition: opacity .15s ease;
+}
+.header-tools__item:hover {
+    opacity: .7;
+}
+.cart-amount {
+    background: var(--brand-primary);
+    color: #fff;
+    border-radius: 999px;
+    min-width: 18px;
+    height: 18px;
+    font-size: .68rem;
+    line-height: 18px;
+    text-align: center;
+    padding: 0 5px;
+    top: -2px;
+    right: -8px;
+}
+
+/* ============ Slideshow ============ */
+.slideshow.type4 {
+    height: 520px;
+}
+.slideshow.type4 .slideshow-bg::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(180deg, rgba(15,23,42,.18), rgba(15,23,42,.42));
+}
+.slideshow-text { z-index: 2; color: #fff; }
+.slideshow-text h2 { color: #fff; text-shadow: 0 2px 14px rgba(0,0,0,.35); }
+.slideshow-text p  { color: rgba(255,255,255,.92); }
+
+/* ============ Section titles ============ */
+.section-title {
+    color: var(--brand-text);
+    font-weight: 600 !important;
+    letter-spacing: .02em;
+}
+
+/* ============ Product cards (anasayfa carousel) ============ */
+.product-card .pc__img-wrapper {
+    overflow: hidden;
+    border-radius: var(--radius);
+    background: var(--brand-bg-soft);
+}
+.product-card .pc__img {
+    transition: transform .35s ease;
+}
+.product-card:hover .pc__img {
+    transform: scale(1.04);
+}
+.product-card .pc__info {
+    padding-top: 12px;
+}
+.product-card .pc__title a {
+    color: var(--brand-text);
+    transition: color .12s ease;
+}
+.product-card .pc__title a:hover {
+    color: var(--brand-primary);
+}
+
+/* ============ Anasayfa brand-* utility'leri ============ */
+.brand-text       { color: var(--brand-primary) !important; }
+.brand-text-dark  { color: var(--brand-primary-dark) !important; }
+.brand-bg-soft    { background-color: var(--brand-primary-soft) !important; }
+.brand-divider    { color: var(--brand-primary); letter-spacing: .14em; font-size: .78rem; }
+.brand-stat       { color: var(--brand-primary); font-weight: 700; font-size: 2rem; }
+.brand-step-num   { color: var(--brand-primary); font-weight: 700; font-size: 1.6rem; opacity: .9; }
+.brand-icon       { color: var(--brand-primary); }
+.brand-cta {
+    background-color: var(--brand-primary) !important;
+    border-color: var(--brand-primary) !important;
+    color: #fff !important;
+}
+.brand-cta:hover, .brand-cta:focus {
+    background-color: var(--brand-primary-dark) !important;
+    border-color: var(--brand-primary-dark) !important;
+}
+
+/* Anasayfa istatistik kutuları */
+.bg-light {
+    background-color: var(--brand-bg-soft) !important;
+    border-radius: var(--radius);
+}
+
+/* ============ Accordion ============ */
+.accordion-item {
+    border: 1px solid var(--brand-border) !important;
+    border-radius: var(--radius-sm) !important;
+    margin-bottom: 8px;
+    overflow: hidden;
+}
+.accordion-button {
+    font-weight: 500;
+    background: #fff;
+    color: var(--brand-text);
+    padding: 14px 18px;
+}
+.accordion-button:not(.collapsed) {
+    background: var(--brand-primary-soft);
+    color: var(--brand-primary-dark);
+    box-shadow: none;
+}
+.accordion-button:focus {
+    box-shadow: 0 0 0 3px rgba(22,163,74,.12);
+    border-color: transparent;
+}
+.accordion-body {
+    background: #fff;
+    color: var(--brand-text-muted);
+    line-height: 1.7;
+}
+
+/* ============ Badges ============ */
+.badge {
+    border-radius: 999px;
+    font-weight: 500;
+    padding: .35em .7em;
+    letter-spacing: .02em;
+}
+.bg-success-subtle {
+    background: var(--brand-primary-soft) !important;
+    color: var(--brand-primary-dark) !important;
+}
+
+/* ============ Wizard sipariş sayfası ============ */
+.wizard-step-title {
+    font-weight: 600;
+    letter-spacing: .015em;
+}
+.wizard-step-desc {
+    color: var(--brand-text-muted);
+}
+.wizard-step-indicator {
+    border-radius: var(--radius-sm);
+    transition: background .15s, color .15s;
+}
+.wizard-step-indicator .wsi-num {
+    background: var(--brand-bg-soft);
+    color: var(--brand-text-muted);
+    border-radius: 50%;
+    width: 28px; height: 28px;
+    display: inline-flex; align-items: center; justify-content: center;
+    font-weight: 600;
+    font-size: .85rem;
+    transition: background .15s, color .15s;
+}
+.wizard-step-indicator.active .wsi-num,
+.wizard-step-indicator.completed .wsi-num {
+    background: var(--brand-primary);
+    color: #fff;
+}
+.wizard-step-indicator.active .wsi-label {
+    color: var(--brand-text);
+    font-weight: 600;
+}
+.wizard-step-indicator .wsi-label {
+    color: var(--brand-text-muted);
+}
+
+.option-card {
+    border: 1.5px solid var(--brand-border);
+    border-radius: var(--radius);
+    transition: border-color .15s ease, box-shadow .15s ease, transform .15s ease;
+}
+.option-card:hover {
+    border-color: var(--brand-primary);
+    transform: translateY(-1px);
+    box-shadow: var(--shadow-sm);
+}
+.option-card-input:checked + .option-card-image-wrap,
+.option-card:has(.option-card-input:checked) {
+    border-color: var(--brand-primary);
+    box-shadow: 0 0 0 2px var(--brand-primary), var(--shadow-sm);
+}
+.option-card-title {
+    font-weight: 600;
+    color: var(--brand-text);
+}
+.option-card-price {
+    color: var(--brand-primary);
+    font-weight: 600;
+}
+
+.wizard-nav {
+    background: #fff;
+    border-top: 1px solid var(--brand-border) !important;
+    padding: 12px 0 !important;
+}
+.wizard-nav-price {
+    color: var(--brand-primary) !important;
+    font-weight: 700 !important;
+}
+
+/* ============ Modal — sipariş ver picker ============ */
+.modal-content {
+    border: 0;
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-lg);
+}
+.modal-header {
+    border-bottom: 1px solid var(--brand-border);
+    padding: 18px 24px;
+}
+.modal-body { padding: 24px; }
+
+.opp-cat-item {
+    color: var(--brand-text);
+}
+.opp-cat-item.active {
+    background: var(--brand-primary) !important;
+    color: #fff !important;
+}
+.opp-cat-item.active strong { color: #fff; }
+.opp-card {
+    border: 1px solid var(--brand-border);
+    border-radius: var(--radius);
+    transition: border-color .15s, box-shadow .15s, transform .15s;
+}
+.opp-card:hover {
+    border-color: var(--brand-primary);
+    box-shadow: var(--shadow-md);
+    transform: translateY(-2px);
+}
+
+/* ============ Cart table ============ */
+.cart-table {
+    background: #fff;
+    border-radius: var(--radius);
+    overflow: hidden;
+}
+.cart-table th {
+    background: var(--brand-bg-soft);
+    color: var(--brand-text);
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: .04em;
+    font-size: .8rem;
+    padding: 14px 12px;
+    border: 0;
+}
+.cart-table td {
+    padding: 16px 12px;
+    border-color: var(--brand-border);
+    vertical-align: middle;
+}
+.shopping-cart__product-item__detail h4 a {
+    color: var(--brand-text);
+    font-weight: 600;
+}
+.shopping-cart__product-item__detail h4 a:hover {
+    color: var(--brand-primary);
+}
+.qty-control {
+    border: 1px solid var(--brand-border);
+    border-radius: 999px;
+    overflow: hidden;
+    background: #fff;
+}
+.qty-control__number {
+    border: 0;
+    background: transparent;
+    width: 40px;
+    text-align: center;
+    font-weight: 600;
+}
+.qty-control__reduce,
+.qty-control__increase {
+    cursor: pointer;
+    user-select: none;
+    color: var(--brand-text-muted);
+    font-weight: 700;
+    padding: 4px 10px;
+    transition: color .12s, background .12s;
+}
+.qty-control__reduce:hover,
+.qty-control__increase:hover {
+    color: var(--brand-primary);
+    background: var(--brand-primary-soft);
+}
+
+/* ============ Footer ============ */
+.footer {
+    border-top: 1px solid var(--brand-border);
+}
+
+/* ============ Utility microsizing ============ */
+.fs-25 { font-size: 1.55rem !important; }
+.fs-15 { font-size: .95rem !important; }
