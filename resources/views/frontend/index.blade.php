@@ -27,6 +27,230 @@
 }
 .brand-icon { color: #198754; }
 
+/* ============ B2B Hero — editorial dark card ============ */
+.b2b-hero {
+    position: relative;
+    border-radius: 24px;
+    overflow: hidden;
+    background: #0a0a0a;
+    min-height: 480px;
+    isolation: isolate;
+}
+.b2b-hero-bg {
+    position: absolute;
+    inset: 0;
+    z-index: 0;
+}
+.b2b-hero-bg img {
+    width: 100%; height: 100%;
+    object-fit: cover;
+    opacity: 0.45;
+    filter: grayscale(20%) contrast(1.05);
+}
+.b2b-hero::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    z-index: 1;
+    background:
+        radial-gradient(circle at 75% 20%, rgba(124,58,237,.45), transparent 55%),
+        linear-gradient(135deg, rgba(10,10,10,.92) 0%, rgba(30,27,75,.85) 50%, rgba(10,10,10,.85) 100%);
+}
+.b2b-hero-grid {
+    position: relative;
+    z-index: 2;
+    display: grid;
+    grid-template-columns: 1.6fr 1fr;
+    gap: 56px;
+    padding: 64px 56px;
+    align-items: center;
+}
+.b2b-hero-content { color: #fff; max-width: 560px; }
+.b2b-hero-eyebrow {
+    display: inline-block;
+    color: #c4b5fd;
+    text-transform: uppercase;
+    letter-spacing: .22em;
+    font-size: .72rem;
+    font-weight: 600;
+    margin-bottom: 18px;
+    padding: 4px 12px;
+    border: 1px solid rgba(196,181,253,.30);
+    border-radius: 999px;
+    background: rgba(124,58,237,.10);
+    backdrop-filter: blur(8px);
+}
+.b2b-hero-title {
+    color: #fff;
+    font-weight: 800;
+    font-size: clamp(2rem, 4.5vw, 3.4rem);
+    line-height: 1.05;
+    letter-spacing: -.025em;
+    margin: 0 0 22px;
+    font-family: inherit !important;
+}
+.b2b-hero-title-accent {
+    background: linear-gradient(135deg, #c4b5fd 0%, #a855f7 60%, #f0abfc 100%);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+}
+.b2b-hero-lead {
+    color: rgba(255,255,255,.85);
+    font-size: 1.02rem;
+    line-height: 1.65;
+    margin-bottom: 28px;
+    max-width: 540px;
+}
+.b2b-hero-actions {
+    display: flex;
+    align-items: center;
+    gap: 24px;
+    flex-wrap: wrap;
+}
+.b2b-hero-cta {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    background: #fff;
+    color: #0a0a0a;
+    padding: 13px 24px;
+    border-radius: 999px;
+    font-weight: 700;
+    font-size: .88rem;
+    text-transform: uppercase;
+    letter-spacing: .04em;
+    transition: transform .2s ease, box-shadow .2s ease, background .15s ease;
+    box-shadow: 0 12px 30px rgba(0,0,0,.20);
+    text-decoration: none;
+}
+.b2b-hero-cta:hover {
+    background: #f5f3ff;
+    color: #5b21b6;
+    transform: translateY(-2px);
+    box-shadow: 0 18px 40px rgba(0,0,0,.30);
+}
+.b2b-hero-cta i { font-size: .8rem; transition: transform .2s ease; }
+.b2b-hero-cta:hover i { transform: translateX(3px); }
+.b2b-hero-link {
+    color: #c4b5fd;
+    font-weight: 600;
+    font-size: .88rem;
+    text-decoration: none;
+    transition: color .15s ease;
+}
+.b2b-hero-link:hover { color: #fff; }
+
+/* Sağdaki feature tag'ler (4 küçük kart) */
+.b2b-hero-meta {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+}
+.b2b-hero-tag {
+    background: rgba(255,255,255,.06);
+    border: 1px solid rgba(255,255,255,.12);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    color: #fff;
+    padding: 14px 16px;
+    border-radius: 14px;
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    transition: background .2s ease, border-color .2s ease, transform .2s ease;
+}
+.b2b-hero-tag:hover {
+    background: rgba(255,255,255,.10);
+    border-color: rgba(196,181,253,.35);
+    transform: translateY(-2px);
+}
+.b2b-hero-tag i {
+    color: #c4b5fd;
+    font-size: 1.1rem;
+    margin-top: 2px;
+}
+.b2b-hero-tag span {
+    font-size: .8rem;
+    line-height: 1.35;
+}
+.b2b-hero-tag strong {
+    color: #fff;
+    font-weight: 600;
+    display: block;
+}
+.b2b-hero-tag em {
+    color: rgba(255,255,255,.65);
+    font-style: normal;
+    font-size: .72rem;
+    text-transform: uppercase;
+    letter-spacing: .04em;
+}
+
+/* Sağ üst floating mini kart (overlap) */
+.b2b-hero-floating {
+    position: absolute;
+    z-index: 3;
+    right: 32px;
+    bottom: 32px;
+    background: #fff;
+    border-radius: 14px;
+    padding: 8px;
+    box-shadow: 0 24px 60px rgba(0,0,0,.40);
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    max-width: 280px;
+    transform: rotate(-2deg);
+    transition: transform .3s ease;
+}
+.b2b-hero-floating:hover { transform: rotate(0) translateY(-4px); }
+.b2b-hero-floating img {
+    width: 60px; height: 60px;
+    object-fit: cover;
+    border-radius: 10px;
+}
+.b2b-hero-floating-info {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding-right: 10px;
+}
+.b2b-hero-floating-dot {
+    width: 10px; height: 10px;
+    border-radius: 50%;
+    background: #10b981;
+    box-shadow: 0 0 0 4px rgba(16,185,129,.18);
+    flex-shrink: 0;
+}
+.b2b-hero-floating-info strong {
+    display: block;
+    color: #0a0a0a;
+    font-size: .82rem;
+    font-weight: 700;
+    line-height: 1.2;
+}
+.b2b-hero-floating-info em {
+    display: block;
+    color: #737373;
+    font-style: normal;
+    font-size: .7rem;
+    margin-top: 2px;
+}
+
+@media (max-width: 991px) {
+    .b2b-hero-grid {
+        grid-template-columns: 1fr;
+        padding: 44px 28px;
+        gap: 36px;
+    }
+    .b2b-hero-floating { display: none; }
+}
+@media (max-width: 575px) {
+    .b2b-hero-meta { grid-template-columns: 1fr; }
+    .b2b-hero-grid { padding: 36px 24px; }
+}
+
 /* B2B intro asimetrik kolaj */
 .b2b-collage {
     position: relative;
@@ -281,63 +505,67 @@
       </div><!-- /.slideshow__next -->
     </section><!-- /.slideshow -->
 
-    {{-- ======== B2B Tanıtım / Marka Hikayesi ======== --}}
+    {{-- ======== B2B Hero — editorial dark hero (yatay) ======== --}}
     <section class="container py-5 my-3">
-      <div class="row align-items-center g-4">
-        <div class="col-lg-6">
-          <small class="text-uppercase brand-divider fw-bold d-block mb-2">— B2B Baskı Atölyesi</small>
-          <h2 class="section-title text-uppercase fs-25 fw-medium mb-3">
-            Fotoğrafçıların güvendiği<br>
-            <span class="brand-text">albüm &amp; baskı çözümü</span>
-          </h2>
-          <p class="text-secondary mb-3">
-            {{ $siteSettings->company_title ?? $siteSettings->title ?? 'KenAlbüm' }} olarak yıllardır profesyonel fotoğrafçılar,
-            stüdyolar ve baskı atölyeleri için yüksek kaliteli albüm ve fotoğraf baskısı üretiyoruz.
-            Bayi panelimizden seçimlerinizi yapın, dosyalarınızı yükleyin — siz müşterilerinizle ilgilenirken
-            biz üretimi tamamlayıp doğrudan size veya nihai müşterinize ulaştırırız.
-          </p>
-          <ul class="list-unstyled mb-4">
-            <li class="mb-2"><i class="fas fa-check-circle brand-icon me-2"></i> Toplu siparişlere özel <strong>bayi indirim grupları</strong></li>
-            <li class="mb-2"><i class="fas fa-check-circle brand-icon me-2"></i> Onlarca <strong>kapak / kumaş / renk</strong> seçeneği</li>
-            <li class="mb-2"><i class="fas fa-check-circle brand-icon me-2"></i> İhtiyaç anında <strong>acil üretim</strong> ve <strong>tasarım hizmeti</strong></li>
-          </ul>
-          @auth
-            <a href="#" class="btn btn-primary border-0 fs-base text-uppercase fw-normal btn-50 me-2" data-bs-toggle="modal" data-bs-target="#orderProductPickerModal">
-              <span>HEMEN SİPARİŞ VER</span>
-            </a>
-            <a href="{{ route('profile.index') }}" class="btn-link text-uppercase fw-medium text-decoration-underline">
-              Bayi Panelim
-            </a>
-          @else
-            <a href="{{ route('login') }}" class="btn btn-primary border-0 fs-base text-uppercase fw-normal btn-50 me-2">
-              <span>BAYİ GİRİŞİ</span>
-            </a>
-            <a href="{{ route('register') }}" class="btn-link text-uppercase fw-medium text-decoration-underline">
-              Bayi Başvurusu
-            </a>
-          @endauth
+      <div class="b2b-hero">
+        <div class="b2b-hero-bg">
+          <img src="/images/1758117104_ORFb8xojb0.JPG" alt="" loading="lazy">
         </div>
-        <div class="col-lg-6">
-          {{-- Asimetrik foto kolaj — gerçek ürün görsellerinden, hover micro-interaction'lı --}}
-          <div class="b2b-collage">
-            <div class="b2b-collage-main">
-              <img src="/images/1758033483_b3GibIqYHN.jpg" alt="Premium Albüm" loading="lazy">
-              <div class="b2b-collage-tag">
-                <span class="b2b-collage-tag-dot"></span>
-                <span>Premium Seri</span>
-              </div>
+        <div class="b2b-hero-grid">
+          <div class="b2b-hero-content">
+            <small class="b2b-hero-eyebrow">B2B Baskı Atölyesi</small>
+            <h2 class="b2b-hero-title">
+              Fotoğrafçıların güvendiği<br>
+              <span class="b2b-hero-title-accent">albüm &amp; baskı çözümü</span>
+            </h2>
+            <p class="b2b-hero-lead">
+              {{ $siteSettings->company_title ?? $siteSettings->title ?? 'KenAlbüm' }} olarak profesyonel fotoğrafçılar, stüdyolar ve baskı atölyeleri için yüksek kaliteli üretim yapıyoruz. Siz müşterilerinizle ilgilenirken biz üretimi tamamlayıp size veya nihai müşterinize ulaştırırız.
+            </p>
+            <div class="b2b-hero-actions">
+              @auth
+                <a href="#" class="b2b-hero-cta" data-bs-toggle="modal" data-bs-target="#orderProductPickerModal">
+                  <span>Hemen Sipariş Ver</span>
+                  <i class="fas fa-arrow-right"></i>
+                </a>
+                <a href="{{ route('profile.index') }}" class="b2b-hero-link">Bayi Panelim →</a>
+              @else
+                <a href="{{ route('login') }}" class="b2b-hero-cta">
+                  <span>Bayi Girişi</span>
+                  <i class="fas fa-arrow-right"></i>
+                </a>
+                <a href="{{ route('register') }}" class="b2b-hero-link">Bayi Başvurusu →</a>
+              @endauth
             </div>
-            <div class="b2b-collage-side">
-              <div class="b2b-collage-thumb">
-                <img src="/images/1758112544_0mgV9mENTd.jpg" alt="Velvet Albüm" loading="lazy">
-              </div>
-              <div class="b2b-collage-thumb">
-                <img src="/images/1758116669_2whgYKwame.JPG" alt="Leaf Albüm" loading="lazy">
-              </div>
-              <div class="b2b-collage-mini-stat">
-                <div class="b2b-collage-stat-number">100K+</div>
-                <div class="b2b-collage-stat-label">Tamamlanan<br>Albüm</div>
-              </div>
+          </div>
+
+          <div class="b2b-hero-meta">
+            <div class="b2b-hero-tag">
+              <i class="fas fa-percentage"></i>
+              <span><strong>Bayi indirim</strong><br><em>grupları</em></span>
+            </div>
+            <div class="b2b-hero-tag">
+              <i class="fas fa-bolt"></i>
+              <span><strong>Acil üretim</strong><br><em>seçeneği</em></span>
+            </div>
+            <div class="b2b-hero-tag">
+              <i class="fas fa-pen-fancy"></i>
+              <span><strong>Tasarım</strong><br><em>hizmeti</em></span>
+            </div>
+            <div class="b2b-hero-tag">
+              <i class="fas fa-shipping-fast"></i>
+              <span><strong>Türkiye</strong><br><em>geneli kargo</em></span>
+            </div>
+          </div>
+        </div>
+
+        {{-- Floating mini-album görsel (sağ üst köşe) --}}
+        <div class="b2b-hero-floating">
+          <img src="/images/1758033483_b3GibIqYHN.jpg" alt="Lily Albüm" loading="lazy">
+          <div class="b2b-hero-floating-info">
+            <span class="b2b-hero-floating-dot"></span>
+            <div>
+              <strong>Premium Seri</strong>
+              <em>10+ yıl tecrübe</em>
             </div>
           </div>
         </div>
