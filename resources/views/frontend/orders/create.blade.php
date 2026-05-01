@@ -471,7 +471,7 @@
                             @if($hasPageCount)
                                 <div class="wizard-step active" data-step-index="0" data-step-kind="page_count">
                                     <h3 class="wizard-step-title">Yaprak Adeti</h3>
-                                    <p class="text-muted mb-3">Albümünüzün toplam yaprak sayısını seçin.</p>
+                                    <p class="wizard-step-desc">Albümünüzün toplam yaprak sayısını seçin.</p>
                                     <div class="row g-3 option-card-grid">
                                         @for($j = $product->min_pages; $j <= $product->max_pages; $j++)
                                             <div class="col-6 col-md-4 col-lg-3">

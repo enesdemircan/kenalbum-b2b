@@ -63,14 +63,15 @@
 {{-- Acil Üretim — sadece ürünün urgent_price'ı set edilmişse render edilir. --}}
 @if($product->urgent_price)
     <div class="wizard-step-section">
+        <h5 class="wizard-section-title">Acil Üretim</h5>
+        <p class="wizard-step-desc">Ek ücret karşılığında siparişiniz öncelikli üretilir (opsiyonel).</p>
         <div class="form-check diger-toggle-card">
             <input class="form-check-input" type="checkbox" name="urgent_production" id="urgent_production" value="1">
             <label class="form-check-label" for="urgent_production">
-                <strong>🚨 Acil Üretim</strong>
+                <strong>🚨 Acil Üretim İstiyorum</strong>
                 @canSeePrices
                     <span class="text-success-2 fw-bold">+ {{ number_format($product->urgent_price, 2) }} ₺</span>
                 @endcanSeePrices
-                <small class="text-muted d-block">Ek ücret karşılığında ürününüz acil olarak üretilecektir.</small>
             </label>
         </div>
     </div>
@@ -79,10 +80,11 @@
 {{-- Sipariş Notu — opsiyonel free-text textarea. --}}
 <div class="wizard-step-section">
     <h5 class="wizard-section-title">Sipariş Notu</h5>
+    <p class="wizard-step-desc">Bu ürüne özel notunuzu yazabilirsiniz (opsiyonel).</p>
     <textarea class="form-control"
               id="order_note"
               name="order_note"
               rows="2"
-              placeholder="Siparişiniz ile ilgili özel notlarınızı buraya yazabilirsiniz... (opsiyonel)"
+              placeholder="Örn: ambalaj rica ediyorum, falan tarih için lazım..."
               style="resize: vertical;"></textarea>
 </div>
