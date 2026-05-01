@@ -1048,7 +1048,7 @@
         color: #0a3622;
     }
     .wizard-step-indicator.completed .wsi-num {
-        background: #198754;
+        background: #ea580c;
         color: #fff;
     }
     .wizard-step { display: none; }
@@ -1151,7 +1151,7 @@
         text-align: center;
         font-size: 1rem;
         font-weight: 700;
-        color: #198754;
+        color: #ea580c;
         line-height: 1;
     }
     .wizard-nav-price .label {
@@ -1192,8 +1192,8 @@
         border-color: #ced4da;
     }
     .extras-grid .extra-card.has-quantity {
-        border-color: #198754;
-        box-shadow: 0 0 0 1px #198754, 0 4px 14px rgba(25,135,84,.15);
+        border-color: #ea580c;
+        box-shadow: 0 0 0 1px #ea580c, 0 4px 14px rgba(234,88,12,.15);
     }
     .extras-grid .extra-card-img {
         width: 100%;
@@ -1214,7 +1214,7 @@
         color: #212529;
     }
     .extras-grid .extra-card-price {
-        color: #198754;
+        color: #ea580c;
         font-weight: 700;
         font-size: 1rem;
     }
@@ -1357,7 +1357,7 @@
         word-break: break-word;
     }
     .option-card-price {
-        color: #198754;
+        color: #ea580c;
         font-weight: 700;
         font-size: 0.78rem;
     }
@@ -1369,12 +1369,12 @@
     }
     .option-card-multi.selected,
     .option-card-multi:has(.option-card-input:checked) {
-        border-color: #198754;
+        border-color: #ea580c;
         background: #f0f9f4;
     }
     .option-card-multi.selected .option-card-checkmark,
     .option-card-multi:has(.option-card-input:checked) .option-card-checkmark {
-        background: #198754;
+        background: #ea580c;
     }
     /* Cascade child loading kaldırıldı — .child-parameters-container artık yaratılmıyor.
        customization-section.blade.php'deki boş <div class="child-parameters-container">

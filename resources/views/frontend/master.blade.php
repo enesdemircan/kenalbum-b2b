@@ -33,6 +33,32 @@
       font-family: "Poppins", "Segoe UI", "Roboto", "Helvetica Neue", Arial, sans-serif !important;
       letter-spacing: -.02em;
   }
+
+  /* Bootstrap success/yeşil renklerini turuncu graniti palette'ine yönlendir.
+     Tema bütünlüğü için #198754 (canlı yeşil) ve #def2d7 (pastel yeşil) override. */
+  :root {
+      --bs-success: #ea580c !important;
+      --bs-success-rgb: 234, 88, 12 !important;
+      --bs-green: #ea580c !important;
+  }
+  .text-success, .text-success-2 { color: #ea580c !important; }
+  .bg-success { background-color: #ea580c !important; }
+  .btn-success {
+      background-color: #ea580c !important;
+      border-color: #ea580c !important;
+      color: #fff !important;
+  }
+  .btn-success:hover, .btn-success:focus {
+      background-color: #c2410c !important;
+      border-color: #c2410c !important;
+  }
+  .border-success { border-color: #ea580c !important; }
+  .alert-success {
+      background-color: #fff7ed !important;
+      color: #9a3412 !important;
+      border-color: #fed7aa !important;
+  }
+  .badge.bg-success { background-color: #ea580c !important; }
   .navigation__item .box-menu {
       width: auto !important;
       min-width: 240px;

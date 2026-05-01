@@ -51,9 +51,9 @@
 }
 .section-h2 {
     font-weight: 800;
-    font-size: clamp(1.6rem, 3vw, 2.4rem);
-    line-height: 1.1;
-    letter-spacing: -.025em;
+    font-size: clamp(1.35rem, 2.4vw, 1.9rem);
+    line-height: 1.15;
+    letter-spacing: -.022em;
     color: #0a0a0a;
     margin: 0;
     text-transform: none;
@@ -210,9 +210,9 @@
 .cta-band-title {
     color: #fff;
     font-weight: 800;
-    font-size: clamp(1.4rem, 2.6vw, 1.9rem);
-    line-height: 1.15;
-    letter-spacing: -.025em;
+    font-size: clamp(1.2rem, 2.1vw, 1.6rem);
+    line-height: 1.18;
+    letter-spacing: -.022em;
     margin-bottom: 10px;
 }
 .cta-band-text p {
@@ -290,8 +290,8 @@
 .b2b-hero-title {
     color: #fff;
     font-weight: 800;
-    font-size: clamp(2rem, 4.5vw, 3.4rem);
-    line-height: 1.05;
+    font-size: clamp(1.7rem, 3.6vw, 2.7rem);
+    line-height: 1.08;
     letter-spacing: -.025em;
     margin: 0 0 22px;
     font-family: inherit !important;
@@ -647,7 +647,7 @@
 .feature-highlight-content h3 {
     color: #fff;
     font-weight: 800;
-    font-size: 2rem;
+    font-size: clamp(1.4rem, 2.4vw, 1.85rem);
     letter-spacing: -.025em;
     margin-bottom: 14px;
 }
@@ -769,41 +769,7 @@
       </div>
     </section>
 
-    {{-- ======== Numune Albümlerimizden — galeri ======== --}}
-    <section class="container py-5">
-      <div class="section-head">
-        <div>
-          <span class="section-eyebrow">Galeri</span>
-          <h2 class="section-h2">Numune albümlerimizden<br>özenle seçtiklerimiz</h2>
-        </div>
-        <p class="section-lead">
-          Bayi siparişlerinden derlenmiş, baskı kalitemizi yansıtan örnekler. Üzerine tıklayarak her ürünün siparişine başlayabilirsiniz.
-        </p>
-      </div>
-
-      <div class="showcase-grid">
-        <a href="@auth#@else{{ route('register') }}@endauth" class="show-tile showcase-tile-1" @auth data-bs-toggle="modal" data-bs-target="#orderProductPickerModal" @endauth>
-          <img src="/images/1758033483_b3GibIqYHN.jpg" alt="Lily Albüm" loading="lazy">
-          <div class="show-tile-overlay"><span class="show-tile-title">Lily Albüm — Premium</span></div>
-        </a>
-        <a href="@auth#@else{{ route('register') }}@endauth" class="show-tile showcase-tile-2" @auth data-bs-toggle="modal" data-bs-target="#orderProductPickerModal" @endauth>
-          <img src="/images/1758112544_0mgV9mENTd.jpg" alt="Velvet Albüm" loading="lazy">
-          <div class="show-tile-overlay"><span class="show-tile-title">Velvet Albüm</span></div>
-        </a>
-        <a href="@auth#@else{{ route('register') }}@endauth" class="show-tile showcase-tile-3" @auth data-bs-toggle="modal" data-bs-target="#orderProductPickerModal" @endauth>
-          <img src="/images/1758033299_WtuZuwrySN.jpg" alt="Daisy Albüm" loading="lazy">
-          <div class="show-tile-overlay"><span class="show-tile-title">Daisy Albüm</span></div>
-        </a>
-        <a href="@auth#@else{{ route('register') }}@endauth" class="show-tile showcase-tile-4" @auth data-bs-toggle="modal" data-bs-target="#orderProductPickerModal" @endauth>
-          <img src="/images/1758116669_2whgYKwame.JPG" alt="Leaf Albüm" loading="lazy">
-          <div class="show-tile-overlay"><span class="show-tile-title">Leaf Albüm</span></div>
-        </a>
-        <a href="@auth#@else{{ route('register') }}@endauth" class="show-tile showcase-tile-5" @auth data-bs-toggle="modal" data-bs-target="#orderProductPickerModal" @endauth>
-          <img src="/images/1758033733_e0uWnodq4t.jpg" alt="Lotus Albüm" loading="lazy">
-          <div class="show-tile-overlay"><span class="show-tile-title">Lotus Albüm</span></div>
-        </a>
-      </div>
-    </section>
+    {{-- 'Numune Albümlerimizden' galeri kaldırıldı (gereksiz). --}}
 
     {{-- ======== Feature highlight — tam genişlik koyu görsel CTA ======== --}}
     <section class="container py-3">
