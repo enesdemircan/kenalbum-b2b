@@ -60,6 +60,157 @@
   }
   .badge.bg-success { background-color: #ea580c !important; }
 
+  /* ============ HEADER — Tutarlı, modern, sticky ============ */
+  .header {
+      background: #fff !important;
+      border-bottom: 1px solid #f1f1f1 !important;
+      position: sticky;
+      top: 0;
+      z-index: 1000;
+      transition: box-shadow .2s ease;
+  }
+  .header.is-scrolled {
+      box-shadow: 0 4px 12px rgba(15,23,42,.06);
+  }
+
+  /* Üst siyah bar — sade, ince */
+  .header-top {
+      background: #0a0a0a !important;
+      padding: 8px 0 !important;
+      border: 0 !important;
+  }
+  .header-top .container { gap: 16px; }
+  .header-top ul { gap: 18px !important; flex-wrap: wrap; }
+  .header-top *, .header-top a, .header-top .menu-link {
+      color: rgba(255,255,255,.65) !important;
+      font-size: .76rem !important;
+      letter-spacing: .015em !important;
+      text-transform: none !important;
+      transition: color .12s ease;
+  }
+  .header-top a:hover, .header-top .menu-link:hover { color: #fff !important; }
+  .header-top .footer__social-link {
+      display: inline-flex !important;
+      align-items: center;
+      width: 22px; height: 22px;
+      padding: 0 !important;
+  }
+  .header-top .footer__social-link svg use { fill: rgba(255,255,255,.55); }
+  .header-top .footer__social-link:hover svg use { fill: #fff; }
+  .header-top .social-links { gap: 12px !important; }
+
+  /* Orta logo + araçlar — dengeli boşluk */
+  .header-middle, .header-desk_type_6 .header-middle {
+      padding: 18px 0 !important;
+  }
+  .header-middle .container { align-items: center; }
+  .logo__image {
+      max-height: 42px !important;
+      width: auto !important;
+      display: block;
+  }
+
+  .header-tools { gap: 4px; }
+  .header-tools__item {
+      padding: 0 12px !important;
+      color: #0a0a0a !important;
+      transition: color .12s ease;
+      position: relative;
+  }
+  .header-tools__item:hover, .header-tools__item:focus { color: #ea580c !important; }
+  .header-tools__item svg { transition: opacity .12s; }
+  .header-tools__item:hover svg use { fill: #ea580c; }
+  .header-tools__cart {
+      position: relative;
+      padding-right: 18px !important;
+  }
+  .cart-amount {
+      background: linear-gradient(135deg, #fb923c, #ea580c) !important;
+      color: #fff !important;
+      border-radius: 999px !important;
+      min-width: 20px;
+      height: 20px;
+      font-size: .66rem !important;
+      line-height: 20px !important;
+      text-align: center;
+      padding: 0 6px !important;
+      font-weight: 700 !important;
+      position: absolute;
+      top: -6px !important;
+      right: -2px !important;
+      box-shadow: 0 3px 8px rgba(234,88,12,.35);
+      border: 2px solid #fff;
+  }
+
+  /* Alt navigation — kompakt, hizalı */
+  .header-bottom {
+      border-top: 1px solid #f1f1f1 !important;
+  }
+  .navigation {
+      padding: 0 !important;
+      border: 0 !important;
+  }
+  .navigation__list {
+      gap: 0 !important;
+      align-items: center;
+      justify-content: center;
+  }
+  .navigation__item {
+      position: relative;
+      margin: 0 !important;
+  }
+  .navigation__link {
+      display: inline-block !important;
+      padding: 16px 18px !important;
+      color: #0a0a0a !important;
+      font-weight: 500 !important;
+      text-transform: uppercase !important;
+      letter-spacing: .045em !important;
+      font-size: .76rem !important;
+      transition: color .15s ease !important;
+      position: relative;
+      background: transparent !important;
+  }
+  .navigation__link::after {
+      content: '';
+      position: absolute;
+      left: 50%; transform: translateX(-50%) scaleX(0);
+      bottom: 10px;
+      width: calc(100% - 36px);
+      height: 2px;
+      background: #ea580c;
+      transition: transform .25s cubic-bezier(.16,1,.3,1);
+      border-radius: 2px;
+  }
+  .navigation__item:hover .navigation__link { color: #ea580c !important; }
+  .navigation__item:hover .navigation__link::after { transform: translateX(-50%) scaleX(1); }
+  .navigation__item-cta .navigation__link {
+      color: #ea580c !important;
+      font-weight: 700 !important;
+  }
+  .navigation__item-cta .navigation__link::after {
+      transform: translateX(-50%) scaleX(1);
+  }
+
+  /* Mobile drawer */
+  .header-mobile { background: #fff !important; border-bottom: 1px solid #f1f1f1 !important; }
+  .header-mobile__navigation {
+      background: #fff !important;
+      box-shadow: 0 8px 24px rgba(0,0,0,.08) !important;
+      padding: 12px 16px !important;
+  }
+  .header-mobile__navigation .navigation__link {
+      padding: 12px 14px !important;
+      border-bottom: 1px solid #f1f1f1;
+      border-radius: 6px;
+      letter-spacing: .03em !important;
+  }
+  .header-mobile__navigation .navigation__link::after { display: none !important; }
+  .header-mobile__navigation .navigation__link:hover {
+      background: #fff7ed !important;
+      color: #c2410c !important;
+  }
+
   /* ============ Footer — modern siyah palet ============ */
   .footer.footer_type_1.dark, .footer.dark {
       background: #0a0a0a !important;
@@ -844,6 +995,20 @@
 
   <!-- Footer Scripts -->
   <script src="{{ asset('js/theme.js') }}"></script>
+  {{-- Header sticky shadow scroll'a göre --}}
+  <script>
+  (function(){
+      var header = document.getElementById('header');
+      if (!header) return;
+      function onScroll() {
+          if ((window.scrollY || window.pageYOffset) > 4) header.classList.add('is-scrolled');
+          else header.classList.remove('is-scrolled');
+      }
+      window.addEventListener('scroll', onScroll, { passive: true });
+      onScroll();
+  })();
+  </script>
+
   @yield('scripts')
 
   @auth

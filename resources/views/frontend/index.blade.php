@@ -945,17 +945,10 @@
           </p>
         </div>
         <div class="cta-band-action">
-          @auth
-            <a href="#" class="b2b-hero-cta" data-bs-toggle="modal" data-bs-target="#orderProductPickerModal">
-              <span>Sipariş Ver</span>
-              <i class="fas fa-arrow-right"></i>
-            </a>
-          @else
-            <a href="{{ route('register') }}" class="b2b-hero-cta">
-              <span>Bayi Başvurusu</span>
-              <i class="fas fa-arrow-right"></i>
-            </a>
-          @endauth
+          <a href="{{ route('register') }}" class="b2b-hero-cta">
+            <span>Kayıt Ol</span>
+            <i class="fas fa-arrow-right"></i>
+          </a>
         </div>
       </div>
     </section>
