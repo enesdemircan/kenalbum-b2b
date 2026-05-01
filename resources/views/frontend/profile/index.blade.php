@@ -1,64 +1,76 @@
 @extends('frontend.master')
 
 @section('content')
-
 <main>
-    <div class="mb-4 pb-4"></div>
-    <section class="my-account container">
-      <h2 class="page-title">Hesabım</h2>
-      <div class="row">
-        <div class="col-lg-3">
-          <ul class="account-nav">
-            <li><a href="{{ route('profile.index') }}" class="menu-link menu-link_us-s menu-link_active">DASHBOARD</a></li>
-            <li><a href="{{ route('profile.orders') }}" class="menu-link menu-link_us-s">SİPARİŞLERİM</a></li>
-            <li><a href="{{ route('profile.addresses') }}" class="menu-link menu-link_us-s">ADRESLERİM</a></li>
-            <li><a href="{{ route('profile.detail') }}" class="menu-link menu-link_us-s">HESAP DETAYLARI</a></li>
-            @if(auth()->user()->hasRole(1))
-            <li><a href="{{ route('admin.dashboard') }}" class="menu-link menu-link_us-s">YÖNETİM PANELİ</a></li>
-            @endif
-            @if(auth()->user()->hasRole('Satış Müdürü'))
-            <li><a href="{{ route('admin.customers.index') }}" class="menu-link menu-link_us-s">MÜŞTERİ LİSTESİ</a></li>
-            @endif
-            @if(auth()->user()->hasRole(3))
-                <li><a href="{{ route('profile.personels') }}" class="menu-link menu-link_us-s">PERSONELLERİM</a></li>
-            @endif
-            <li>
-                <form method="POST" action="{{ route('logout') }}" style="display: inline;">
-                    @csrf
-                    <button type="submit" class="menu-link menu-link_us-s border-0 bg-transparent" style="width: 100%; text-align: left; padding: 0; font-size: 14px;font-weight: 500;text-transform: uppercase;">
-                        Çıkış Yap
-                    </button>
-                </form>
-            </li>
-          </ul>
-        </div>
-        <div class="col-lg-9">
-          @if(Auth::user()->roles->contains('id', 3) && Auth::user()->customer)
-          <div class="card">
-            <div class="card-body">
-        
-              <p class="card-text">Bakiyeniz: {{ number_format(auth()->user()->customer->balance, 2) }} TL</p>
+  <div class="mb-4 pb-4"></div>
+  <section class="profile-shell container">
+
+    <div class="profile-shell__head">
+      <div>
+        <h1 class="profile-shell__heading"><i class="fas fa-gauge"></i> Hesabım</h1>
+        <p class="profile-shell__sub">Hesap özetiniz, hızlı erişim ve bakiye bilgileriniz.</p>
+      </div>
+    </div>
+
+    <div class="row g-4">
+      <div class="col-lg-3">
+        @include('frontend.profile._sidebar', ['active' => 'dashboard'])
+      </div>
+
+      <div class="col-lg-9">
+        @if(Auth::user()->roles->contains('id', 3) && Auth::user()->customer)
+          <div class="profile-balance">
+            <div class="profile-balance__icon"><i class="fas fa-wallet"></i></div>
+            <div class="profile-balance__body">
+              <strong>Firma Bakiyesi</strong>
+              <em>₺{{ number_format(auth()->user()->customer->balance, 2, ',', '.') }}</em>
             </div>
           </div>
-          @elseif(Auth::user()->roles->contains('id', 3) && !Auth::user()->customer)
-          <div class="alert alert-warning">
-            <i class="fa fa-exclamation-triangle"></i> Firma atamanız bulunmamaktadır. Lütfen yönetici ile iletişime geçin.
+        @elseif(Auth::user()->roles->contains('id', 3) && !Auth::user()->customer)
+          <div class="profile-empty">
+            <i class="fas fa-triangle-exclamation"></i>
+            <h4>Firma Atamanız Bulunmuyor</h4>
+            <p>Sipariş verebilmek için lütfen yöneticiyle iletişime geçin.</p>
           </div>
-          @endif
-          <div class="page-content my-account__dashboard">
-            <p>Merhaba <strong>{{ auth()->user()->name }}</strong> ({{ auth()->user()->name }} değil misiniz? <a href="{{ route('logout') }}" onclick="event.preventDefault(); document.getElementById('logout-form').submit();">Çıkış yapın</a>)</p>
-            <p>Hesap panelinizden <a class="unerline-link" href="{{ route('profile.orders') }}">son siparişlerinizi</a> görüntüleyebilir, <a class="unerline-link" href="{{ route('profile.addresses') }}">teslimat ve fatura adreslerinizi</a> yönetebilir ve <a class="unerline-link" href="{{ route('profile.detail') }}">şifrenizi ve hesap detaylarınızı düzenleyebilirsiniz.</a></p>
-            
-            <form id="logout-form" action="{{ route('logout') }}" method="POST" class="d-none">
-                @csrf
-            </form>
+        @endif
+
+        <div class="profile-card">
+          <div class="profile-card__head">
+            <div>
+              <h3 class="profile-card__title"><i class="fas fa-hand-wave"></i> Merhaba, {{ auth()->user()->name }}</h3>
+              <p class="profile-card__sub">Hesap panelinizden son siparişlerinizi, adreslerinizi ve hesap detaylarınızı yönetebilirsiniz.</p>
+            </div>
           </div>
-          
+
+          <div class="profile-quicklinks">
+            <a href="{{ route('profile.orders') }}" class="profile-quicklink">
+              <span class="profile-quicklink__icon"><i class="fas fa-bag-shopping"></i></span>
+              <h4 class="profile-quicklink__title">Siparişlerim</h4>
+              <p class="profile-quicklink__desc">Tüm siparişlerinizi görüntüleyin ve takip edin.</p>
+            </a>
+            <a href="{{ route('profile.addresses') }}" class="profile-quicklink">
+              <span class="profile-quicklink__icon"><i class="fas fa-location-dot"></i></span>
+              <h4 class="profile-quicklink__title">Adreslerim</h4>
+              <p class="profile-quicklink__desc">Şirket ve müşteri adreslerinizi yönetin.</p>
+            </a>
+            <a href="{{ route('profile.detail') }}" class="profile-quicklink">
+              <span class="profile-quicklink__icon"><i class="fas fa-user-pen"></i></span>
+              <h4 class="profile-quicklink__title">Hesap Detayları</h4>
+              <p class="profile-quicklink__desc">Bilgilerinizi ve şifrenizi güncelleyin.</p>
+            </a>
+            @if(auth()->user()->hasRole(3))
+              <a href="{{ route('profile.personels') }}" class="profile-quicklink">
+                <span class="profile-quicklink__icon"><i class="fas fa-id-badge"></i></span>
+                <h4 class="profile-quicklink__title">Personellerim</h4>
+                <p class="profile-quicklink__desc">Firma personellerinizi yönetin.</p>
+              </a>
+            @endif
+          </div>
         </div>
       </div>
-      
-    </section>
-  </main>
-  <br>
+    </div>
+
+  </section>
+</main>
 <br>
 @endsection
