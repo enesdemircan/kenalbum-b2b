@@ -1344,23 +1344,29 @@
                 let valid = true;
                 let isFieldType = false;
 
+                // Wrapper visibility helper — display:contents elementleri için offsetParent
+                // güvenilir değil. Wrapper'ın inline style.display 'none' mı ona bakıyoruz.
+                const isWrapperVisible = (input) => {
+                    const wrapper = input.closest('.option-card-wrapper');
+                    if (!wrapper) return true; // wrapper yoksa görünür say (top-level)
+                    return wrapper.style.display !== 'none';
+                };
+
                 if (sectionType === 'select') {
                     const sel = section.querySelector(':scope > select.customization-select')
                         || section.querySelector('select.customization-select');
                     valid = !!(sel && sel.value);
                 } else if (sectionType === 'radio' || sectionType === 'hidden') {
-                    // Görünür wrapper'lar içindeki radio'lar (cascade filter sonrası)
                     const visibleRadios = Array.from(section.querySelectorAll('input[type="radio"]'))
-                        .filter(r => r.offsetParent !== null);
+                        .filter(isWrapperVisible);
                     if (visibleRadios.length === 0) {
-                        // Cascade step henüz parent seçilmediği için boş olabilir
                         valid = false;
                     } else {
                         valid = visibleRadios.some(r => r.checked);
                     }
                 } else if (sectionType === 'checkbox') {
                     const visibleChecks = Array.from(section.querySelectorAll('input[type="checkbox"]'))
-                        .filter(c => c.offsetParent !== null);
+                        .filter(isWrapperVisible);
                     valid = visibleChecks.some(c => c.checked);
                 } else if (sectionType === 'input') {
                     isFieldType = true;
