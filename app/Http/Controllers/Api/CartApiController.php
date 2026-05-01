@@ -86,10 +86,13 @@ class CartApiController extends Controller
                 'pivot_ids' => 'nullable|array',
                 'pivot_ids.*' => 'integer|exists:customization_pivot_params,id',
                 'order_note' => 'nullable|string|max:1000',
-                'album_text' => 'nullable|string|max:500', // Albüm üzerine yazılacak yazı
-                'file' => 'nullable|string|url', // s3_zip için file linki
+                'album_text' => 'nullable|string|max:500',
+                'file' => 'nullable|string|url',                            // s3_zip için file linki
                 'status' => 'nullable|integer',
                 'discount_group_id' => 'nullable|exists:discount_groups,id',
+                'urgent_status' => 'nullable|in:0,1,true,false',            // Acil üretim — frontend boolean veya 0/1
+                'urgent_production' => 'nullable|boolean',                  // Alias: notes JSON'a flag olarak yazılır
+                'design_service' => 'nullable|in:with_design,self_design',  // Tasarım hizmeti (notes JSON'a)
             ]);
 
             if ($validator->fails()) {
@@ -159,15 +162,24 @@ class CartApiController extends Controller
                     'customizations' => $customizations,
                     'total_customization_price' => number_format($totalCustomizationPrice, 2, '.', '')
                 ];
-                
+
                 // Sipariş notu varsa ekle
                 if ($request->has('order_note') && !empty(trim($request->order_note))) {
                     $notesData['order_note'] = trim($request->order_note);
                 }
-                
+                // Acil üretim flag'i (notes JSON'a)
+                if ($request->boolean('urgent_production')) {
+                    $notesData['urgent_production'] = true;
+                }
+                // Tasarım hizmeti tercihi
+                $designService = $request->input('design_service');
+                if (in_array($designService, ['with_design', 'self_design'], true)) {
+                    $notesData['design_service'] = $designService;
+                }
+
                 // JSON string'e çevir
                 $request->merge(['notes' => json_encode($notesData)]);
-            } 
+            }
             // Eğer sadece album_text gönderilmişse (pivot_ids yoksa)
             elseif ($request->has('album_text') && !empty(trim($request->album_text))) {
                 $customizations = [];
@@ -175,18 +187,23 @@ class CartApiController extends Controller
                     'type' => 'radio',
                     'value' => trim($request->album_text)
                 ];
-                
+
                 $notesData = [
                     'customizations' => $customizations,
                     'total_customization_price' => '0.00'
                 ];
-                
-                // Sipariş notu varsa ekle
+
                 if ($request->has('order_note') && !empty(trim($request->order_note))) {
                     $notesData['order_note'] = trim($request->order_note);
                 }
-                
-                // JSON string'e çevir
+                if ($request->boolean('urgent_production')) {
+                    $notesData['urgent_production'] = true;
+                }
+                $designService = $request->input('design_service');
+                if (in_array($designService, ['with_design', 'self_design'], true)) {
+                    $notesData['design_service'] = $designService;
+                }
+
                 $request->merge(['notes' => json_encode($notesData)]);
             }
             // Eğer notes direkt gönderilmişse (eski format)
@@ -482,6 +499,8 @@ class CartApiController extends Controller
                 'cargo_barcode' => 'sometimes|string',
                 'tracking_url' => 'sometimes|string',
                 'discount_group_id' => 'sometimes|exists:discount_groups,id',
+                's3_zip' => 'sometimes|nullable|string|url|max:1000',
+                'urgent_status' => 'sometimes|in:0,1',
             ]);
 
             if ($validator->fails()) {

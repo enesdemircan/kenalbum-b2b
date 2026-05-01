@@ -14,7 +14,7 @@ class Cart extends Model
 {
     use HasFactory; 
 
-    protected $fillable = [ 
+    protected $fillable = [
         'user_id',
         'product_id',
         'quantity',
@@ -22,7 +22,7 @@ class Cart extends Model
         'price',
         'original_price',
         'notes',
-        'images', 
+        'images',
         'local_zip',
         's3_zip',
         'cart_id',
@@ -33,7 +33,8 @@ class Cart extends Model
         'status',
         'order_id',
         'discount_group_id',
-        'cargo_customer'
+        'cargo_customer',
+        'urgent_status',
     ];
 
     protected $casts = [

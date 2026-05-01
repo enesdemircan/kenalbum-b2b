@@ -525,6 +525,7 @@
               <li class="sub-menu__item"><a href="mailto:{{ $siteSettings->email }}" class="menu-link menu-link_us-s">{{ $siteSettings->email }}</a></li>
             @endif
             <li class="sub-menu__item"><a href="{{ route('home') }}#homeFaqAccordion" class="menu-link menu-link_us-s">Sıkça Sorulan Sorular</a></li>
+            <li class="sub-menu__item"><a href="{{ route('api.docs') }}" class="menu-link menu-link_us-s">API Dökümantasyonu</a></li>
           </ul>
         </div><!-- /.footer-column -->
 
