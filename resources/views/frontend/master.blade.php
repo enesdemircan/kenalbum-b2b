@@ -59,6 +59,87 @@
       border-color: #fed7aa !important;
   }
   .badge.bg-success { background-color: #ea580c !important; }
+
+  /* ============ Footer — modern siyah palet ============ */
+  .footer.footer_type_1.dark, .footer.dark {
+      background: #0a0a0a !important;
+      color: rgba(255,255,255,.62) !important;
+      border-top: 1px solid #1f1f1f;
+  }
+  .footer.footer_type_1.dark::before {
+      content: '';
+      display: block;
+      height: 1px;
+      background: linear-gradient(90deg, transparent, rgba(234,88,12,.5), transparent);
+  }
+  .footer-middle.container { padding-top: 64px !important; padding-bottom: 56px !important; }
+  .footer.dark .sub-menu__title {
+      color: #fff !important;
+      font-weight: 700 !important;
+      font-size: .82rem !important;
+      letter-spacing: .14em !important;
+      margin-bottom: 18px !important;
+  }
+  .footer.dark .sub-menu__item { margin-bottom: 6px; }
+  .footer.dark .menu-link {
+      color: rgba(255,255,255,.6) !important;
+      font-size: .85rem !important;
+      transition: color .15s ease, padding-left .15s ease;
+      letter-spacing: 0;
+      text-transform: none;
+  }
+  .footer.dark .menu-link:hover {
+      color: #fdba74 !important;
+      padding-left: 6px;
+  }
+  .footer.dark .footer-address {
+      color: rgba(255,255,255,.62) !important;
+      font-size: .85rem;
+      line-height: 1.6;
+      margin-bottom: 12px;
+  }
+  .footer.dark p, .footer.dark p strong {
+      color: rgba(255,255,255,.62) !important;
+      font-size: .85rem;
+      margin-bottom: 6px;
+  }
+  .footer.dark .logo__image { max-height: 42px; margin-bottom: 16px; }
+  .footer.dark .social-links { gap: 10px; margin-top: 16px; }
+  .footer.dark .footer__social-link {
+      width: 36px;
+      height: 36px;
+      border-radius: 50%;
+      background: rgba(255,255,255,.06);
+      border: 1px solid rgba(255,255,255,.10);
+      display: inline-flex !important;
+      align-items: center;
+      justify-content: center;
+      transition: background .15s, border-color .15s;
+  }
+  .footer.dark .footer__social-link:hover {
+      background: rgba(234,88,12,.18);
+      border-color: rgba(234,88,12,.45);
+  }
+  .footer.dark .footer__social-link svg { width: 14px; height: 14px; }
+  .footer.dark .footer__social-link svg use { fill: rgba(255,255,255,.7); }
+  .footer.dark .footer__social-link:hover svg use { fill: #fdba74; }
+
+  .footer-bottom.container {
+      padding-top: 24px !important;
+      padding-bottom: 24px !important;
+      border-top: 1px solid #1f1f1f;
+      margin-top: 0;
+  }
+  .footer.dark .footer-copyright {
+      color: rgba(255,255,255,.45) !important;
+      font-size: .78rem;
+      letter-spacing: .02em;
+  }
+  .footer.dark .footer-copyright a {
+      color: rgba(255,255,255,.7) !important;
+      transition: color .15s;
+  }
+  .footer.dark .footer-copyright a:hover { color: #fdba74 !important; }
   .navigation__item .box-menu {
       width: auto !important;
       min-width: 240px;
@@ -604,9 +685,34 @@
           </ul>
         </div><!-- /.footer-column -->
 
-      
+        <div class="footer-column footer-menu mb-4 mb-lg-0">
+          <h6 class="sub-menu__title text-uppercase">Bayi</h6>
+          <ul class="sub-menu__list list-unstyled">
+            @auth
+              <li class="sub-menu__item"><a href="#" class="menu-link menu-link_us-s" data-bs-toggle="modal" data-bs-target="#orderProductPickerModal">Sipariş Ver</a></li>
+              <li class="sub-menu__item"><a href="{{ route('cart.index') }}" class="menu-link menu-link_us-s">Sepetim</a></li>
+              <li class="sub-menu__item"><a href="{{ route('profile.index') }}" class="menu-link menu-link_us-s">Bayi Panelim</a></li>
+              <li class="sub-menu__item"><a href="{{ route('profile.orders') }}" class="menu-link menu-link_us-s">Siparişlerim</a></li>
+            @else
+              <li class="sub-menu__item"><a href="{{ route('login') }}" class="menu-link menu-link_us-s">Bayi Girişi</a></li>
+              <li class="sub-menu__item"><a href="{{ route('register') }}" class="menu-link menu-link_us-s">Bayi Başvurusu</a></li>
+            @endauth
+          </ul>
+        </div><!-- /.footer-column -->
 
-        
+        <div class="footer-column footer-menu mb-4 mb-lg-0">
+          <h6 class="sub-menu__title text-uppercase">Destek</h6>
+          <ul class="sub-menu__list list-unstyled">
+            @if($siteSettings->phone)
+              <li class="sub-menu__item"><a href="tel:{{ preg_replace('/[^0-9+]/','',$siteSettings->phone) }}" class="menu-link menu-link_us-s">{{ $siteSettings->phone }}</a></li>
+            @endif
+            @if($siteSettings->email)
+              <li class="sub-menu__item"><a href="mailto:{{ $siteSettings->email }}" class="menu-link menu-link_us-s">{{ $siteSettings->email }}</a></li>
+            @endif
+            <li class="sub-menu__item"><a href="{{ route('home') }}#homeFaqAccordion" class="menu-link menu-link_us-s">Sıkça Sorulan Sorular</a></li>
+          </ul>
+        </div><!-- /.footer-column -->
+
       </div><!-- /.row-cols-5 -->
     </div><!-- /.footer-middle container -->
 

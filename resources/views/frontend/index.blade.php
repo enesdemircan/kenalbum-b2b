@@ -27,43 +27,26 @@
 }
 .brand-icon { color: #ea580c; }
 
-/* ============ Section başlık standartı ============ */
+/* ============ Section başlık standartı — altalta sade ============ */
 .section-head {
-    display: flex;
-    justify-content: space-between;
-    align-items: flex-end;
-    flex-wrap: wrap;
-    gap: 24px;
-    margin-bottom: 40px;
-}
-.section-eyebrow {
-    display: inline-block;
-    color: #c2410c;
-    text-transform: uppercase;
-    letter-spacing: .22em;
-    font-size: .7rem;
-    font-weight: 700;
-    padding: 4px 12px;
-    border: 1px solid rgba(234,88,12,.30);
-    border-radius: 999px;
-    background: rgba(234,88,12,.06);
-    margin-bottom: 14px;
+    margin-bottom: 36px;
+    max-width: 720px;
 }
 .section-h2 {
     font-weight: 800;
     font-size: clamp(1.35rem, 2.4vw, 1.9rem);
-    line-height: 1.15;
+    line-height: 1.18;
     letter-spacing: -.022em;
     color: #0a0a0a;
-    margin: 0;
+    margin: 0 0 10px;
     text-transform: none;
 }
 .section-lead {
     color: #525252;
-    max-width: 460px;
     margin: 0;
     font-size: .94rem;
     line-height: 1.65;
+    max-width: 580px;
 }
 .section-lead-tight {
     color: #525252;
@@ -181,6 +164,56 @@
 @media (max-width: 768px) {
     .advantages-grid { grid-template-columns: 1fr; }
     .advantage-card { padding: 22px; }
+}
+
+/* ============ SSS aside ============ */
+.faq-aside {
+    position: sticky;
+    top: 100px;
+    padding-right: 8px;
+}
+.faq-aside .section-h2 { margin-bottom: 14px; }
+.faq-aside-link {
+    color: #ea580c;
+    border-bottom: 1px solid rgba(234,88,12,.30);
+    text-decoration: none;
+    font-weight: 600;
+    transition: color .15s, border-color .15s;
+}
+.faq-aside-link:hover { color: #c2410c; border-color: #c2410c; }
+@media (max-width: 991px) {
+    .faq-aside { position: static; padding-right: 0; }
+}
+
+/* Accordion item — daha sade ve hizalı */
+.accordion-item {
+    background: #fff !important;
+    border: 1px solid #e5e5e5 !important;
+    border-radius: 12px !important;
+    margin-bottom: 10px;
+    overflow: hidden;
+}
+.accordion-button {
+    background: #fff !important;
+    color: #0a0a0a !important;
+    font-weight: 600 !important;
+    padding: 16px 20px !important;
+    font-size: .95rem !important;
+    box-shadow: none !important;
+}
+.accordion-button:not(.collapsed) {
+    background: #fff7ed !important;
+    color: #9a3412 !important;
+}
+.accordion-button:focus {
+    box-shadow: 0 0 0 3px rgba(234,88,12,.14) !important;
+    border-color: transparent !important;
+}
+.accordion-body {
+    color: #525252 !important;
+    line-height: 1.7;
+    padding: 4px 20px 20px !important;
+    background: #fff !important;
 }
 
 /* ============ Final CTA bant ============ */
@@ -710,7 +743,6 @@
         </div>
         <div class="b2b-hero-grid">
           <div class="b2b-hero-content">
-            <small class="b2b-hero-eyebrow">B2B Baskı Atölyesi</small>
             <h2 class="b2b-hero-title">
               Fotoğrafçıların güvendiği<br>
               <span class="b2b-hero-title-accent">albüm &amp; baskı çözümü</span>
@@ -777,36 +809,10 @@
          sağ tag'lerine taşındı (floating cloud animasyonlu). --}}
     {{-- 'Numune Albümlerimizden' galeri kaldırıldı (gereksiz). --}}
 
-    {{-- ======== Feature highlight — tam genişlik koyu görsel CTA ======== --}}
-    <section class="container py-3">
-      <div class="feature-highlight">
-        <img src="/images/1758117104_ORFb8xojb0.JPG" alt="Premium baskı" loading="lazy">
-        <div class="feature-highlight-content">
-          <small class="text-uppercase fw-bold d-block mb-2" style="color:#fdba74; letter-spacing:.18em; font-size:.72rem;">— Yeni nesil baskı</small>
-          <h3>Müşterilerinizi etkileyecek<br>premium kalite</h3>
-          <p>Düğün, nişan, doğum ve özel anlar için profesyonel kalitede albüm üretimi. Yıllarca koruma sağlayan dayanıklı malzemeler, modern bağlama teknikleri ve renk derinliği yüksek baskı.</p>
-          <div>
-            @auth
-              <a href="#" class="btn btn-outline-secondary fs-base text-uppercase fw-normal" data-bs-toggle="modal" data-bs-target="#orderProductPickerModal" style="background:#fff; color:#0a0a0a; border-color:#fff;">
-                <span>Hemen Sipariş Ver</span>
-              </a>
-            @else
-              <a href="{{ route('register') }}" class="btn btn-outline-secondary fs-base text-uppercase fw-normal" style="background:#fff; color:#0a0a0a; border-color:#fff;">
-                <span>Bayi Başvurusu</span>
-              </a>
-            @endauth
-          </div>
-        </div>
-      </div>
-    </section>
-
-    {{-- ======== Nasıl Çalışır? — yatay editorial akış ======== --}}
+    {{-- ======== Nasıl Çalışır — hero ile feature highlight arasında ======== --}}
     <section class="container py-5">
       <div class="section-head">
-        <div>
-          <span class="section-eyebrow">Sipariş Süreci</span>
-          <h2 class="section-h2">Sipariş vermek<br>yalnızca 4 adım</h2>
-        </div>
+        <h2 class="section-h2">Sipariş vermek<br>yalnızca 4 adım</h2>
         <p class="section-lead">
           Header'daki <strong>Sipariş Ver</strong> menüsüyle başlayın, yapılandırın, dosyalarınızı yükleyin — gerisini bize bırakın.
         </p>
@@ -836,83 +842,30 @@
       </div>
     </section>
 
-    {{-- ======== Kategoriler intro ======== --}}
+    {{-- ======== Feature highlight — Nasıl Çalışır ile Kategoriler arasında, CTA'sız ======== --}}
     <section class="container py-3">
-      <div class="section-head">
-        <div>
-          <span class="section-eyebrow">Ürünlerimiz</span>
-          <h2 class="section-h2">Tüm kategoriler<br>tek panelden erişim</h2>
+      <div class="feature-highlight">
+        <img src="/images/1758117104_ORFb8xojb0.JPG" alt="Premium baskı" loading="lazy">
+        <div class="feature-highlight-content">
+          <small class="text-uppercase fw-bold d-block mb-2" style="color:#fdba74; letter-spacing:.18em; font-size:.72rem;">— Yeni nesil baskı</small>
+          <h3>Müşterilerinizi etkileyecek<br>premium kalite</h3>
+          <p>Düğün, nişan, doğum ve özel anlar için profesyonel kalitede albüm üretimi. Yıllarca koruma sağlayan dayanıklı malzemeler, modern bağlama teknikleri ve renk derinliği yüksek baskı.</p>
         </div>
-        <p class="section-lead">
-          Albümler, fotokitaplar, duvar çerçeveleri ve daha fazlası. Bayi fiyatıyla hızlıca sipariş verebilirsiniz.
-        </p>
       </div>
     </section>
 
-        @foreach($homepageCategories as $category)
-        <div class="mb-3 mb-xl-5 pb-3 pt-1 pb-xl-5"></div>
-
-        @if($category->products->count() > 0)
-            <section class="products-carousel container">
-                <div class="d-flex justify-content-between align-items-center mb-4">
-                    <div>
-                        <h2 class="section-title text-uppercase fs-25 fw-medium mb-2">{{ $category->title }}</h2>
-                        <p class="fs-15 mb-0 text-secondary">{{ $category->title }} kategorisindeki en kaliteli ürünler.</p>
-                    </div>
-                    <div class="d-flex align-items-center">
-                     
-                      
-                    </div>
-                </div>
-
-                <div class="position-relative">
-                    <div class="swiper-container " >
-                        <div class="swiper-wrapper">
-                            @foreach($category->products as $product)
-                                <div class="swiper-slide product-card">
-                                    <div class="pc__img-wrapper">
-                                        <a href="{{ route('products.show', $product->slug) }}">
-                                            @php
-                                                $firstImage = $product->images ? explode(',', $product->images)[0] : null;
-                                                $firstThumbnail = $product->thumbnails ? explode(',', $product->thumbnails)[0] : null;
-                                            @endphp
-                                            @if($firstThumbnail)
-                                                <img loading="lazy" src="{{ trim($firstThumbnail) }}" width="330" height="400" alt="{{ $product->title }}" class="pc__img">
-                                            @elseif($firstImage)
-                                                <img loading="lazy" src="{{ trim($firstImage) }}" width="330" height="400" alt="{{ $product->title }}" class="pc__img">
-                                           
-                                            @endif
-                                        </a>
-                                    </div>
-
-                                    <div class="pc__info position-relative text-center">
-                                       
-                                        <h6 class="pc__title text-uppercase fw-medium mb-2"><a href="{{ route('products.show', $product->slug) }}">{{ $product->title }}</a></h6>
-                                     
-                                      
-                                    </div>
-                                </div>
-                            @endforeach
-                        </div><!-- /.swiper-wrapper -->
-                    </div><!-- /.swiper-container js-swiper-slider -->
-
-               
-                </div><!-- /.position-relative -->
-            </section><!-- /.products-carousel container -->
-
-        @endif
-    @endforeach
+    {{-- 'Kategoriler intro' ve homepageCategories carousel'ları kaldırıldı — anasayfada artık ürün listelemiyoruz. --}}
 
     {{-- ======== Sıkça Sorulan Sorular ======== --}}
-    <section class="bg-light py-5">
-      <div class="container">
-        <div class="row">
-          <div class="col-lg-4 mb-4 mb-lg-0">
-            <span class="section-eyebrow">SSS</span>
-            <h2 class="section-h2 mt-2">Aklınızda<br>soru var mı?</h2>
-            <p class="section-lead-tight mt-3">Bayi sürecimizle ilgili sıkça sorulan sorulara verdiğimiz cevaplar — başka bir konu olursa bize ulaşın.</p>
+    <section class="container py-5">
+      <div class="row g-5 align-items-start">
+        <div class="col-lg-4">
+          <div class="faq-aside">
+            <h2 class="section-h2">Aklınızda<br>soru var mı?</h2>
+            <p class="section-lead-tight">Bayi sürecimizle ilgili sıkça sorulan sorulara verdiğimiz cevaplar. Başka bir konu olursa <a href="#" data-bs-toggle="modal" data-bs-target="#orderProductPickerModal" class="faq-aside-link">bize ulaşın</a>.</p>
           </div>
-          <div class="col-lg-8">
+        </div>
+        <div class="col-lg-8">
             <div class="accordion" id="homeFaqAccordion">
               <div class="accordion-item">
                 <h2 class="accordion-header">
@@ -975,7 +928,6 @@
                 </div>
               </div>
             </div>
-          </div>
         </div>
       </div>
     </section>
