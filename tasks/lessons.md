@@ -44,3 +44,20 @@ composer dump-autoload
 php artisan optimize:clear
 ```
 Production'da: deploy script'inin sonunda mutlaka bu adım olmalı.
+
+---
+
+## 2026-05-01 — İki paralel sistem (legacy AJAX + yeni chain filter) duplicate ID üretir
+
+**Pattern:** Aynı domain'de iki farklı yaklaşım birlikte koşturursa (örn. legacy AJAX cascade child loading + yeni pre-rendered chain filter), her iki sistem aynı parametreyi DOM'a inject ediyorsa **duplicate id="..." attribute'ları oluşur**. Browser `<label for="...">` çağrısı `getElementById()`'ye düşer, o da DOM'daki ilk eşleşeni döner — kullanıcının tıkladığı görsel kart başka bir gizli element ile bağlanmış olabilir → click hiçbir şey yapmıyor gibi görünür.
+
+**Why:** Bu projede cascade child kategorileri (Kumaş/Renk/Paket) hem yeni "ön-render + chain filter" wizard step'lerinde hem de eski jQuery `loadChildParameters` AJAX response'unun gizli `.child-parameters-container`'ında **aynı `id="param_X"` ile** mevcuttu. Kart label'ının `for=` attribute'u DOM'daki ilkine (eski legacy hidden element) bağlanıyordu → görünür kart radio'su asla check edilmiyordu → validation "seçim yapmadın" diyordu.
+
+**How to apply:**
+1. Bir parça kodu refactor ederken **paralel/yedek/legacy yolu işleyişini bilerek bırakma**. Ya tamamen kaldır ya da ondan üretilecek DOM çıktısını kontrolünde tut (örn. immediately empty inject olan container).
+2. **Duplicate ID kontrolü** için browser DevTools console'da `Array.from(document.querySelectorAll('[id]')).map(e=>e.id).filter((v,i,a)=>a.indexOf(v)!==i)` çalıştırılabilir.
+3. Yeni bir feature ile eski mantığı değiştirirken, "geçici olarak ikisini birlikte koşturalım" kararı sonradan ciddi bug'lara yol açar. Migration'ı tamamla, eskiyi kaldır.
+4. Cascade/dynamic UI sistemleri için **tek "source of truth"** kuralı uygula — birden fazla sistem aynı state'i yönetmesin.
+
+**How to detect:**
+- Kullanıcı "kart tıklıyorum ama seçilmiyor" derse → DevTools'ta o kartın label'ının `for=` attribute'u → karşılık gelen ID'yi `document.querySelectorAll('#paramX').length` ile saysın. > 1 ise duplicate var.

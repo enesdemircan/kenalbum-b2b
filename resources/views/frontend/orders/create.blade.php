@@ -1244,8 +1244,10 @@
     .option-card-multi:has(.option-card-input:checked) .option-card-checkmark {
         background: #198754;
     }
-    /* Eski cascade child loading container'ı yeni chain-filter ile gereksiz — gizle */
-    .wizard-step .child-parameters-container { display: none !important; }
+    /* Cascade child loading kaldırıldı — .child-parameters-container artık yaratılmıyor.
+       customization-section.blade.php'deki boş <div class="child-parameters-container">
+       legacy backwards compat için duruyor ama içeriği boş kalacak. */
+    .wizard-step .child-parameters-container { display: none; }
 
     /* Mobile: hide step labels, only show numbers */
     @media (max-width: 768px) {
@@ -1352,11 +1354,7 @@
                     return wrapper.style.display !== 'none';
                 };
 
-                if (sectionType === 'select') {
-                    const sel = section.querySelector(':scope > select.customization-select')
-                        || section.querySelector('select.customization-select');
-                    valid = !!(sel && sel.value);
-                } else if (sectionType === 'radio' || sectionType === 'hidden') {
+                if (sectionType === 'select' || sectionType === 'radio' || sectionType === 'hidden') {
                     const visibleRadios = Array.from(section.querySelectorAll('input[type="radio"]'))
                         .filter(isWrapperVisible);
                     if (visibleRadios.length === 0) {
@@ -1546,11 +1544,9 @@
             const changedCatId = changedStepEl?.getAttribute('data-step-category-id');
             if (!changedCatId) return;
 
-            const changedSelect = changedStepEl.querySelector('select.customization-select');
+            // Tüm seçim tipleri artık native radio (select tipi unify edildi).
             const checkedRadio = changedStepEl.querySelector('input[type="radio"]:checked');
-            const selectedPivotId = (checkedRadio && checkedRadio.value)
-                || (changedSelect && changedSelect.value)
-                || '';
+            const selectedPivotId = checkedRadio ? checkedRadio.value : '';
 
             const childStep = document.querySelector(
                 '.wizard-step[data-step-cascade="true"][data-step-parent-cat="' + changedCatId + '"]'
@@ -1586,30 +1582,15 @@
         document.addEventListener('change', (e) => {
             const tgt = e.target;
             if (!tgt) return;
-            if (tgt.matches('.customization-radio, input[type="radio"][data-pivot-id], select.customization-select')) {
+            if (tgt.matches('.customization-radio, input[type="radio"][data-pivot-id]')) {
                 const stepEl = tgt.closest('.wizard-step');
                 if (stepEl) refreshCascadeChain(stepEl);
             }
         });
 
-        // Eski jQuery loadChildParameters AJAX'ı .child-parameters-container'a Kumaş/Renk
-        // option'ları yüklüyor. Cascade chain bu kategoriler için ayrı step'ler oluşturduğu
-        // için DOM'da DUPLICATE ID'ler oluşuyor (param_X hem cascade step'inde hem de
-        // legacy hidden container'da). Browser <label for=> ilk bulduğunu seçtiği için
-        // kullanıcının tıkladığı kart radio'sunu check etmiyor.
-        // Çözüm: AJAX bitince container'ları boşalt.
-        if (window.jQuery) {
-            window.jQuery(document).ajaxComplete(function (event, xhr, settings) {
-                const url = settings && settings.url ? settings.url : '';
-                if (url.indexOf('/customization-params/') !== -1 && url.indexOf('/children') !== -1) {
-                    setTimeout(() => {
-                        document.querySelectorAll('.child-parameters-container').forEach(c => {
-                            c.innerHTML = '';
-                        });
-                    }, 30);
-                }
-            });
-        }
+        // ajaxComplete cleanup hook'u kaldırıldı — legacy loadChildParameters AJAX
+        // çağrısı artık tetiklenmiyor (Phase 2'de jQuery handler revize edildi).
+        // Duplicate ID problemi kökünden çözüldü.
 
         // İlk yüklenmede tüm cascade step'leri başlangıç olarak gizle (parent henüz seçilmemiş)
         document.querySelectorAll('.wizard-step[data-step-cascade="true"]').forEach(cs => {
@@ -1658,77 +1639,13 @@
             // Event listener'ları ekle
             function attachEventListeners() {
                 
-                // Ana parametreler için event listener
-                $('.customization-radio, .customization-select').off('change.customization').on('change.customization', function() {
-                    var $element = $(this);
-                    var paramId = $element.val();
-                    var pivotId = $element.data('pivot-id');
-                    var hasChildren = $element.attr('data-has-children') === 'true';
-                    
-                    // Eğer select ise, seçili option'dan pivot ID'sini al
-                    if ($element.is('select') && paramId) {
-                        var $selectedOption = $element.find('option:selected');
-                        pivotId = $selectedOption.data('pivot-id');
-                        hasChildren = $selectedOption.attr('data-has-children') === 'true';
-                    }
-                    
-                    if (hasChildren && pivotId) {
-                        // Sadece bu element'in kendi container'ını temizle
-                        // Kardeş elementlerin container'larını etkilememek için daha spesifik seçim
-                        var $currentSection = $element.closest('.customization-section');
-                        // Sadece bu section'ın doğrudan child container'larını temizle
-                        $currentSection.children('.child-parameters-container').empty().hide();
-                        loadChildParameters($element, pivotId);
-                    } else {
-                        // Child parametreleri gizle
-                        var $currentSection = $element.closest('.customization-section');
-                        $currentSection.children('.child-parameters-container').empty().hide();
-                    } 
-                    
-                    updatePrice();
-                });
-                
-                // Child parametreler için event listener (recursive)
-                $('.child-customization-radio, .child-customization-select').off('change.childCustomization').on('change.childCustomization', function() {
-                    var $element = $(this);
-                    var paramId = $element.val();
-                    var pivotId = $element.data('pivot-id');
-                    var hasChildren = $element.attr('data-has-children') === 'true';
-                    
-                    // Eğer select ise, seçili option'ın data-has-children değerini kontrol et
-                    if ($element.is('select')) {
-                        var $selectedOption = $element.find('option:selected');
-                        if ($selectedOption.length > 0) {
-                            hasChildren = $selectedOption.attr('data-has-children') === 'true';
-                            pivotId = $selectedOption.data('pivot-id');
-                        }
-                    }
-                    
-                    console.log('Child element changed:', {
-                        element: $element,
-                        paramId: paramId,
-                        pivotId: pivotId,
-                        hasChildren: hasChildren,
-                        elementType: $element.attr('type') || 'select'
+                // Ana + child parametreler — fiyat güncelle, cascade chain (yeni vanilla JS) ayrı dinliyor.
+                // Eski loadChildParameters AJAX + .child-parameters-container DOM injection KALDIRILDI
+                // (duplicate ID sorunu yarattığı için). Cascade tek mekanizma: refreshCascadeChain.
+                $(document).off('change.customization', '.customization-radio, .customization-select, .customization-checkbox, .child-customization-radio, .child-customization-select, .child-customization-checkbox')
+                    .on('change.customization', '.customization-radio, .customization-select, .customization-checkbox, .child-customization-radio, .child-customization-select, .child-customization-checkbox', function () {
+                        updatePrice();
                     });
-                    
-                    if (hasChildren && pivotId) {
-                        console.log('Loading child parameters for pivotId:', pivotId);
-                        // Sadece bu element'in kendi container'ını temizle
-                        // Kardeş elementlerin container'larını etkilememek için daha spesifik seçim
-                        var $elementContainer = $element.closest('.customization-section, .child-parameters-container');
-                        // Sadece bu container'ın doğrudan child container'larını temizle
-                        $elementContainer.children('.child-parameters-container').empty().hide();
-                        loadChildParameters($element, pivotId);
-                    } else {
-                        console.log('No children or no pivotId, hiding child containers');
-                        // Sadece bu element'in alt child parametrelerini gizle
-                        var $elementContainer = $element.closest('.child-parameters-container');
-                        $elementContainer.children('.child-parameters-container').empty().hide();
-                    }
-                    
-                    updatePrice();
-                });
                 
                 // Checkbox'lar için event listener
                 $('.customization-checkbox, .child-customization-checkbox').off('change.checkbox').on('change.checkbox', function() {

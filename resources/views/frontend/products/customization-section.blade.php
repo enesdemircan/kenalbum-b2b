@@ -51,7 +51,10 @@
     @endif
 
 @if($category->params && $category->params->count() > 0)
-    @if($category->type == 'radio' || $category->type == 'hidden')
+    {{-- Tüm tek-seçim tipleri (radio, hidden, select) aynı uniform card pattern.
+         Cascade chain filter'ı tek mekanizma; eski mirror-select + hidden <select>
+         + AJAX child loading kaldırıldı (duplicate ID problemi yaratıyordu). --}}
+    @if($category->type == 'radio' || $category->type == 'hidden' || $category->type == 'select')
 
         <div class="row g-3 option-card-grid">
         @foreach($categoryParams as $pivot)
@@ -284,75 +287,6 @@
         @endforeach
 
 
-
-        @elseif($category->type == 'select')
-
-        {{-- Hidden select for backward-compat (cascade child loading kullanılıyor) --}}
-        <select class="form-select customization-select d-none"
-                name="customization[{{ $category->id }}]"
-                data-category="{{ $category->id }}"
-                data-category-title="{{ $category->title }}"
-                data-required="{{ $category->required ? 'true' : 'false' }}"
-                data-pivot-id="0"
-                data-has-children="false">
-            <option value="">Seçiniz...</option>
-            @foreach($categoryParams as $pivot)
-                @php
-                    $param = $pivot->param;
-                    $hasChildren = $product->customizationPivotParams->where('customization_params_ust_id', $pivot->id)->count() > 0;
-                    $isChild = $pivot->customization_params_ust_id > 0;
-                @endphp
-                @if(!$isChild)
-                <option value="{{ $pivot->id }}"
-                        data-price="{{ $pivot->price ?: 0 }}"
-                        data-title="{{ $param->key }}"
-                        data-pivot-id="{{ $pivot->id }}"
-                        data-has-children="{{ $hasChildren ? 'true' : 'false' }}"
-                        data-is-child="false"
-                        data-parent-id="0"
-                        data-category-id="{{ $category->id }}"
-                        data-category-title="{{ $category->title }}">{{ $param->key }}</option>
-                @endif
-            @endforeach
-        </select>
-
-        {{-- Görsel kart UI'ı (radio gibi davranıyor — seçilince hidden select'i de günceller) --}}
-        <div class="row g-3 option-card-grid" data-mirror-select="{{ $category->id }}">
-        @foreach($categoryParams as $pivot)
-            @php
-                $param = $pivot->param;
-                $hasImage = $param->option2 == 'true' && !empty($param->value);
-                $hasChildren = $product->customizationPivotParams->where('customization_params_ust_id', $pivot->id)->count() > 0;
-                $isChild = $pivot->customization_params_ust_id > 0;
-                if ($isChild) continue;
-            @endphp
-            <div class="col-6 col-md-4 col-lg-3">
-                <label class="option-card option-card-mirror-select" data-target-select="select.customization-select[data-category='{{ $category->id }}']" data-pivot-id="{{ $pivot->id }}">
-                    <div class="option-card-image-wrap">
-                        @if($hasImage)
-                            <img src="{{ asset('storage/' . $param->value) }}"
-                                 alt="{{ $param->key }}"
-                                 class="option-card-image"
-                                 loading="lazy">
-                        @else
-                            <div class="option-card-no-image">
-                                <i class="fas fa-th-large"></i>
-                            </div>
-                        @endif
-                        <span class="option-card-checkmark"><i class="fas fa-check"></i></span>
-                    </div>
-                    <div class="option-card-body">
-                        <div class="option-card-title">{{ $param->key }}</div>
-                        @if(($pivot->price ?: 0) > 0)
-                            @if(Auth::check() and Auth::user()->roles->contains('id', 3) or Auth::user()->roles->contains('id', 1))
-                            <div class="option-card-price">+{{ number_format($pivot->price ?: 0, 2) }} ₺</div>
-                            @endif
-                        @endif
-                    </div>
-                </label>
-            </div>
-        @endforeach
-        </div>
 
     @endif
 @endif
