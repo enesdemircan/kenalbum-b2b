@@ -23,12 +23,11 @@ return new class extends Migration
             ['title_like' => 'Model',      'label' => 'Model'],
             ['title_like' => 'Boyut',      'label' => 'Ebat'],
             ['title_like' => 'Pvc Kalın',  'label' => 'Pvc Kalınlığı'],
-            ['title_like' => 'Extra Ürün', 'label' => 'Ekstra Ürün'],
-
             // "Özel" tab — birden fazla kategori bu label ile gruplanır
             ['title_like' => 'Albüm Üzerine', 'label' => 'Özel'],
             ['title_like' => 'Yazılacak Yazı','label' => 'Özel'],
             ['title_like' => 'Not',          'label' => 'Özel'],
+            ['title_like' => 'Extra Ürün',   'label' => 'Özel'],
             // Yeni kategoriler eklenecek (Çalışma Tipi, Dizgi, Rötüş vb.) — bunlar da admin
             // panelden step_label='Özel' set ederek aynı tab'da görünür hale gelir.
         ];
