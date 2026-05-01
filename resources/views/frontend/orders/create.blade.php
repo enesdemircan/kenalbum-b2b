@@ -1764,6 +1764,52 @@
         });
 
         // ============ Ekstra customization modal ============
+        // Modal show/hide — Bootstrap 5 API varsa onu kullan, yoksa vanilla fallback.
+        // Bazı sayfalarda window.bootstrap namespace mevcut olmayabilir
+        // (master layout yükleme sırası, başka bir global override).
+        function showExtraModal() {
+            const modalEl = document.getElementById('extraCustomizeModal');
+            if (!modalEl) return;
+            if (window.bootstrap && window.bootstrap.Modal) {
+                window.bootstrap.Modal.getOrCreateInstance(modalEl).show();
+                return;
+            }
+            // Vanilla fallback
+            modalEl.classList.add('show');
+            modalEl.style.display = 'block';
+            modalEl.removeAttribute('aria-hidden');
+            modalEl.setAttribute('aria-modal', 'true');
+            document.body.classList.add('modal-open');
+            if (!document.getElementById('extraCustomizeBackdrop')) {
+                const bd = document.createElement('div');
+                bd.id = 'extraCustomizeBackdrop';
+                bd.className = 'modal-backdrop fade show';
+                bd.addEventListener('click', hideExtraModal);
+                document.body.appendChild(bd);
+            }
+        }
+        function hideExtraModal() {
+            const modalEl = document.getElementById('extraCustomizeModal');
+            if (!modalEl) return;
+            if (window.bootstrap && window.bootstrap.Modal) {
+                window.bootstrap.Modal.getInstance(modalEl)?.hide();
+                return;
+            }
+            modalEl.classList.remove('show');
+            modalEl.style.display = 'none';
+            modalEl.setAttribute('aria-hidden', 'true');
+            modalEl.removeAttribute('aria-modal');
+            document.body.classList.remove('modal-open');
+            document.getElementById('extraCustomizeBackdrop')?.remove();
+        }
+        // Manuel close button + ESC + backdrop click bind (vanilla fallback için)
+        document.addEventListener('click', (e) => {
+            if (e.target.closest('#extraCustomizeModal [data-bs-dismiss="modal"]')) hideExtraModal();
+        });
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape') hideExtraModal();
+        });
+
         async function openExtraCustomizeModal(card) {
             if (!window._mainCommitted) {
                 Swal.fire({ icon: 'info', title: 'Önce ana ürün', text: 'Önce Sipariş Özeti adımından ana ürünü sepete eklemelisiniz.' });
@@ -1776,9 +1822,7 @@
             if (titleEl) titleEl.textContent = title;
             if (bodyEl) bodyEl.innerHTML = '<div class="text-center py-4"><div class="spinner-border text-primary"></div><p class="text-muted mt-2 mb-0">Yükleniyor...</p></div>';
 
-            const modalEl = document.getElementById('extraCustomizeModal');
-            const modal = bootstrap.Modal.getOrCreateInstance(modalEl);
-            modal.show();
+            showExtraModal();
 
             try {
                 const res = await fetch('/products/' + encodeURIComponent(productId) + '/extra-form', {
@@ -1815,8 +1859,7 @@
                     });
                     const data = await res.json();
                     if (data.success && data.cart_id) {
-                        const modalEl = document.getElementById('extraCustomizeModal');
-                        bootstrap.Modal.getInstance(modalEl)?.hide();
+                        hideExtraModal();
                         Swal.fire({ icon: 'success', title: 'Sepete eklendi', timer: 1400, showConfirmButton: false });
                         const card = document.querySelector('.extra-card[data-extra-product-id="' + productId + '"]');
                         if (card) card.classList.add('has-quantity');
