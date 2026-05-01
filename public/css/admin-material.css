@@ -796,3 +796,25 @@
 .bg-material-warning { background: var(--md-warning) !important; }
 .bg-material-danger { background: var(--md-danger) !important; }
 .bg-material-info { background: var(--md-info) !important; }
+
+/* ===================================
+   16. Sortable image grid (admin/products edit)
+   ================================== */
+.sortable-image-item .border { transition: box-shadow .15s, transform .15s; }
+.sortable-image-item .border:hover { box-shadow: 0 4px 16px rgba(0,0,0,.12); }
+.sortable-ghost { opacity: .35; }
+.sortable-chosen .border { box-shadow: 0 6px 20px rgba(234,88,12,.25); transform: scale(1.02); }
+.sortable-image-order {
+    position: absolute;
+    top: 5px;
+    left: 5px;
+    z-index: 5;
+    background: linear-gradient(135deg, #fb923c, #ea580c);
+    color: #fff;
+    font-size: .72rem;
+    font-weight: 800;
+    padding: 2px 8px;
+    border-radius: 999px;
+    min-width: 22px;
+    text-align: center;
+}

@@ -468,4 +468,57 @@ class ProductController extends Controller
         
         return response()->json(['success' => true, 'message' => 'Resim ve thumbnail başarıyla silindi']);
     }
+
+    /**
+     * Ürün resimlerinin sırasını güncelle.
+     * Body: { order: [2, 0, 1] }  (yeni sıralamada eski indeksler)
+     */
+    public function reorderImages(Request $request, $productId)
+    {
+        $product = Product::findOrFail($productId);
+
+        $request->validate([
+            'order' => 'required|array|min:1',
+            'order.*' => 'integer|min:0',
+        ]);
+
+        if (!$product->images) {
+            return response()->json(['success' => false, 'message' => 'Sıralanacak resim yok.'], 422);
+        }
+
+        $images = array_map('trim', explode(',', $product->images));
+        $thumbnails = $product->thumbnails ? array_map('trim', explode(',', $product->thumbnails)) : [];
+        $newOrder = $request->input('order');
+
+        // Validate indexes are in range and unique
+        $count = count($images);
+        if (count($newOrder) !== $count || count(array_unique($newOrder)) !== $count) {
+            return response()->json(['success' => false, 'message' => 'Sıralama mevcut resim sayısıyla eşleşmiyor.'], 422);
+        }
+        foreach ($newOrder as $i) {
+            if ($i < 0 || $i >= $count) {
+                return response()->json(['success' => false, 'message' => 'Geçersiz indeks.'], 422);
+            }
+        }
+
+        $reorderedImages = [];
+        $reorderedThumbnails = [];
+        foreach ($newOrder as $oldIndex) {
+            $reorderedImages[] = $images[$oldIndex];
+            if (isset($thumbnails[$oldIndex])) {
+                $reorderedThumbnails[] = $thumbnails[$oldIndex];
+            }
+        }
+
+        $product->update([
+            'images' => implode(',', $reorderedImages),
+            'thumbnails' => implode(',', $reorderedThumbnails),
+        ]);
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Resim sırası kaydedildi.',
+            'images' => $reorderedImages,
+        ]);
+    }
 }

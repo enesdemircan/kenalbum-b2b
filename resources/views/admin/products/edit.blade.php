@@ -176,32 +176,43 @@
                         <small class="text-muted">Yeni resimler ekleyebilirsiniz. Mevcut resimler korunacaktır. Maksimum dosya boyutu: 5MB. Yeni resimler otomatik olarak sıkıştırılacak ve thumbnail'lar oluşturulacaktır.</small>
                         
                         @if($product->images)
-                            <div class="mt-3">
-                                <label class="form-label">Mevcut Resimler</label>
-                                <div class="row">
+                            <div class="mt-3" id="existingImagesSection">
+                                <div class="d-flex justify-content-between align-items-center mb-2">
+                                    <label class="form-label mb-0">Mevcut Resimler</label>
+                                    <small class="text-muted">
+                                        <span class="material-icons" style="font-size:14px;vertical-align:middle">drag_indicator</span>
+                                        Sürükleyerek sırasını değiştirebilirsiniz
+                                    </small>
+                                </div>
+                                <div id="existingImagesSortable" class="row">
                                     @php
-                                        $existingImages = explode(',', $product->images);
-                                        $existingThumbnails = $product->thumbnails ? explode(',', $product->thumbnails) : [];
+                                        $existingImages = array_map('trim', explode(',', $product->images));
+                                        $existingThumbnails = $product->thumbnails ? array_map('trim', explode(',', $product->thumbnails)) : [];
                                     @endphp
                                     @foreach($existingImages as $index => $image)
-                                        <div class="col-md-3 mb-2" id="image-container-{{ $index }}">
-                                            <div class="border rounded p-2 position-relative">
-                                                <button type="button" 
-                                                        class="btn-material btn-material-danger btn-sm position-absolute" 
+                                        <div class="col-md-3 mb-2 sortable-image-item" data-index="{{ $index }}" id="image-container-{{ $index }}">
+                                            <div class="border rounded p-2 position-relative" style="cursor: move;">
+                                                <span class="badge sortable-image-order">{{ $index + 1 }}</span>
+                                                <button type="button"
+                                                        class="btn-material btn-material-danger btn-sm position-absolute"
                                                         style="top: 5px; right: 5px; z-index: 10;"
-                                                        onclick="deleteImage({{ $product->id }}, {{ $index }}, '{{ trim($image) }}')"
+                                                        onclick="deleteImage({{ $product->id }}, {{ $index }}, '{{ $image }}')"
                                                         title="Resmi Sil">
                                                     <span class="material-icons" style="font-size:18px">delete</span>
                                                 </button>
-                                                @if(isset($existingThumbnails[$index]))
-                                                    <img src="{{ trim($existingThumbnails[$index]) }}" class="img-fluid" style="max-height: 100px; object-fit: cover;">
+                                                @if(isset($existingThumbnails[$index]) && $existingThumbnails[$index] !== '')
+                                                    <img src="{{ $existingThumbnails[$index] }}" class="img-fluid sortable-image-thumb" style="max-height: 100px; object-fit: cover;">
                                                 @else
-                                                    <img src="{{ trim($image) }}" class="img-fluid" style="max-height: 100px;">
+                                                    <img src="{{ $image }}" class="img-fluid sortable-image-thumb" style="max-height: 100px;">
                                                 @endif
-                                                <div class="small text-muted mt-1">{{ basename($image) }}</div>
+                                                <div class="small text-muted mt-1 sortable-image-name">{{ basename($image) }}</div>
                                             </div>
                                         </div>
                                     @endforeach
+                                </div>
+                                <div id="reorderStatus" class="small text-muted mt-2 d-none">
+                                    <span class="material-icons" style="font-size:14px;vertical-align:middle">cloud_done</span>
+                                    Sıralama kaydedildi.
                                 </div>
                             </div>
                         @endif
@@ -287,7 +298,68 @@
     </div>
 </div>
 
+<script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.2/Sortable.min.js"></script>
 <script>
+// ============ SORTABLE: mevcut resimlerin sırasını drag-drop ile değiştir ============
+(function() {
+    const list = document.getElementById('existingImagesSortable');
+    if (!list || typeof Sortable === 'undefined') return;
+
+    Sortable.create(list, {
+        animation: 150,
+        ghostClass: 'sortable-ghost',
+        chosenClass: 'sortable-chosen',
+        onEnd: function() {
+            const items = list.querySelectorAll('.sortable-image-item');
+            const order = [];
+            items.forEach((el, i) => {
+                order.push(parseInt(el.dataset.index, 10));
+                // Yeni numarayı badge'de güncelle
+                const badge = el.querySelector('.sortable-image-order');
+                if (badge) badge.textContent = i + 1;
+            });
+            saveImageOrder(order);
+        }
+    });
+})();
+
+function saveImageOrder(order) {
+    const status = document.getElementById('reorderStatus');
+    fetch('{{ route("admin.products.reorder-images", $product->id) }}', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRF-TOKEN': '{{ csrf_token() }}',
+            'Accept': 'application/json',
+        },
+        credentials: 'same-origin',
+        body: JSON.stringify({ order })
+    })
+    .then(r => r.json())
+    .then(d => {
+        if (d.success) {
+            // data-index'leri yeni sıraya göre 0..n-1 olarak resetle (tekrar sürüklenebilsin)
+            const items = document.querySelectorAll('#existingImagesSortable .sortable-image-item');
+            items.forEach((el, i) => {
+                el.dataset.index = i;
+                el.id = 'image-container-' + i;
+                const delBtn = el.querySelector('button[onclick^="deleteImage"]');
+                if (delBtn) {
+                    delBtn.setAttribute('onclick', `deleteImage({{ $product->id }}, ${i}, '${(d.images && d.images[i]) || ''}')`);
+                }
+            });
+            if (status) {
+                status.classList.remove('d-none');
+                clearTimeout(window.__reorderStatusTimer);
+                window.__reorderStatusTimer = setTimeout(() => status.classList.add('d-none'), 2400);
+            }
+        } else {
+            showAlert('danger', d.message || 'Sıralama kaydedilemedi.');
+        }
+    })
+    .catch(err => { console.error(err); showAlert('danger', 'Sıralama kaydedilemedi.'); });
+}
+
 document.getElementById('images').addEventListener('change', function(e) {
     const preview = document.getElementById('imagePreview');
     preview.innerHTML = '';

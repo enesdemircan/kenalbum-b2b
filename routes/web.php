@@ -213,6 +213,7 @@ Route::prefix('admin')->name('admin.')->middleware(['check.route.permission'])->
     Route::resource('products', ProductController::class);
     Route::post('products/{product}/customization', [ProductController::class, 'storeCustomization'])->name('products.customization.store');
     Route::delete('products/{product}/images/{imageIndex}', [ProductController::class, 'deleteImage'])->name('products.delete-image');
+    Route::post('products/{product}/images/reorder', [ProductController::class, 'reorderImages'])->name('products.reorder-images');
     
     // Product Customization Parameters
     Route::get('products/{product}/customization-params', [\App\Http\Controllers\Admin\ProductCustomizationParamController::class, 'index'])->name('product-customization-params.index');
