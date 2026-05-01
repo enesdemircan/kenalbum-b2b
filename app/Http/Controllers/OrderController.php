@@ -61,7 +61,12 @@ class OrderController extends Controller
             ->orderBy('title');
 
         if ($categoryId = $request->input('category')) {
-            $query->where('main_category_id', (int) $categoryId);
+            // Hierarchy: ürünlerin main_category_id'si genellikle alt-kategoride.
+            // Üst kategori seçilince TÜM alt kategorileri de dahil et (1 seviye).
+            $catIds = [(int) $categoryId];
+            $children = \App\Models\MainCategory::where('ust_id', (int) $categoryId)->pluck('id')->toArray();
+            if (!empty($children)) $catIds = array_merge($catIds, $children);
+            $query->whereIn('main_category_id', $catIds);
         }
 
         if ($search = trim((string) $request->input('search'))) {

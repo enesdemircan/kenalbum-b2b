@@ -691,9 +691,14 @@
                                   <i class="fas fa-th-large me-2"></i>Tüm Kategoriler
                               </li>
                               @foreach($mainCategories->where('ust_id', 0)->sortBy('order') as $mainCat)
-                                  <li class="list-group-item opp-cat-item" data-cat="{{ $mainCat->id }}">
-                                      {{ $mainCat->title }}
+                                  <li class="list-group-item opp-cat-item opp-cat-parent" data-cat="{{ $mainCat->id }}">
+                                      <strong>{{ $mainCat->title }}</strong>
                                   </li>
+                                  @foreach($mainCategories->where('ust_id', $mainCat->id)->sortBy('order') as $subCat)
+                                      <li class="list-group-item opp-cat-item opp-cat-child" data-cat="{{ $subCat->id }}">
+                                          ↳ {{ $subCat->title }}
+                                      </li>
+                                  @endforeach
                               @endforeach
                           </ul>
                       </div>
@@ -732,6 +737,12 @@
       }
       .opp-cat-item:hover { background: #f8f9fa; }
       .opp-cat-item.active { background: #198754; color: #fff; font-weight: 600; }
+      .opp-cat-item.active strong { color: #fff; }
+      .opp-cat-child {
+          padding-left: 28px !important;
+          font-size: 0.84rem;
+          color: #6c757d;
+      }
       .opp-card {
           display: block;
           height: 100%;
