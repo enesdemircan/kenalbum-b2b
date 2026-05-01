@@ -348,50 +348,86 @@
 }
 .b2b-hero-link:hover { color: #fff; }
 
-/* Sağdaki feature tag'ler (4 küçük kart) */
+/* Sağdaki feature kartları — 4 detaylı, floating cloud animasyonlu */
 .b2b-hero-meta {
     display: grid;
     grid-template-columns: 1fr 1fr;
-    gap: 12px;
+    gap: 18px;
+    perspective: 1000px;
 }
+
+@keyframes cloud-float-1 {
+    0%, 100% { transform: translate(0, 0) rotate(-1.6deg); }
+    50%      { transform: translate(-6px, -10px) rotate(0.4deg); }
+}
+@keyframes cloud-float-2 {
+    0%, 100% { transform: translate(0, 0) rotate(2deg); }
+    50%      { transform: translate(8px, -8px) rotate(-0.6deg); }
+}
+@keyframes cloud-float-3 {
+    0%, 100% { transform: translate(0, 0) rotate(-2.2deg); }
+    50%      { transform: translate(-10px, 12px) rotate(0.2deg); }
+}
+@keyframes cloud-float-4 {
+    0%, 100% { transform: translate(0, 0) rotate(1.5deg); }
+    50%      { transform: translate(10px, 8px) rotate(-0.8deg); }
+}
+
 .b2b-hero-tag {
-    background: rgba(255,255,255,.06);
-    border: 1px solid rgba(255,255,255,.12);
-    backdrop-filter: blur(12px);
-    -webkit-backdrop-filter: blur(12px);
+    background: rgba(255,255,255,.07);
+    border: 1px solid rgba(255,255,255,.14);
+    backdrop-filter: blur(14px);
+    -webkit-backdrop-filter: blur(14px);
     color: #fff;
-    padding: 14px 16px;
-    border-radius: 14px;
-    display: flex;
-    align-items: flex-start;
-    gap: 12px;
-    transition: background .2s ease, border-color .2s ease, transform .2s ease;
+    padding: 16px 16px 14px;
+    border-radius: 16px;
+    transition: background .25s ease, border-color .25s ease, box-shadow .25s ease;
+    will-change: transform;
+    position: relative;
 }
 .b2b-hero-tag:hover {
-    background: rgba(255,255,255,.10);
-    border-color: rgba(253,186,116,.35);
-    transform: translateY(-2px);
+    background: rgba(255,255,255,.12);
+    border-color: rgba(253,186,116,.45);
+    box-shadow: 0 12px 32px rgba(0,0,0,.30), 0 0 0 1px rgba(253,186,116,.30);
+    animation-play-state: paused;
 }
-.b2b-hero-tag i {
+.b2b-hero-tag--1 { animation: cloud-float-1 8.5s ease-in-out 0s infinite; margin-top: 0;     margin-left: -6px; }
+.b2b-hero-tag--2 { animation: cloud-float-2 9.2s ease-in-out 0.6s infinite; margin-top: 14px; margin-right: -4px; }
+.b2b-hero-tag--3 { animation: cloud-float-3 7.8s ease-in-out 1.4s infinite; margin-top: -8px;  margin-left: 4px; }
+.b2b-hero-tag--4 { animation: cloud-float-4 10s   ease-in-out 0.3s infinite; margin-top: 6px;   margin-right: -8px; }
+
+.b2b-hero-tag-icon {
+    width: 36px; height: 36px;
+    border-radius: 10px;
+    background: rgba(253,186,116,.18);
     color: #fdba74;
-    font-size: 1.1rem;
-    margin-top: 2px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1rem;
+    margin-bottom: 10px;
+    border: 1px solid rgba(253,186,116,.22);
 }
-.b2b-hero-tag span {
-    font-size: .8rem;
-    line-height: 1.35;
-}
-.b2b-hero-tag strong {
+.b2b-hero-tag-title {
     color: #fff;
-    font-weight: 600;
-    display: block;
+    font-weight: 700;
+    font-size: .85rem;
+    margin: 0 0 4px;
+    letter-spacing: -.005em;
+    text-transform: none;
 }
-.b2b-hero-tag em {
-    color: rgba(255,255,255,.65);
-    font-style: normal;
-    font-size: .72rem;
-    text-transform: uppercase;
-    letter-spacing: .04em;
+.b2b-hero-tag-desc {
+    color: rgba(255,255,255,.72);
+    font-size: .75rem;
+    line-height: 1.55;
+    margin: 0;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .b2b-hero-tag--1, .b2b-hero-tag--2, .b2b-hero-tag--3, .b2b-hero-tag--4 {
+        animation: none;
+        transform: none;
+    }
 }
 
 /* Sağ üst floating mini kart (overlap) */
@@ -700,21 +736,25 @@
           </div>
 
           <div class="b2b-hero-meta">
-            <div class="b2b-hero-tag">
-              <i class="fas fa-percentage"></i>
-              <span><strong>Bayi indirim</strong><br><em>grupları</em></span>
+            <div class="b2b-hero-tag b2b-hero-tag--1">
+              <div class="b2b-hero-tag-icon"><i class="fas fa-percentage"></i></div>
+              <h6 class="b2b-hero-tag-title">Bayiye Özel Fiyat</h6>
+              <p class="b2b-hero-tag-desc">Sipariş hacminize göre kademeli indirim. Listede gördüğünüz, ödediğiniz net fiyat.</p>
             </div>
-            <div class="b2b-hero-tag">
-              <i class="fas fa-bolt"></i>
-              <span><strong>Acil üretim</strong><br><em>seçeneği</em></span>
+            <div class="b2b-hero-tag b2b-hero-tag--2">
+              <div class="b2b-hero-tag-icon"><i class="fas fa-bolt"></i></div>
+              <h6 class="b2b-hero-tag-title">Acil Üretim</h6>
+              <p class="b2b-hero-tag-desc">Yaklaşan tarihiniz mi var? Önceliklendirip planlanan günde teslim ediyoruz.</p>
             </div>
-            <div class="b2b-hero-tag">
-              <i class="fas fa-pen-fancy"></i>
-              <span><strong>Tasarım</strong><br><em>hizmeti</em></span>
+            <div class="b2b-hero-tag b2b-hero-tag--3">
+              <div class="b2b-hero-tag-icon"><i class="fas fa-pen-fancy"></i></div>
+              <h6 class="b2b-hero-tag-title">Tasarım & Dizgi</h6>
+              <p class="b2b-hero-tag-desc">Tasarımı kendiniz yapın ya da bize bırakın. Dizgi, rötüş hizmeti de var.</p>
             </div>
-            <div class="b2b-hero-tag">
-              <i class="fas fa-shipping-fast"></i>
-              <span><strong>Türkiye</strong><br><em>geneli kargo</em></span>
+            <div class="b2b-hero-tag b2b-hero-tag--4">
+              <div class="b2b-hero-tag-icon"><i class="fas fa-shipping-fast"></i></div>
+              <h6 class="b2b-hero-tag-title">Türkiye Geneli Kargo</h6>
+              <p class="b2b-hero-tag-desc">Anlaşmalı kargolarla hızlı teslimat. Dilerseniz nihai müşterinize gönderilir.</p>
             </div>
           </div>
         </div>
@@ -733,42 +773,8 @@
       </div>
     </section>
 
-    {{-- ======== Bayi Avantajları — kapsamlı kartlar ======== --}}
-    <section class="container py-5">
-      <div class="section-head">
-        <div>
-          <span class="section-eyebrow">Neden Biz</span>
-          <h2 class="section-h2">Bayi olmanın<br>somut avantajları</h2>
-        </div>
-        <p class="section-lead">
-          Hero'daki kısa özetlerin arkasında yatan gerçek değer. Her bayimize özel sunduğumuz hizmetler.
-        </p>
-      </div>
-
-      <div class="advantages-grid">
-        <div class="advantage-card">
-          <div class="advantage-icon"><i class="fas fa-percentage"></i></div>
-          <h6 class="advantage-title">Bayiye Özel Fiyat</h6>
-          <p>Sipariş hacminize göre otomatik uygulanan kademeli indirim grupları. Listede gördüğünüz fiyat, sizin net bayi fiyatınızdır — ekstra ücret yok, gizli kalem yok.</p>
-        </div>
-        <div class="advantage-card">
-          <div class="advantage-icon advantage-icon-2"><i class="fas fa-bolt"></i></div>
-          <h6 class="advantage-title">Acil Üretim Önceliği</h6>
-          <p>Düğün tarihi yaklaşan müşteriniz mi var? Acil üretim seçeneğiyle siparişinizi öne alıyor, planlanan tarihte teslim ediyoruz. Ek ücret kaleminiz şeffaf.</p>
-        </div>
-        <div class="advantage-card">
-          <div class="advantage-icon advantage-icon-3"><i class="fas fa-pen-fancy"></i></div>
-          <h6 class="advantage-title">Tasarım & Dizgi Hizmeti</h6>
-          <p>Tasarımı kendiniz yapabilir veya bizim tasarım ekibimize bırakabilirsiniz. Dizgi ve rötüş hizmetleri de mevcut — yalnızca fotoğraflarınızı paylaşın yeter.</p>
-        </div>
-        <div class="advantage-card">
-          <div class="advantage-icon advantage-icon-4"><i class="fas fa-shipping-fast"></i></div>
-          <h6 class="advantage-title">Türkiye Geneli Kargo</h6>
-          <p>Anlaşmalı kargo firmalarımızla siparişiniz hızlıca yola çıkar. Dilerseniz nihai müşterinizin adresine gönderilir; takibini panelinizden anlık görürsünüz.</p>
-        </div>
-      </div>
-    </section>
-
+    {{-- 'Bayi Avantajları' detaylı section'ı kaldırıldı, içerik hero'nun
+         sağ tag'lerine taşındı (floating cloud animasyonlu). --}}
     {{-- 'Numune Albümlerimizden' galeri kaldırıldı (gereksiz). --}}
 
     {{-- ======== Feature highlight — tam genişlik koyu görsel CTA ======== --}}
