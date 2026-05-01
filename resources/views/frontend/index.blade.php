@@ -9,23 +9,23 @@
      (.text-success, .bg-light vs) dokunulmadı; sadece anasayfa içerik bölümleri
      bu yeni class'ları kullanıyor. --}}
 <style>
-.brand-text       { color: #198754 !important; }
-.brand-text-dark  { color: #146c43 !important; }
+.brand-text       { color: #ea580c !important; }
+.brand-text-dark  { color: #c2410c !important; }
 .brand-bg-soft    { background-color: #f0f9f4 !important; }
-.brand-divider    { color: #198754; letter-spacing: .12em; }
-.brand-stat       { color: #198754; font-weight: 700; }
-.brand-step-num   { color: #198754; font-weight: 700; }
+.brand-divider    { color: #ea580c; letter-spacing: .12em; }
+.brand-stat       { color: #ea580c; font-weight: 700; }
+.brand-step-num   { color: #ea580c; font-weight: 700; }
 .brand-cta {
-    background-color: #198754 !important;
-    border-color: #198754 !important;
+    background-color: #ea580c !important;
+    border-color: #ea580c !important;
     color: #fff !important;
 }
 .brand-cta:hover, .brand-cta:focus {
-    background-color: #146c43 !important;
-    border-color: #146c43 !important;
+    background-color: #c2410c !important;
+    border-color: #c2410c !important;
     color: #fff !important;
 }
-.brand-icon { color: #198754; }
+.brand-icon { color: #ea580c; }
 
 /* ============ Section başlık standartı ============ */
 .section-head {
@@ -38,15 +38,15 @@
 }
 .section-eyebrow {
     display: inline-block;
-    color: #6d28d9;
+    color: #c2410c;
     text-transform: uppercase;
     letter-spacing: .22em;
     font-size: .7rem;
     font-weight: 700;
     padding: 4px 12px;
-    border: 1px solid rgba(124,58,237,.30);
+    border: 1px solid rgba(234,88,12,.30);
     border-radius: 999px;
-    background: rgba(124,58,237,.06);
+    background: rgba(234,88,12,.06);
     margin-bottom: 14px;
 }
 .section-h2 {
@@ -88,7 +88,7 @@
 .flow-step:last-child { border-right: 0; }
 .flow-step:hover { background: #fafafa; }
 .flow-step-num {
-    color: #c4b5fd;
+    color: #fdba74;
     font-weight: 800;
     font-size: 2rem;
     line-height: 1;
@@ -110,7 +110,7 @@
     line-height: 1.6;
     margin: 0;
 }
-.flow-step:hover .flow-step-num { color: #7c3aed; }
+.flow-step:hover .flow-step-num { color: #ea580c; }
 
 @media (max-width: 991px) {
     .flow-steps { grid-template-columns: 1fr 1fr; }
@@ -124,10 +124,69 @@
     .flow-step:last-child { border-bottom: 0 !important; }
 }
 
+/* ============ Bayi Avantajları — kapsamlı kartlar ============ */
+.advantages-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 16px;
+}
+.advantage-card {
+    background: #fff;
+    border: 1px solid #e5e5e5;
+    border-radius: 16px;
+    padding: 28px 28px 26px;
+    display: grid;
+    grid-template-columns: auto 1fr;
+    column-gap: 20px;
+    row-gap: 6px;
+    align-items: start;
+    transition: border-color .2s ease, box-shadow .2s ease, transform .2s ease;
+}
+.advantage-card:hover {
+    border-color: #fdba74;
+    box-shadow: 0 12px 28px rgba(234,88,12,.10);
+    transform: translateY(-2px);
+}
+.advantage-icon {
+    width: 48px;
+    height: 48px;
+    border-radius: 12px;
+    background: linear-gradient(135deg, #ea580c 0%, #c2410c 100%);
+    color: #fff;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.15rem;
+    grid-row: span 2;
+    box-shadow: 0 6px 16px rgba(234,88,12,.22);
+}
+.advantage-icon-2 { background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%); box-shadow: 0 6px 16px rgba(245,158,11,.22); }
+.advantage-icon-3 { background: linear-gradient(135deg, #ec4899 0%, #be185d 100%); box-shadow: 0 6px 16px rgba(236,72,153,.22); }
+.advantage-icon-4 { background: linear-gradient(135deg, #14b8a6 0%, #0d9488 100%); box-shadow: 0 6px 16px rgba(20,184,166,.22); }
+
+.advantage-title {
+    color: #0a0a0a;
+    font-weight: 700;
+    font-size: 1.02rem;
+    margin: 2px 0 4px;
+    letter-spacing: -.005em;
+    text-transform: none;
+}
+.advantage-card p {
+    color: #525252;
+    font-size: .87rem;
+    line-height: 1.65;
+    margin: 0;
+}
+@media (max-width: 768px) {
+    .advantages-grid { grid-template-columns: 1fr; }
+    .advantage-card { padding: 22px; }
+}
+
 /* ============ Final CTA bant ============ */
 .cta-band {
     background: #0a0a0a;
-    background-image: linear-gradient(135deg, #0a0a0a 0%, #1e1b4b 60%, #0a0a0a 100%);
+    background-image: linear-gradient(135deg, #0a0a0a 0%, #431407 60%, #0a0a0a 100%);
     border-radius: 20px;
     padding: 44px 48px;
     display: flex;
@@ -144,7 +203,7 @@
     position: absolute;
     top: -40%; right: -10%;
     width: 360px; height: 360px;
-    background: radial-gradient(circle, rgba(124,58,237,.30), transparent 65%);
+    background: radial-gradient(circle, rgba(234,88,12,.30), transparent 65%);
     pointer-events: none;
 }
 .cta-band-text { position: relative; z-index: 1; max-width: 560px; }
@@ -163,9 +222,9 @@
     line-height: 1.6;
 }
 .cta-band-text a {
-    color: #c4b5fd;
+    color: #fdba74;
     text-decoration: none;
-    border-bottom: 1px solid rgba(196,181,253,.30);
+    border-bottom: 1px solid rgba(253,186,116,.30);
     font-weight: 600;
 }
 .cta-band-text a:hover { color: #fff; border-color: #fff; }
@@ -201,7 +260,7 @@
     inset: 0;
     z-index: 1;
     background:
-        radial-gradient(circle at 75% 20%, rgba(124,58,237,.45), transparent 55%),
+        radial-gradient(circle at 75% 20%, rgba(234,88,12,.45), transparent 55%),
         linear-gradient(135deg, rgba(10,10,10,.92) 0%, rgba(30,27,75,.85) 50%, rgba(10,10,10,.85) 100%);
 }
 .b2b-hero-grid {
@@ -216,16 +275,16 @@
 .b2b-hero-content { color: #fff; max-width: 560px; }
 .b2b-hero-eyebrow {
     display: inline-block;
-    color: #c4b5fd;
+    color: #fdba74;
     text-transform: uppercase;
     letter-spacing: .22em;
     font-size: .72rem;
     font-weight: 600;
     margin-bottom: 18px;
     padding: 4px 12px;
-    border: 1px solid rgba(196,181,253,.30);
+    border: 1px solid rgba(253,186,116,.30);
     border-radius: 999px;
-    background: rgba(124,58,237,.10);
+    background: rgba(234,88,12,.10);
     backdrop-filter: blur(8px);
 }
 .b2b-hero-title {
@@ -238,7 +297,7 @@
     font-family: inherit !important;
 }
 .b2b-hero-title-accent {
-    background: linear-gradient(135deg, #c4b5fd 0%, #a855f7 60%, #f0abfc 100%);
+    background: linear-gradient(135deg, #fdba74 0%, #fb923c 60%, #fed7aa 100%);
     -webkit-background-clip: text;
     background-clip: text;
     color: transparent;
@@ -273,15 +332,15 @@
     text-decoration: none;
 }
 .b2b-hero-cta:hover {
-    background: #f5f3ff;
-    color: #5b21b6;
+    background: #fff7ed;
+    color: #9a3412;
     transform: translateY(-2px);
     box-shadow: 0 18px 40px rgba(0,0,0,.30);
 }
 .b2b-hero-cta i { font-size: .8rem; transition: transform .2s ease; }
 .b2b-hero-cta:hover i { transform: translateX(3px); }
 .b2b-hero-link {
-    color: #c4b5fd;
+    color: #fdba74;
     font-weight: 600;
     font-size: .88rem;
     text-decoration: none;
@@ -310,11 +369,11 @@
 }
 .b2b-hero-tag:hover {
     background: rgba(255,255,255,.10);
-    border-color: rgba(196,181,253,.35);
+    border-color: rgba(253,186,116,.35);
     transform: translateY(-2px);
 }
 .b2b-hero-tag i {
-    color: #c4b5fd;
+    color: #fdba74;
     font-size: 1.1rem;
     margin-top: 2px;
 }
@@ -367,8 +426,8 @@
 .b2b-hero-floating-dot {
     width: 10px; height: 10px;
     border-radius: 50%;
-    background: #10b981;
-    box-shadow: 0 0 0 4px rgba(16,185,129,.18);
+    background: #ea580c;
+    box-shadow: 0 0 0 4px rgba(234,88,12,.18);
     flex-shrink: 0;
 }
 .b2b-hero-floating-info strong {
@@ -440,13 +499,13 @@
 .b2b-collage-tag-dot {
     width: 6px; height: 6px;
     border-radius: 50%;
-    background: #7c3aed;
-    box-shadow: 0 0 0 3px rgba(124,58,237,.20);
+    background: #ea580c;
+    box-shadow: 0 0 0 3px rgba(234,88,12,.20);
     animation: pulse 2s infinite;
 }
 @keyframes pulse {
-    0%,100% { box-shadow: 0 0 0 3px rgba(124,58,237,.20); }
-    50% { box-shadow: 0 0 0 6px rgba(124,58,237,.10); }
+    0%,100% { box-shadow: 0 0 0 3px rgba(234,88,12,.20); }
+    50% { box-shadow: 0 0 0 6px rgba(234,88,12,.10); }
 }
 .b2b-collage-side {
     display: grid;
@@ -468,7 +527,7 @@
 }
 .b2b-collage-mini-stat {
     background: #0a0a0a;
-    background-image: linear-gradient(135deg, #312e81 0%, #1e1b4b 50%, #0a0a0a 100%);
+    background-image: linear-gradient(135deg, #7c2d12 0%, #431407 50%, #0a0a0a 100%);
     color: #fff;
     border-radius: 14px;
     padding: 16px 18px;
@@ -482,7 +541,7 @@
     font-weight: 800;
     line-height: 1;
     letter-spacing: -.02em;
-    background: linear-gradient(135deg, #c4b5fd, #a855f7);
+    background: linear-gradient(135deg, #fdba74, #fb923c);
     -webkit-background-clip: text;
     background-clip: text;
     color: transparent;
@@ -604,57 +663,11 @@
 </style>
 
 <main>
-    <section class="swiper-container js-swiper-slider slideshow type4 slideshow-navigation-white-sm"
-      data-settings='{
-        "autoplay": {
-          "delay": 5000
-        },
-        "navigation": {
-          "nextEl": ".slideshow__next",
-          "prevEl": ".slideshow__prev"
-        },
-        "pagination": false,
-        "slidesPerView": 1,
-        "effect": "fade",
-        "loop": true
-      }'>
-      
-      <div class="swiper-wrapper">  
-        @foreach($sliders as $slider)
-        <div class="swiper-slide">
-          <div class="overflow-hidden position-relative h-100">
-            <div class="slideshow-bg">
-              <img loading="lazy" src="{{ asset('storage/'.$slider->image) }}" width="1920" height="600" alt="Pattern" class="slideshow-bg__img object-fit-cover">
-            </div>
-            <div class="slideshow-text container position-absolute start-50 top-50 translate-middle">
-              <h2 class="fs-70 mb-2 mb-lg-3 animate animate_fade animate_btt animate_delay-5 text-uppercase fw-normal" style="font-family: 'Average Sans';">{{ $slider->title }}</h2>
-              <p class="h6 mb-4 pb-2 animate animate_fade animate_btt animate_delay-5 lh-2rem">{{ $slider->description }}</p>
-              @if($slider->link)
-              <div class="animate animate_fade animate_btt animate_delay-7">
-                <a href="{{ $slider->link }}" class="btn btn-primary border-0 fs-base text-uppercase fw-normal btn-50">
-                  <span>{{ $slider->button_text }}</span>
-                </a>
-              </div>
-              @endif
-            </div>
-          </div>
-        </div><!-- /.slideshow-item -->
-         @endforeach
-
-
-
-      </div><!-- /.slideshow-wrapper js-swiper-slider -->
-
-      <div class="slideshow__prev position-absolute top-50 d-flex align-items-center justify-content-center border-radius-0">
-        <svg width="7" height="11" viewBox="0 0 7 11" xmlns="http://www.w3.org/2000/svg"><use href="#icon_prev_sm" /></svg>
-      </div><!-- /.slideshow__prev -->
-      <div class="slideshow__next position-absolute top-50 d-flex align-items-center justify-content-center border-radius-0">
-        <svg width="7" height="11" viewBox="0 0 7 11" xmlns="http://www.w3.org/2000/svg"><use href="#icon_next_sm" /></svg>
-      </div><!-- /.slideshow__next -->
-    </section><!-- /.slideshow -->
+    {{-- Eski swiper slider kaldırıldı — modern arayüzlerde basit kaçıyordu.
+         Yerine doğrudan B2B editorial hero ile başlıyoruz. --}}
 
     {{-- ======== B2B Hero — editorial dark hero (yatay) ======== --}}
-    <section class="container py-5 my-3">
+    <section class="container pt-4 pt-lg-5">
       <div class="b2b-hero">
         <div class="b2b-hero-bg">
           <img src="/images/1758117104_ORFb8xojb0.JPG" alt="" loading="lazy">
@@ -720,9 +733,41 @@
       </div>
     </section>
 
-    {{-- 'Bayi Avantajları' kaldırıldı — yeni hero'nun sağındaki 4 feature tag
-         (bayi indirim / acil üretim / tasarım / kargo) zaten aynı bilgiyi
-         daha kompakt veriyordu. --}}
+    {{-- ======== Bayi Avantajları — kapsamlı kartlar ======== --}}
+    <section class="container py-5">
+      <div class="section-head">
+        <div>
+          <span class="section-eyebrow">Neden Biz</span>
+          <h2 class="section-h2">Bayi olmanın<br>somut avantajları</h2>
+        </div>
+        <p class="section-lead">
+          Hero'daki kısa özetlerin arkasında yatan gerçek değer. Her bayimize özel sunduğumuz hizmetler.
+        </p>
+      </div>
+
+      <div class="advantages-grid">
+        <div class="advantage-card">
+          <div class="advantage-icon"><i class="fas fa-percentage"></i></div>
+          <h6 class="advantage-title">Bayiye Özel Fiyat</h6>
+          <p>Sipariş hacminize göre otomatik uygulanan kademeli indirim grupları. Listede gördüğünüz fiyat, sizin net bayi fiyatınızdır — ekstra ücret yok, gizli kalem yok.</p>
+        </div>
+        <div class="advantage-card">
+          <div class="advantage-icon advantage-icon-2"><i class="fas fa-bolt"></i></div>
+          <h6 class="advantage-title">Acil Üretim Önceliği</h6>
+          <p>Düğün tarihi yaklaşan müşteriniz mi var? Acil üretim seçeneğiyle siparişinizi öne alıyor, planlanan tarihte teslim ediyoruz. Ek ücret kaleminiz şeffaf.</p>
+        </div>
+        <div class="advantage-card">
+          <div class="advantage-icon advantage-icon-3"><i class="fas fa-pen-fancy"></i></div>
+          <h6 class="advantage-title">Tasarım & Dizgi Hizmeti</h6>
+          <p>Tasarımı kendiniz yapabilir veya bizim tasarım ekibimize bırakabilirsiniz. Dizgi ve rötüş hizmetleri de mevcut — yalnızca fotoğraflarınızı paylaşın yeter.</p>
+        </div>
+        <div class="advantage-card">
+          <div class="advantage-icon advantage-icon-4"><i class="fas fa-shipping-fast"></i></div>
+          <h6 class="advantage-title">Türkiye Geneli Kargo</h6>
+          <p>Anlaşmalı kargo firmalarımızla siparişiniz hızlıca yola çıkar. Dilerseniz nihai müşterinizin adresine gönderilir; takibini panelinizden anlık görürsünüz.</p>
+        </div>
+      </div>
+    </section>
 
     {{-- ======== Numune Albümlerimizden — galeri ======== --}}
     <section class="container py-5">
@@ -765,7 +810,7 @@
       <div class="feature-highlight">
         <img src="/images/1758117104_ORFb8xojb0.JPG" alt="Premium baskı" loading="lazy">
         <div class="feature-highlight-content">
-          <small class="text-uppercase fw-bold d-block mb-2" style="color:#c4b5fd; letter-spacing:.18em; font-size:.72rem;">— Yeni nesil baskı</small>
+          <small class="text-uppercase fw-bold d-block mb-2" style="color:#fdba74; letter-spacing:.18em; font-size:.72rem;">— Yeni nesil baskı</small>
           <h3>Müşterilerinizi etkileyecek<br>premium kalite</h3>
           <p>Düğün, nişan, doğum ve özel anlar için profesyonel kalitede albüm üretimi. Yıllarca koruma sağlayan dayanıklı malzemeler, modern bağlama teknikleri ve renk derinliği yüksek baskı.</p>
           <div>

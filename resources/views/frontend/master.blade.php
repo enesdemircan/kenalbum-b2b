@@ -19,8 +19,20 @@
 
   <link rel="stylesheet" href="{{ asset('css/style.css') }}" type="text/css">
 
-  {{-- Hedefli düzeltmeler — sadece header dropdown ve mega-menu kompaktlığı --}}
+  {{-- Poppins font — anasayfa hero ve genel başlıklar için garanti yükleme --}}
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800;900&display=swap">
+
+  {{-- Hedefli düzeltmeler — header dropdown + global font + temel typography --}}
   <style>
+  body, html {
+      font-family: "Poppins", "Segoe UI", "Roboto", "Helvetica Neue", Arial, sans-serif !important;
+  }
+  h1, h2, h3, h4, h5, h6, .section-title, .page-title {
+      font-family: "Poppins", "Segoe UI", "Roboto", "Helvetica Neue", Arial, sans-serif !important;
+      letter-spacing: -.02em;
+  }
   .navigation__item .box-menu {
       width: auto !important;
       min-width: 240px;
@@ -57,8 +69,8 @@
   }
   .navigation__item .box-menu .sub-menu__item a:hover,
   .navigation__item .box-menu .sub-menu__item .menu-link:hover {
-      background: #f5f3ff;
-      color: #6d28d9 !important;
+      background: #fff7ed;
+      color: #c2410c !important;
   }
   </style>
 
