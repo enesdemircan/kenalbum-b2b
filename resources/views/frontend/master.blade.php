@@ -17,7 +17,7 @@
   <!-- Stylesheets -->
   <link rel="stylesheet" href="{{ asset('css/plugins/swiper.min.css') }}" type="text/css">
 
-  <link rel="stylesheet" href="{{ asset('css/style.css') }}" type="text/css">
+  <link rel="stylesheet" href="{{ asset('css/style.css') }}?v={{ filemtime(public_path('css/style.css')) }}" type="text/css">
 
   {{-- Poppins font — anasayfa hero ve genel başlıklar için garanti yükleme --}}
   <link rel="preconnect" href="https://fonts.googleapis.com">
