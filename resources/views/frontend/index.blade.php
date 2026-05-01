@@ -32,6 +32,15 @@
     margin-bottom: 36px;
     max-width: 720px;
 }
+.section-head--center {
+    margin-left: auto;
+    margin-right: auto;
+    text-align: center;
+}
+.section-head--center .section-lead {
+    margin-left: auto;
+    margin-right: auto;
+}
 .section-h2 {
     font-weight: 800;
     font-size: clamp(1.35rem, 2.4vw, 1.9rem);
@@ -811,10 +820,10 @@
 
     {{-- ======== Nasıl Çalışır — hero ile feature highlight arasında ======== --}}
     <section class="container py-5">
-      <div class="section-head">
+      <div class="section-head section-head--center">
         <h2 class="section-h2">Sipariş vermek<br>yalnızca 4 adım</h2>
         <p class="section-lead">
-          Header'daki <strong>Sipariş Ver</strong> menüsüyle başlayın, yapılandırın, dosyalarınızı yükleyin — gerisini bize bırakın.
+          Birkaç tıklamayla siparişinizi oluşturun: ürünü seçin, yapılandırın, dosyalarınızı yükleyin — gerisini bize bırakın.
         </p>
       </div>
 
