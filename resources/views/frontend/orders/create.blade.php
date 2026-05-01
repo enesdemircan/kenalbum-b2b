@@ -1592,6 +1592,25 @@
             }
         });
 
+        // Eski jQuery loadChildParameters AJAX'ı .child-parameters-container'a Kumaş/Renk
+        // option'ları yüklüyor. Cascade chain bu kategoriler için ayrı step'ler oluşturduğu
+        // için DOM'da DUPLICATE ID'ler oluşuyor (param_X hem cascade step'inde hem de
+        // legacy hidden container'da). Browser <label for=> ilk bulduğunu seçtiği için
+        // kullanıcının tıkladığı kart radio'sunu check etmiyor.
+        // Çözüm: AJAX bitince container'ları boşalt.
+        if (window.jQuery) {
+            window.jQuery(document).ajaxComplete(function (event, xhr, settings) {
+                const url = settings && settings.url ? settings.url : '';
+                if (url.indexOf('/customization-params/') !== -1 && url.indexOf('/children') !== -1) {
+                    setTimeout(() => {
+                        document.querySelectorAll('.child-parameters-container').forEach(c => {
+                            c.innerHTML = '';
+                        });
+                    }, 30);
+                }
+            });
+        }
+
         // İlk yüklenmede tüm cascade step'leri başlangıç olarak gizle (parent henüz seçilmemiş)
         document.querySelectorAll('.wizard-step[data-step-cascade="true"]').forEach(cs => {
             cs.querySelectorAll('.option-card-wrapper').forEach(w => w.style.display = 'none');
