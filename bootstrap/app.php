@@ -19,6 +19,7 @@ return Application::configure(basePath: dirname(__DIR__))
             'ensure.customer' => \App\Http\Middleware\EnsureUserHasCustomer::class,
             'cors' => \App\Http\Middleware\CorsMiddleware::class,
             'api.role' => \App\Http\Middleware\ApiRoleMiddleware::class,
+            'api.docs' => \App\Http\Middleware\ApiDocsAccessMiddleware::class,
         ]);
  
         // ShareViewData'yı sadece web route'larına uygula

@@ -20,7 +20,7 @@ Route::get('/category/{slug}', [FrontendController::class, 'category'])->name('c
 Route::get('/products/{slug}', [FrontendController::class, 'show'])->name('products.show');
 Route::get('/page/{slug}', [FrontendController::class, 'page'])->name('page.show');
 Route::get('/search', [FrontendController::class, 'search'])->name('search')->middleware('throttle:20,1');
-Route::view('/api-docs', 'frontend.docs.api')->name('api.docs');
+Route::view('/api-docs', 'frontend.docs.api')->middleware(['auth', 'api.docs'])->name('api.docs');
 
 // Customization parameters routes
 Route::get('/products/{product}/customization-params', [FrontendController::class, 'getCustomizationParams'])->name('products.customization-params');

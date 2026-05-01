@@ -525,7 +525,12 @@
               <li class="sub-menu__item"><a href="mailto:{{ $siteSettings->email }}" class="menu-link menu-link_us-s">{{ $siteSettings->email }}</a></li>
             @endif
             <li class="sub-menu__item"><a href="{{ route('home') }}#homeFaqAccordion" class="menu-link menu-link_us-s">Sıkça Sorulan Sorular</a></li>
-            <li class="sub-menu__item"><a href="{{ route('api.docs') }}" class="menu-link menu-link_us-s">API Dökümantasyonu</a></li>
+            @auth
+              @php $canSeeApiDocs = auth()->user()->roles()->whereIn('roles.id', [1, 11])->exists(); @endphp
+              @if($canSeeApiDocs)
+                <li class="sub-menu__item"><a href="{{ route('api.docs') }}" class="menu-link menu-link_us-s">API Dökümantasyonu</a></li>
+              @endif
+            @endauth
           </ul>
         </div><!-- /.footer-column -->
 
