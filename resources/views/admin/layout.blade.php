@@ -525,6 +525,7 @@
         <div class="sidebar-submenu" id="sabitlerSubmenu">
             <a href="{{ route('admin.customization-categories.index') }}" class="sidebar-submenu-item {{ request()->routeIs('admin.customization-categories.*') ? 'active' : '' }}">Özelleştirme Kategorileri</a>
             <a href="{{ route('admin.order-statuses.index') }}" class="sidebar-submenu-item {{ request()->routeIs('admin.order-statuses.*') ? 'active' : '' }}">Sipariş Durumları</a>
+            <a href="{{ route('admin.shipping-methods.index') }}" class="sidebar-submenu-item {{ request()->routeIs('admin.shipping-methods.*') ? 'active' : '' }}">Kargo Metotları</a>
             <a href="{{ route('admin.roles.index') }}" class="sidebar-submenu-item {{ request()->routeIs('admin.roles.*') ? 'active' : '' }}">Kullanıcı Rolleri</a>
             <a href="{{ route('admin.routes.index') }}" class="sidebar-submenu-item {{ request()->routeIs('admin.routes.*') ? 'active' : '' }}">Route Yönetimi</a>
         </div>

@@ -7,15 +7,28 @@ use Illuminate\Database\Eloquent\Model;
 class Order extends Model
 {
     protected $fillable = [
-        'user_id', 'order_number', 'api_archive_code', 's3_zip', 'customer_name', 'customer_surname', 'customer_phone',
-        'city', 'district', 'shipping_address', 'payment_method', 'notes', 'total_price', 'discount_amount', 'status'
+        'user_id', 'order_number', 'api_archive_code', 's3_zip',
+        'customer_name', 'customer_surname', 'customer_phone',
+        'city', 'district', 'shipping_address',
+        'billing_name', 'billing_surname', 'billing_phone',
+        'billing_city', 'billing_district', 'billing_address',
+        'billing_tax_no', 'billing_company', 'billing_same_as_shipping',
+        'shipping_method_id', 'shipping_cost',
+        'payment_method', 'notes', 'total_price', 'discount_amount', 'status',
     ];
 
     protected $casts = [
         'total_price' => 'decimal:2',
         'discount_amount' => 'decimal:2',
+        'shipping_cost' => 'decimal:2',
         'status' => 'integer',
+        'billing_same_as_shipping' => 'boolean',
     ];
+
+    public function shippingMethod()
+    {
+        return $this->belongsTo(ShippingMethod::class, 'shipping_method_id');
+    }
 
     public function user()
     {

@@ -33,53 +33,89 @@
         </div>
         <div class="col-lg-9">
           <div class="page-content my-account__address">
-            <p class="notice">Aşağıdaki adresler ödeme sayfasında varsayılan olarak kullanılacaktır.</p>
-            
             @if(session('success'))
-                <div class="alert alert-success">
-                    {{ session('success') }}
-                </div>
+                <div class="alert alert-success">{{ session('success') }}</div>
             @endif
-
             @if(session('error'))
-                <div class="alert alert-danger">
-                    {{ session('error') }}
-                </div>
+                <div class="alert alert-danger">{{ session('error') }}</div>
             @endif
 
-            <!-- Yeni Adres Ekleme Butonu -->
-            <div class="mb-4">
-                <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addAddressModal">
-                    <i class="fas fa-plus"></i> Yeni Adres Ekle
+            {{-- ŞİRKET ADRESLERİM (Bana Gelsin) --}}
+            <div class="address-group mb-4">
+              <div class="d-flex justify-content-between align-items-center mb-3">
+                <h4 class="address-group-title m-0">
+                  <i class="fas fa-building me-2 text-warning"></i> Şirket Adreslerim
+                  <small class="text-muted fw-normal d-block" style="font-size:.78rem; margin-top:2px;">Sipariş bana gelsin — bayi/atölye/depo adresleriniz</small>
+                </h4>
+                <button type="button" class="btn btn-sm btn-primary" data-bs-toggle="modal" data-bs-target="#addAddressModal" onclick="prepareAddModal('company')">
+                  <i class="fas fa-plus"></i> Yeni Şirket Adresi
                 </button>
-            </div>
-
-            <div class="my-account__address-list">
-              @forelse($addresses as $address)
-                <div class="my-account__address-item">
-                  <div class="my-account__address-item__title">
-                    <h5>{{ $address->title }}</h5>
-                    <div>
-                      <a href="#" class="btn btn-sm btn-outline-primary" onclick="editAddress({{ $address->id }})">Düzenle</a>
-                      <form method="POST" action="{{ route('profile.addresses.delete', $address->id) }}" style="display: inline;" onsubmit="return confirm('Bu adresi silmek istediğinizden emin misiniz?')">
-                        @csrf
-                        @method('DELETE')
-                        <button type="submit" class="btn btn-sm btn-outline-danger">Sil</button>
-                      </form>
+              </div>
+              <div class="my-account__address-list">
+                @forelse($companyAddresses as $address)
+                  <div class="my-account__address-item">
+                    <div class="my-account__address-item__title">
+                      <h5><i class="fas fa-building me-1 text-warning" style="font-size:.85em;"></i> {{ $address->title }}</h5>
+                      <div>
+                        <a href="#" class="btn btn-sm btn-outline-primary" onclick="editAddress({{ $address->id }})">Düzenle</a>
+                        <form method="POST" action="{{ route('profile.addresses.delete', $address->id) }}" style="display:inline;" onsubmit="return confirm('Bu adresi silmek istediğinizden emin misiniz?')">
+                          @csrf @method('DELETE')
+                          <button type="submit" class="btn btn-sm btn-outline-danger">Sil</button>
+                        </form>
+                      </div>
+                    </div>
+                    <div class="my-account__address-item__detail">
+                      <p>{{ $address->ad }} {{ $address->soyad }}</p>
+                      <p>{{ $address->city ?? 'İl belirtilmemiş' }} / {{ $address->district ?? 'İlçe belirtilmemiş' }}</p>
+                      <p>{{ $address->adres }}</p>
+                      <p>{{ $address->telefon }}</p>
                     </div>
                   </div>
-                  <div class="my-account__address-item__detail">
-                    <p>{{ $address->ad }} {{ $address->soyad }}</p>
-                    <p>{{ $address->city ?? 'İl belirtilmemiş' }} / {{ $address->district ?? 'İlçe belirtilmemiş' }}</p>
-                    <p>{{ $address->adres }}</p>
-                    <p>{{ $address->telefon }}</p>
+                @empty
+                  <div class="text-center py-3 address-empty">
+                    <p class="text-muted m-0">Henüz şirket adresi eklenmemiş.</p>
                   </div>
-                </div>
-              @empty
-                <div class="text-center py-4">
-                  <p class="text-muted">Henüz adres eklenmemiş.</p>
-                </div>
-              @endforelse
+                @endforelse
+              </div>
+            </div>
+
+            {{-- MÜŞTERİ ADRESLERİM (Müşterime Gitsin) --}}
+            <div class="address-group">
+              <div class="d-flex justify-content-between align-items-center mb-3">
+                <h4 class="address-group-title m-0">
+                  <i class="fas fa-users me-2 text-info"></i> Müşteri Adreslerim
+                  <small class="text-muted fw-normal d-block" style="font-size:.78rem; margin-top:2px;">Sipariş müşterime gitsin — son müşteri adresleri</small>
+                </h4>
+                <button type="button" class="btn btn-sm btn-primary" data-bs-toggle="modal" data-bs-target="#addAddressModal" onclick="prepareAddModal('customer')">
+                  <i class="fas fa-plus"></i> Yeni Müşteri Adresi
+                </button>
+              </div>
+              <div class="my-account__address-list">
+                @forelse($customerAddresses as $address)
+                  <div class="my-account__address-item">
+                    <div class="my-account__address-item__title">
+                      <h5><i class="fas fa-user me-1 text-info" style="font-size:.85em;"></i> {{ $address->title }}</h5>
+                      <div>
+                        <a href="#" class="btn btn-sm btn-outline-primary" onclick="editAddress({{ $address->id }})">Düzenle</a>
+                        <form method="POST" action="{{ route('profile.addresses.delete', $address->id) }}" style="display:inline;" onsubmit="return confirm('Bu adresi silmek istediğinizden emin misiniz?')">
+                          @csrf @method('DELETE')
+                          <button type="submit" class="btn btn-sm btn-outline-danger">Sil</button>
+                        </form>
+                      </div>
+                    </div>
+                    <div class="my-account__address-item__detail">
+                      <p>{{ $address->ad }} {{ $address->soyad }}</p>
+                      <p>{{ $address->city ?? 'İl belirtilmemiş' }} / {{ $address->district ?? 'İlçe belirtilmemiş' }}</p>
+                      <p>{{ $address->adres }}</p>
+                      <p>{{ $address->telefon }}</p>
+                    </div>
+                  </div>
+                @empty
+                  <div class="text-center py-3 address-empty">
+                    <p class="text-muted m-0">Henüz müşteri adresi eklenmemiş.</p>
+                  </div>
+                @endforelse
+              </div>
             </div>
           </div>
         </div>
@@ -97,10 +133,15 @@
         </div>
         <form method="POST" action="{{ route('profile.addresses.store') }}">
           @csrf
+          <input type="hidden" name="type" id="addAddressType" value="company">
           <div class="modal-body">
+            <div class="mb-3 address-type-indicator p-2 rounded" style="background:#fff7ed; border:1px solid #fed7aa;">
+              <small class="text-muted d-block" style="font-size:.72rem;">Adres Tipi</small>
+              <strong id="addAddressTypeLabel" style="color:#9a3412;">🏢 Şirket Adresi (Bana Gelsin)</strong>
+            </div>
             <div class="mb-3">
               <label for="title" class="form-label">Adres Başlığı</label>
-              <input type="text" class="form-control" id="title" name="title" required placeholder="Ev, İş vb.">
+              <input type="text" class="form-control" id="title" name="title" required placeholder="Atölye, Müşteri Ali Vb.">
             </div>
             <div class="row">
               <div class="col-md-6">
@@ -164,6 +205,13 @@
           @csrf
           @method('PUT')
           <div class="modal-body">
+            <div class="mb-3">
+              <label class="form-label">Adres Tipi</label>
+              <select class="form-select" id="edit_type" name="type" required>
+                <option value="company">🏢 Şirket Adresi (Bana Gelsin)</option>
+                <option value="customer">👥 Müşteri Adresi (Müşterime Gitsin)</option>
+              </select>
+            </div>
             <div class="mb-3">
               <label for="edit_title" class="form-label">Adres Başlığı</label>
               <input type="text" class="form-control" id="edit_title" name="title" required>
@@ -293,13 +341,32 @@
         }
     }
 
+    // Yeni Adres modal'ı açılırken type'ı set et + label güncelle
+    function prepareAddModal(type) {
+      const hidden = document.getElementById('addAddressType');
+      const label = document.getElementById('addAddressTypeLabel');
+      const indicator = document.querySelector('.address-type-indicator');
+      hidden.value = type;
+      if (type === 'customer') {
+        label.textContent = '👥 Müşteri Adresi (Müşterime Gitsin)';
+        label.style.color = '#075985';
+        indicator.style.background = '#e0f2fe';
+        indicator.style.borderColor = '#7dd3fc';
+      } else {
+        label.textContent = '🏢 Şirket Adresi (Bana Gelsin)';
+        label.style.color = '#9a3412';
+        indicator.style.background = '#fff7ed';
+        indicator.style.borderColor = '#fed7aa';
+      }
+    }
+
     function editAddress(addressId) {
-      // Burada AJAX ile adres bilgilerini çekip modal'a doldurabilirsiniz
-      // Şimdilik basit bir örnek:
-      const address = @json($addresses);
-      const selectedAddress = address.find(addr => addr.id === addressId);
-      
+      // Şirket + müşteri adres listelerini birleştir
+      const addresses = [...@json($companyAddresses), ...@json($customerAddresses)];
+      const selectedAddress = addresses.find(addr => addr.id === addressId);
+
       if (selectedAddress) {
+        document.getElementById('edit_type').value = selectedAddress.type || 'company';
         document.getElementById('edit_title').value = selectedAddress.title;
         document.getElementById('edit_ad').value = selectedAddress.ad;
         document.getElementById('edit_soyad').value = selectedAddress.soyad;

@@ -236,14 +236,16 @@ class CustomerPanelController extends Controller
     public function addresses()
     {
         $user = Auth::user();
-        $addresses = $user->addresses()->orderBy('created_at', 'desc')->get();
-        return view('frontend.profile.addresses', compact('addresses'));
+        $companyAddresses = $user->addresses()->where('type', 'company')->orderBy('created_at', 'desc')->get();
+        $customerAddresses = $user->addresses()->where('type', 'customer')->orderBy('created_at', 'desc')->get();
+        return view('frontend.profile.addresses', compact('companyAddresses', 'customerAddresses'));
     }
 
     public function storeAddress(Request $request)
     {
         try {
             $validated = $request->validate([
+                'type' => 'required|in:company,customer',
                 'title' => 'required|string|min:2|max:255',
                 'ad' => 'required|string|min:2|max:255|regex:/^[A-Za-zğüşıöçĞÜŞİÖÇ\s]+$/',
                 'soyad' => 'required|string|min:2|max:255|regex:/^[A-Za-zğüşıöçĞÜŞİÖÇ\s]+$/',
@@ -373,6 +375,7 @@ class CustomerPanelController extends Controller
     public function updateAddress(Request $request, $id)
     {
         $request->validate([
+            'type' => 'required|in:company,customer',
             'title' => 'required|string|min:2|max:255',
             'ad' => 'required|string|min:2|max:255|regex:/^[A-Za-zğüşıöçĞÜŞİÖÇ\s]+$/',
             'soyad' => 'required|string|min:2|max:255|regex:/^[A-Za-zğüşıöçĞÜŞİÖÇ\s]+$/',

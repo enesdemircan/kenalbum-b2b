@@ -288,6 +288,7 @@ Route::prefix('admin')->name('admin.')->middleware(['check.route.permission'])->
     
     // Order statuses management
     Route::resource('order-statuses', \App\Http\Controllers\Admin\OrderStatusController::class);
+    Route::resource('shipping-methods', \App\Http\Controllers\Admin\ShippingMethodController::class);
     
     // Site settings management
     Route::get('site-settings', [\App\Http\Controllers\Admin\SiteSettingController::class, 'index'])->name('site-settings.index');
