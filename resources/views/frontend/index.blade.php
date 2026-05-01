@@ -155,28 +155,28 @@
         <div class="row g-4">
           <div class="col-md-6 col-lg-3">
             <div class="text-center p-3 h-100">
-              <i class="fas fa-percentage brand-icon fs-25 mb-3 d-block"></i>
+              <i class="fas fa-percentage brand-icon fs-25 mb-3 d-block"></i>{{-- mor --}}
               <h6 class="fw-medium text-uppercase mb-2">Bayiye Özel Fiyat</h6>
               <p class="text-secondary small mb-0">Sipariş hacminize göre otomatik uygulanan kademeli indirim grupları. Listede gördüğünüz fiyat, sizin net bayi fiyatınızdır.</p>
             </div>
           </div>
           <div class="col-md-6 col-lg-3">
             <div class="text-center p-3 h-100">
-              <i class="fas fa-bolt brand-icon fs-25 mb-3 d-block"></i>
+              <i class="fas fa-bolt brand-icon icon-orange fs-25 mb-3 d-block"></i>
               <h6 class="fw-medium text-uppercase mb-2">Acil Üretim</h6>
               <p class="text-secondary small mb-0">Düğün tarihi yaklaşan müşteriniz mi var? Acil üretim seçeneğiyle siparişinizi öne alıyor, gününde teslim ediyoruz.</p>
             </div>
           </div>
           <div class="col-md-6 col-lg-3">
             <div class="text-center p-3 h-100">
-              <i class="fas fa-pen-fancy brand-icon fs-25 mb-3 d-block"></i>
+              <i class="fas fa-pen-fancy brand-icon icon-pink fs-25 mb-3 d-block"></i>
               <h6 class="fw-medium text-uppercase mb-2">Tasarım Hizmeti</h6>
               <p class="text-secondary small mb-0">Tasarımı kendiniz yapabilir veya bizim ekibimize bırakabilirsiniz. Dizgi ve rötüş hizmetleri de mevcuttur.</p>
             </div>
           </div>
           <div class="col-md-6 col-lg-3">
             <div class="text-center p-3 h-100">
-              <i class="fas fa-shipping-fast brand-icon fs-25 mb-3 d-block"></i>
+              <i class="fas fa-shipping-fast brand-icon icon-teal fs-25 mb-3 d-block"></i>
               <h6 class="fw-medium text-uppercase mb-2">Türkiye Geneli Kargo</h6>
               <p class="text-secondary small mb-0">Anlaşmalı kargo firmalarımızla siparişiniz hızlıca yola çıkar. Dilerseniz nihai müşterinizin adresine gönderilebilir.</p>
             </div>
