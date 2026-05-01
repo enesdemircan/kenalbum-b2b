@@ -53,6 +53,158 @@
       </div><!-- /.slideshow__next -->
     </section><!-- /.slideshow -->
 
+    {{-- ======== B2B Tanıtım / Marka Hikayesi ======== --}}
+    <section class="container py-5 my-3">
+      <div class="row align-items-center g-4">
+        <div class="col-lg-6">
+          <small class="text-uppercase text-success fw-bold d-block mb-2">— B2B Baskı Atölyesi</small>
+          <h2 class="section-title text-uppercase fs-25 fw-medium mb-3">
+            Fotoğrafçıların güvendiği<br>
+            <span class="text-success">albüm &amp; baskı çözümü</span>
+          </h2>
+          <p class="text-secondary mb-3">
+            {{ $siteSettings->company_title ?? $siteSettings->title ?? 'KenAlbüm' }} olarak yıllardır profesyonel fotoğrafçılar,
+            stüdyolar ve baskı atölyeleri için yüksek kaliteli albüm ve fotoğraf baskısı üretiyoruz.
+            Bayi panelimizden seçimlerinizi yapın, dosyalarınızı yükleyin — siz müşterilerinizle ilgilenirken
+            biz üretimi tamamlayıp doğrudan size veya nihai müşterinize ulaştırırız.
+          </p>
+          <ul class="list-unstyled mb-4">
+            <li class="mb-2"><i class="fas fa-check-circle text-success me-2"></i> Toplu siparişlere özel <strong>bayi indirim grupları</strong></li>
+            <li class="mb-2"><i class="fas fa-check-circle text-success me-2"></i> Onlarca <strong>kapak / kumaş / renk</strong> seçeneği</li>
+            <li class="mb-2"><i class="fas fa-check-circle text-success me-2"></i> İhtiyaç anında <strong>acil üretim</strong> ve <strong>tasarım hizmeti</strong></li>
+          </ul>
+          @auth
+            <a href="#" class="btn btn-primary border-0 fs-base text-uppercase fw-normal btn-50 me-2" data-bs-toggle="modal" data-bs-target="#orderProductPickerModal">
+              <span>HEMEN SİPARİŞ VER</span>
+            </a>
+            <a href="{{ route('profile.index') }}" class="btn-link text-uppercase fw-medium text-decoration-underline">
+              Bayi Panelim
+            </a>
+          @else
+            <a href="{{ route('login') }}" class="btn btn-primary border-0 fs-base text-uppercase fw-normal btn-50 me-2">
+              <span>BAYİ GİRİŞİ</span>
+            </a>
+            <a href="{{ route('register') }}" class="btn-link text-uppercase fw-medium text-decoration-underline">
+              Bayi Başvurusu
+            </a>
+          @endauth
+        </div>
+        <div class="col-lg-6">
+          <div class="row g-3">
+            <div class="col-6">
+              <div class="bg-light p-4 h-100 text-center">
+                <div class="fs-25 fw-bold text-success">10+</div>
+                <small class="text-uppercase text-secondary">Yıllık Tecrübe</small>
+              </div>
+            </div>
+            <div class="col-6">
+              <div class="bg-light p-4 h-100 text-center">
+                <div class="fs-25 fw-bold text-success">500+</div>
+                <small class="text-uppercase text-secondary">Aktif Bayi</small>
+              </div>
+            </div>
+            <div class="col-6">
+              <div class="bg-light p-4 h-100 text-center">
+                <div class="fs-25 fw-bold text-success">100K+</div>
+                <small class="text-uppercase text-secondary">Tamamlanan Albüm</small>
+              </div>
+            </div>
+            <div class="col-6">
+              <div class="bg-light p-4 h-100 text-center">
+                <div class="fs-25 fw-bold text-success">2-5</div>
+                <small class="text-uppercase text-secondary">İş Günü Üretim</small>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    {{-- ======== Bayi Avantajları ======== --}}
+    <section class="bg-light py-5">
+      <div class="container">
+        <div class="text-center mb-4">
+          <small class="text-uppercase text-success fw-bold d-block mb-2">— Neden KenAlbüm?</small>
+          <h2 class="section-title text-uppercase fs-25 fw-medium">Bayi Olmanın Avantajları</h2>
+        </div>
+        <div class="row g-4">
+          <div class="col-md-6 col-lg-3">
+            <div class="text-center p-3 h-100">
+              <i class="fas fa-percentage text-success fs-25 mb-3 d-block"></i>
+              <h6 class="fw-medium text-uppercase mb-2">Bayiye Özel Fiyat</h6>
+              <p class="text-secondary small mb-0">Sipariş hacminize göre otomatik uygulanan kademeli indirim grupları. Listede gördüğünüz fiyat, sizin net bayi fiyatınızdır.</p>
+            </div>
+          </div>
+          <div class="col-md-6 col-lg-3">
+            <div class="text-center p-3 h-100">
+              <i class="fas fa-bolt text-success fs-25 mb-3 d-block"></i>
+              <h6 class="fw-medium text-uppercase mb-2">Acil Üretim</h6>
+              <p class="text-secondary small mb-0">Düğün tarihi yaklaşan müşteriniz mi var? Acil üretim seçeneğiyle siparişinizi öne alıyor, gününde teslim ediyoruz.</p>
+            </div>
+          </div>
+          <div class="col-md-6 col-lg-3">
+            <div class="text-center p-3 h-100">
+              <i class="fas fa-pen-fancy text-success fs-25 mb-3 d-block"></i>
+              <h6 class="fw-medium text-uppercase mb-2">Tasarım Hizmeti</h6>
+              <p class="text-secondary small mb-0">Tasarımı kendiniz yapabilir veya bizim ekibimize bırakabilirsiniz. Dizgi ve rötüş hizmetleri de mevcuttur.</p>
+            </div>
+          </div>
+          <div class="col-md-6 col-lg-3">
+            <div class="text-center p-3 h-100">
+              <i class="fas fa-shipping-fast text-success fs-25 mb-3 d-block"></i>
+              <h6 class="fw-medium text-uppercase mb-2">Türkiye Geneli Kargo</h6>
+              <p class="text-secondary small mb-0">Anlaşmalı kargo firmalarımızla siparişiniz hızlıca yola çıkar. Dilerseniz nihai müşterinizin adresine gönderilebilir.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    {{-- ======== Nasıl Çalışır? ======== --}}
+    <section class="container py-5">
+      <div class="text-center mb-4">
+        <small class="text-uppercase text-success fw-bold d-block mb-2">— Sipariş Süreci</small>
+        <h2 class="section-title text-uppercase fs-25 fw-medium">Sadece 4 Adımda Sipariş</h2>
+      </div>
+      <div class="row g-4">
+        <div class="col-md-6 col-lg-3">
+          <div class="text-center p-3 h-100">
+            <div class="text-success fw-bold fs-25 mb-2">01</div>
+            <h6 class="fw-medium text-uppercase mb-2">Ürünü Seçin</h6>
+            <p class="text-secondary small mb-0">Header'daki <strong>Sipariş Ver</strong> menüsünden veya kategorilerden ürününüzü seçin. Aynı siparişten yeniden vermek için <em>Geçmişim</em> sekmesini kullanın.</p>
+          </div>
+        </div>
+        <div class="col-md-6 col-lg-3">
+          <div class="text-center p-3 h-100">
+            <div class="text-success fw-bold fs-25 mb-2">02</div>
+            <h6 class="fw-medium text-uppercase mb-2">Özelleştirin</h6>
+            <p class="text-secondary small mb-0">Ebat, kumaş, renk, paket ve diğer detayları adım adım wizard'dan seçin. Her seçimde toplam fiyatınız anlık güncellenir.</p>
+          </div>
+        </div>
+        <div class="col-md-6 col-lg-3">
+          <div class="text-center p-3 h-100">
+            <div class="text-success fw-bold fs-25 mb-2">03</div>
+            <h6 class="fw-medium text-uppercase mb-2">Dosyaları Yükleyin</h6>
+            <p class="text-secondary small mb-0">Kapak ve iç sayfa tasarımlarınızı sipariş özetinde tek bir ZIP olarak yükleyin. Hatalı dosyalar tarafımızdan kontrol edilir.</p>
+          </div>
+        </div>
+        <div class="col-md-6 col-lg-3">
+          <div class="text-center p-3 h-100">
+            <div class="text-success fw-bold fs-25 mb-2">04</div>
+            <h6 class="fw-medium text-uppercase mb-2">Üretim &amp; Kargo</h6>
+            <p class="text-secondary small mb-0">Siparişiniz onaylandıktan sonra üretim sürecine girer. Durum takibini panelinizden anlık görebilir, kargo takibinizi yapabilirsiniz.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    {{-- ======== Kategoriler intro ======== --}}
+    <section class="container text-center pt-3">
+      <small class="text-uppercase text-success fw-bold d-block mb-2">— Ürünlerimiz</small>
+      <h2 class="section-title text-uppercase fs-25 fw-medium mb-2">Kategorilere Göz Atın</h2>
+      <p class="text-secondary col-lg-7 mx-auto mb-0">Albümler, fotokitaplar, duvar çerçeveleri ve daha fazlası — tüm ürün kategorilerimizden bayi fiyatıyla hızlıca sipariş verebilirsiniz.</p>
+    </section>
+
         @foreach($homepageCategories as $category)
         <div class="mb-3 mb-xl-5 pb-3 pt-1 pb-xl-5"></div>
 
@@ -106,6 +258,111 @@
 
         @endif
     @endforeach
+
+    {{-- ======== Sıkça Sorulan Sorular ======== --}}
+    <section class="bg-light py-5">
+      <div class="container">
+        <div class="row">
+          <div class="col-lg-4 mb-4 mb-lg-0">
+            <small class="text-uppercase text-success fw-bold d-block mb-2">— SSS</small>
+            <h2 class="section-title text-uppercase fs-25 fw-medium">Sık Sorulan Sorular</h2>
+            <p class="text-secondary mt-3">Bayi sürecimizle ilgili merak ettikleriniz için cevapları derledik. Aklınıza takılan başka bir konu olursa bize ulaşın.</p>
+          </div>
+          <div class="col-lg-8">
+            <div class="accordion" id="homeFaqAccordion">
+              <div class="accordion-item">
+                <h2 class="accordion-header">
+                  <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#faqB1">
+                    Bayi başvurusunu nasıl yapabilirim?
+                  </button>
+                </h2>
+                <div id="faqB1" class="accordion-collapse collapse" data-bs-parent="#homeFaqAccordion">
+                  <div class="accordion-body small text-secondary">
+                    Üst menüden <strong>Bayi Başvurusu</strong> bağlantısıyla kayıt formunu doldurup gönderebilirsiniz. Ekibimiz başvurunuzu inceleyip onay verdikten sonra panelinize giriş yapabilir, bayi fiyatlarıyla sipariş vermeye başlayabilirsiniz.
+                  </div>
+                </div>
+              </div>
+              <div class="accordion-item">
+                <h2 class="accordion-header">
+                  <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#faqB2">
+                    Üretim ve teslimat süresi ne kadar?
+                  </button>
+                </h2>
+                <div id="faqB2" class="accordion-collapse collapse" data-bs-parent="#homeFaqAccordion">
+                  <div class="accordion-body small text-secondary">
+                    Standart üretim süremiz <strong>2-5 iş günü</strong> arasındadır. Acil üretim seçeneği ile bu süre 1 iş gününe iner. Kargolama anlaşmalı firmalar üzerinden yapılır; gönderim tarihi panelinizden takip edilebilir.
+                  </div>
+                </div>
+              </div>
+              <div class="accordion-item">
+                <h2 class="accordion-header">
+                  <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#faqB3">
+                    Hangi dosya formatlarını kabul ediyorsunuz?
+                  </button>
+                </h2>
+                <div id="faqB3" class="accordion-collapse collapse" data-bs-parent="#homeFaqAccordion">
+                  <div class="accordion-body small text-secondary">
+                    Kapak ve iç sayfaları için <strong>PSD, AI, PDF, TIFF, JPG</strong> formatlarını kabul ediyoruz. Tüm dosyaları tek bir <strong>ZIP/RAR</strong> arşivi olarak siparişin son adımında yükleyebilirsiniz. Tasarım şablonlarımızı ürün detay sayfasından indirebilirsiniz.
+                  </div>
+                </div>
+              </div>
+              <div class="accordion-item">
+                <h2 class="accordion-header">
+                  <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#faqB4">
+                    Sık tekrarlayan siparişlerimi hızlandırabilir miyim?
+                  </button>
+                </h2>
+                <div id="faqB4" class="accordion-collapse collapse" data-bs-parent="#homeFaqAccordion">
+                  <div class="accordion-body small text-secondary">
+                    Evet. Header'daki <strong>Sipariş Ver</strong> menüsünde <em>Geçmişim</em> sekmesinden önceki siparişlerinize ulaşabilir, tek tıkla aynısını sepete ekleyebilir veya küçük değişiklikler için "Özelleştir" diyerek wizard'ı önceki seçimlerle önceden doldurabilirsiniz.
+                  </div>
+                </div>
+              </div>
+              <div class="accordion-item">
+                <h2 class="accordion-header">
+                  <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#faqB5">
+                    Ödeme ve fatura nasıl işliyor?
+                  </button>
+                </h2>
+                <div id="faqB5" class="accordion-collapse collapse" data-bs-parent="#homeFaqAccordion">
+                  <div class="accordion-body small text-secondary">
+                    Bayi panelinizdeki <strong>bakiye</strong> üzerinden ödeme yapılır. Bakiyenizi havale/EFT ile yükleyebilir, her sipariş tutarı bakiyenizden otomatik düşülür. Tüm siparişler için panelinizden e-fatura/dekont indirilebilir.
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    {{-- ======== Final CTA ======== --}}
+    <section class="container py-5">
+      <div class="row align-items-center justify-content-center text-center text-lg-start">
+        <div class="col-lg-8">
+          <h2 class="section-title text-uppercase fs-25 fw-medium mb-2">
+            Bayi olun, baskıyı bize bırakın.
+          </h2>
+          <p class="text-secondary mb-3 mb-lg-0">
+            Stüdyonuza, atölyenize özel bayi indirimleri ve öncelikli üretim avantajları için hemen başvurun.
+            @if($siteSettings->phone)
+              Sorularınız için <a href="tel:{{ preg_replace('/[^0-9+]/','',$siteSettings->phone) }}" class="text-success fw-medium text-decoration-none">{{ $siteSettings->phone }}</a> numarasından bize ulaşabilirsiniz.
+            @endif
+          </p>
+        </div>
+        <div class="col-lg-4 text-center text-lg-end mt-3 mt-lg-0">
+          @auth
+            <a href="#" class="btn btn-primary border-0 fs-base text-uppercase fw-normal btn-50" data-bs-toggle="modal" data-bs-target="#orderProductPickerModal">
+              <span>SİPARİŞ VER</span>
+            </a>
+          @else
+            <a href="{{ route('register') }}" class="btn btn-primary border-0 fs-base text-uppercase fw-normal btn-50">
+              <span>BAYİ BAŞVURUSU YAP</span>
+            </a>
+          @endauth
+        </div>
+      </div>
+    </section>
 
   </main>
 
