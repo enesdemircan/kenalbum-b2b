@@ -1540,42 +1540,54 @@
         // Cascade step'lerin tüm seçenekleri ön-render edilmiş (server-side).
         // Parent step'te seçim değişince child step'in seçeneklerini parent_pivot_id'ye göre filtrele.
 
-        function refreshCascadeChain(changedStepEl) {
-            const changedCatId = changedStepEl?.getAttribute('data-step-category-id');
-            if (!changedCatId) return;
-
-            // Tüm seçim tipleri artık native radio (select tipi unify edildi).
-            const checkedRadio = changedStepEl.querySelector('input[type="radio"]:checked');
-            const selectedPivotId = checkedRadio ? checkedRadio.value : '';
-
-            const childStep = document.querySelector(
-                '.wizard-step[data-step-cascade="true"][data-step-parent-cat="' + changedCatId + '"]'
-            );
-            if (!childStep) return;
-
-            let visibleCount = 0;
-            childStep.querySelectorAll('.option-card-wrapper').forEach(wrapper => {
-                const parentId = wrapper.getAttribute('data-parent-pivot-id') || '0';
-                const visible = String(parentId) === String(selectedPivotId);
-                wrapper.style.display = visible ? '' : 'none';
-                if (visible) visibleCount++;
-
-                if (!visible) {
-                    const inp = wrapper.querySelector('input');
-                    if (inp && inp.checked) inp.checked = false;
-                    wrapper.querySelector('.option-card')?.classList.remove('selected');
-                }
+        // Cascade chain filter — multi-branch hierarchy destekli.
+        // Eski varsayım: tek-lineer chain (Ebat→Kumaş→Renk). Yenisi: bir parent
+        // pivot'un farklı kategorilerde child'ları olabilir (örn. Ebat'ın hem
+        // Kumaş hem Paket child'ları). Filter logic: ANY checked radio'nun
+        // value'sunu set'e at, child step wrapper'ının data-parent-pivot-id'si
+        // bu set'te varsa göster.
+        function refreshCascadeChain() {
+            // Tüm wizard step'lerinde checked olan radio'ların pivot ID'lerini topla
+            const checkedPivots = new Set();
+            document.querySelectorAll('.wizard-step input[type="radio"]:checked').forEach(r => {
+                if (r.value) checkedPivots.add(String(r.value));
             });
 
-            const emptyState = childStep.querySelector('.cascade-empty-state');
-            const sectionGrid = childStep.querySelector('.option-card-grid');
-            if (emptyState && sectionGrid) {
-                emptyState.style.display = visibleCount === 0 ? '' : 'none';
-                sectionGrid.style.display = visibleCount === 0 ? 'none' : '';
-            }
+            // İterate: cascade step'leri çoklu kez geç (cleared selection cascade'i tetikleyebilir)
+            // 3 iter yeterli: parent değişimi → child clear → child cascade → grandchild clear
+            for (let iter = 0; iter < 3; iter++) {
+                let changed = false;
+                document.querySelectorAll('.wizard-step[data-step-cascade="true"]').forEach(stepEl => {
+                    let visibleCount = 0;
+                    stepEl.querySelectorAll('.option-card-wrapper').forEach(wrapper => {
+                        const parentPivotId = wrapper.getAttribute('data-parent-pivot-id') || '0';
+                        const visible = checkedPivots.has(String(parentPivotId));
+                        const oldDisplay = wrapper.style.display;
+                        wrapper.style.display = visible ? '' : 'none';
+                        if (visible) visibleCount++;
 
-            // Recursive (Ebat → Kumaş → Renk → Paket)
-            refreshCascadeChain(childStep);
+                        if (!visible) {
+                            const inp = wrapper.querySelector('input');
+                            if (inp && inp.checked) {
+                                inp.checked = false;
+                                if (checkedPivots.has(String(inp.value))) {
+                                    checkedPivots.delete(String(inp.value));
+                                    changed = true;
+                                }
+                            }
+                            wrapper.querySelector('.option-card')?.classList.remove('selected');
+                        }
+                    });
+
+                    const emptyState = stepEl.querySelector('.cascade-empty-state');
+                    const sectionGrid = stepEl.querySelector('.option-card-grid');
+                    if (emptyState && sectionGrid) {
+                        emptyState.style.display = visibleCount === 0 ? '' : 'none';
+                        sectionGrid.style.display = visibleCount === 0 ? 'none' : '';
+                    }
+                });
+                if (!changed) break;
+            }
         }
 
         // Tüm cascade-relevant input change'lerini izle
@@ -1583,8 +1595,7 @@
             const tgt = e.target;
             if (!tgt) return;
             if (tgt.matches('.customization-radio, input[type="radio"][data-pivot-id]')) {
-                const stepEl = tgt.closest('.wizard-step');
-                if (stepEl) refreshCascadeChain(stepEl);
+                refreshCascadeChain();
             }
         });
 
